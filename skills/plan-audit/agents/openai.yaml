@@ -1,0 +1,3 @@
+interface:
+  display_name: "Plan Audit"
+  short_description: "Gate external plans before verification or execution"
