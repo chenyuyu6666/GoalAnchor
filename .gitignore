@@ -1,0 +1,37 @@
+# Python bytecode and local tooling state
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local environments and packaging output
+.venv/
+venv/
+env/
+dist/
+build/
+*.egg-info/
+
+# Node tooling state
+node_modules/
+npm-debug.log*
+
+# Generated graph, image, and runtime output
+**/graphify-out/
+**/output/
+test-results/
+*.tmp
+*.temp
+
+# Local credentials and machine-specific settings
+.env
+.env.*
+!.env.example
+
+# Operating-system files
+.DS_Store
+Thumbs.db

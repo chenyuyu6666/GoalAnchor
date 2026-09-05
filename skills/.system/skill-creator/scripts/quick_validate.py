@@ -20,11 +20,11 @@ def validate_skill(skill_path):
     if not skill_md.exists():
         return False, "SKILL.md not found"
 
-    content = skill_md.read_text()
+    content = skill_md.read_text(encoding="utf-8")
     if not content.startswith("---"):
         return False, "No YAML frontmatter found"
 
-    match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
+    match = re.match(r"^---\r?\n(.*?)\r?\n---", content, re.DOTALL)
     if not match:
         return False, "Invalid frontmatter format"
 

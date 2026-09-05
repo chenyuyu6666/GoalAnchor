@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "fixture_id": "S6-DRIFT-UNLINKED",
+      "failure_class": "防漂移",
+      "phase": "plan",
+      "expected_passed": false,
+      "expected_finding_codes": ["MISSING_DECISION_LINK"],
+      "case": {
+        "work_items": [{"decision_link": null}]
+      }
+    },
+    {
+      "fixture_id": "S6-GOAL-REPLACED",
+      "failure_class": "防漂移",
+      "phase": "plan",
+      "expected_passed": false,
+      "expected_finding_codes": ["BLOCKER_REPLACES_GOAL"],
+      "case": {
+        "contract": {
+          "current_blocking_uncertainty": "达到可接受的页面滑动流畅度"
+        }
+      }
+    },
+    {
+      "fixture_id": "S6-UNVERIFIED-PREMISE",
+      "failure_class": "防错误积累",
+      "phase": "plan",
+      "expected_passed": false,
+      "expected_finding_codes": ["UNVERIFIED_ASSUMPTION"],
+      "case": {
+        "work_items": [{"assumptions": ["Snapshot 是主要瓶颈"]}]
+      }
+    },
+    {
+      "fixture_id": "S6-MIXED-EXPERIMENT",
+      "failure_class": "防伪证据",
+      "phase": "experiment",
+      "expected_passed": false,
+      "expected_finding_codes": ["NOT_ATTRIBUTABLE"],
+      "case": {
+        "experiment": {"additional_changed_variables": ["print_work", "config"]}
+      }
+    },
+    {
+      "fixture_id": "S6-SHORT-WINDOW",
+      "failure_class": "防伪证据",
+      "phase": "experiment",
+      "expected_passed": false,
+      "expected_finding_codes": ["INSUFFICIENT_WINDOW"],
+      "case": {
+        "experiment": {
+          "observation_window_seconds": 11,
+          "event_period_seconds": 300
+        }
+      }
+    },
+    {
+      "fixture_id": "S6-WEAK-CONCLUSION",
+      "failure_class": "防伪证据",
+      "phase": "conclusion",
+      "expected_passed": false,
+      "expected_finding_codes": ["CONCLUSION_EXCEEDS_EVIDENCE"],
+      "case": {
+        "conclusion_level": "Causal"
+      }
+    },
+    {
+      "fixture_id": "S6-EVIDENCE-OVERCLAIM",
+      "failure_class": "防伪证据",
+      "phase": "evidence",
+      "expected_passed": false,
+      "expected_finding_codes": ["SUPPORTS_EXCEEDS_LEVEL"],
+      "case": {
+        "evidence": {
+          "level": "Fact",
+          "supports": ["Association"],
+          "does_not_support": []
+        }
+      }
+    },
+    {
+      "fixture_id": "S6-FALSE-CLOSURE",
+      "failure_class": "防伪闭环",
+      "phase": "closure",
+      "expected_passed": false,
+      "expected_finding_codes": ["PROVENANCE_REQUIRED"],
+      "case": {
+        "closure": {
+          "root_cause_proven": false,
+          "fix_change_ref": null,
+          "artifact_verified": false,
+          "system_validation_passed": false,
+          "acceptance_complete": false,
+          "provenance": null
+        }
+      }
+    },
+    {
+      "fixture_id": "S6-BROKEN-PROVENANCE",
+      "failure_class": "防伪闭环",
+      "phase": "provenance",
+      "expected_passed": false,
+      "expected_finding_codes": ["PROVENANCE_CHAIN_INCOMPLETE"],
+      "case": {
+        "provenance_variant": "missing_device"
+      }
+    },
+    {
+      "fixture_id": "S6-VALID-PLAN",
+      "failure_class": "正例",
+      "phase": "plan",
+      "expected_passed": true,
+      "expected_finding_codes": [],
+      "case": {}
+    },
+    {
+      "fixture_id": "S6-VALID-EXPERIMENT",
+      "failure_class": "正例",
+      "phase": "experiment",
+      "expected_passed": true,
+      "expected_finding_codes": [],
+      "case": {}
+    },
+    {
+      "fixture_id": "S6-VALID-CLOSURE",
+      "failure_class": "正例",
+      "phase": "closure",
+      "expected_passed": true,
+      "expected_finding_codes": [],
+      "case": {}
+    }
+  ]
+}
