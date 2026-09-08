@@ -10,6 +10,13 @@
 - 阶段 4 已实现：增加 ArtifactManifest、六节点 ProvenanceChain、闭环等级和安全降级校验。
 - 阶段 5 已实现：增加 Review/Graphify 结果适配、来源与不确定性边界及统一 CLI 输入校验。
 
+## [0.3.4] - 2026-09-08
+
+### Documentation
+
+- 明确日常提交类型、scope、提交正文和验证记录要求。
+- 明确发布聚合提交与 SemVer 标签的对应关系。
+
 ## [0.3.3] - 2026-09-08
 
 ### Changed
@@ -77,11 +84,12 @@
 
 ## 历史提交说明
 
-历史记录使用中文描述实际变化；从 `v0.3.1` 起，所有新提交标题统一使用
-`vX.Y.Z 中文变更说明` 格式，并与对应版本标签保持一致。历史提交不会被删除或
-回写，版本边界以标签和本文件为准。
+历史记录使用中文描述实际变化；日常提交使用 `type(scope): 中文说明`，发布聚合提交
+使用 `vX.Y.Z 中文变更说明`，并与对应版本标签保持一致。历史提交不会被删除或回写，
+版本边界以标签和本文件为准。
 
-[未发布]: https://gitee.com/chen-yuyu6666/goal-anchor/compare/v0.3.3...master
+[未发布]: https://gitee.com/chen-yuyu6666/goal-anchor/compare/v0.3.4...master
+[0.3.4]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.3.4
 [0.3.3]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.3.3
 [0.3.1]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.3.1
 [0.3.0]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.3.0

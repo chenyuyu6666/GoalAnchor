@@ -18,6 +18,7 @@ GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Eng
 - `v0.3.1`：统一提交标题与版本管理规范；
 - `v0.3.2`：简化多人协作流程。
 - `v0.3.3`：按 GitHub Flow 重构协作管理。
+- `v0.3.4`：明确 Git 提交规则。
 
 版本说明见 [CHANGELOG.md](CHANGELOG.md)，分支、提交和发布流程见
 [CONTRIBUTING.md](CONTRIBUTING.md)。
@@ -119,8 +120,6 @@ Graphify 的运行时版本按 `skills/graphify/.graphify_version` 管理，Deep
 
 ## 开发与提交
 
-使用 `feature/*`、`fix/*` 或 `chore/*` 分支开发。所有后续提交标题统一使用
-`vX.Y.Z 中文变更说明` 格式，例如
-`v0.3.0 收紧 Plan Audit v3 诊断边界`；版本号必须与对应标签一致。
-日常开发提交使用 `type(scope): 中文说明`，只有发布聚合提交带版本号。
+使用 `feature/*`、`fix/*` 或 `chore/*` 短期分支开发。日常提交使用
+`type(scope): 中文说明`；只有发布聚合提交使用 `vX.Y.Z 中文变更说明`，并创建同名标签。
 完整规范和发布示例见 [CONTRIBUTING.md](CONTRIBUTING.md)。

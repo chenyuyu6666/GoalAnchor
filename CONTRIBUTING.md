@@ -42,6 +42,18 @@ docs(process): 更新协作流程
 v0.3.2 简化多人协作流程
 ```
 
+允许的日常提交类型：
+
+- `feat`：新增能力；
+- `fix`：修复缺陷；
+- `docs`：文档或变更记录；
+- `test`：测试变更；
+- `refactor`：不改变行为的重构；
+- `chore`：依赖、CI 或其他工程维护。
+
+`scope` 使用具体模块，例如 `core`、`gates`、`evidence`、`cli`、`ci`。
+提交正文应说明影响范围、关键决策和实际验证命令；不把多个无关改动放在同一提交中。
+
 规则：
 
 - 日常提交标题使用 `type(scope): 中文说明`，版本号不写入每个开发提交；
@@ -61,6 +73,7 @@ v0.3.2 简化多人协作流程
 - `v0.3.1`：统一提交标题与版本管理规范。
 - `v0.3.2`：简化多人协作流程。
 - `v0.3.3`：按 GitHub Flow 重构协作管理。
+- `v0.3.4`：明确 Git 提交规则。
 - `v0.4.0`：下一版本目标，暂未发布。
 - 新功能增加 `MINOR`，兼容性修复增加 `PATCH`，破坏性变更增加 `MAJOR`。
 - 运行时版本以 `goalanchor/__init__.py` 导出的 `__version__` 为单一来源。
@@ -71,8 +84,8 @@ v0.3.2 简化多人协作流程
 
 ```powershell
 python -m pytest -q
-git commit -m "v0.3.2 简化多人协作流程"
-git tag -a v0.3.2 -m "v0.3.2 简化多人协作流程"
+git commit -m "v0.3.4 明确 Git 提交规则"
+git tag -a v0.3.4 -m "v0.3.4 明确 Git 提交规则"
 git push origin master --follow-tags
 ```
 
