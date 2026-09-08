@@ -9,10 +9,14 @@ GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Eng
 
 ## 当前版本
 
-当前开发版本为 `0.2.0`，运行时版本由 `goalanchor.__version__` 统一维护。
+当前稳定版本为 `v0.3.2`，下一开发目标为 `v0.4.0`；日常开发从 `master` 创建
+短期工作分支，运行时版本由 `goalanchor.__version__` 统一维护。
 
 - `v0.1.0`：初始 skills 与 Plan Audit 基线；
-- `v0.2.0`：GoalAnchor 阶段 1 契约与状态模型。
+- `v0.2.0`：加入 Plan Audit v2 目标与验证约束；
+- `v0.3.0`：收紧 Plan Audit v3 诊断边界；
+- `v0.3.1`：统一提交标题与版本管理规范；
+- `v0.3.2`：简化多人协作流程。
 
 版本说明见 [CHANGELOG.md](CHANGELOG.md)，分支、提交和发布流程见
 [CONTRIBUTING.md](CONTRIBUTING.md)。
@@ -117,4 +121,5 @@ Graphify 的运行时版本按 `skills/graphify/.graphify_version` 管理，Deep
 使用 `feature/*`、`fix/*` 或 `chore/*` 分支开发。所有后续提交标题统一使用
 `vX.Y.Z 中文变更说明` 格式，例如
 `v0.3.0 收紧 Plan Audit v3 诊断边界`；版本号必须与对应标签一致。
+日常开发提交使用 `type(scope): 中文说明`，只有发布聚合提交带版本号。
 完整规范和发布示例见 [CONTRIBUTING.md](CONTRIBUTING.md)。
