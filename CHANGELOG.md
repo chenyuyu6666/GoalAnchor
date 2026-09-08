@@ -10,6 +10,14 @@
 - 阶段 4 已实现：增加 ArtifactManifest、六节点 ProvenanceChain、闭环等级和安全降级校验。
 - 阶段 5 已实现：增加 Review/Graphify 结果适配、来源与不确定性边界及统一 CLI 输入校验。
 
+## [0.3.3] - 2026-09-08
+
+### Changed
+
+- 按 GitHub Flow 重构协作管理：日常使用 `master` 和短期 PR 分支，合并后删除工作分支。
+- 将历史提交转为只读 `history/*` 标签，保留原始提交但不占用日常分支。
+- 明确日常提交与发布提交的标题职责，避免每个开发提交绑定版本号。
+
 ## [0.3.2] - 2026-09-08
 
 ### Changed
@@ -73,7 +81,8 @@
 `vX.Y.Z 中文变更说明` 格式，并与对应版本标签保持一致。历史提交不会被删除或
 回写，版本边界以标签和本文件为准。
 
-[未发布]: https://gitee.com/chen-yuyu6666/goal-anchor/compare/v0.2.0...master
+[未发布]: https://gitee.com/chen-yuyu6666/goal-anchor/compare/v0.3.3...master
+[0.3.3]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.3.3
 [0.3.1]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.3.1
 [0.3.0]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.3.0
 [0.2.0]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.2.0
