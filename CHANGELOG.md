@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+### v0.4.0 目标内容
+
+- 增加生命周期状态 `HUMAN_DECISION_REQUIRED` 和 `STOPPED`。
+- 增加五 Gate 兼容映射、DecisionRecord、轻量 Authorization 和 Verification 闭环。
+- 增加有限 Multi-Agent Review 协议：统一上下文、Reviewer、Arbiter、DisputePacket、Meta Review、DecisionReport 和 JSON CLI 入口。
+- 增加平台无关的命名 Agent Profile/Dispatcher、Reviewer 并行调度及 JSON-over-stdio 桥接协议。
+- 增加 Phase 6 固定 Benchmark 与开发者最小示例。
+
+运行时版本仍保持 `0.3.4`，待发布聚合时切换为 `0.4.0`。
+
 - 阶段 2 已实现：增加 Q1–Q5、VERIFY、EXECUTE 和 PLAN_CHANGED 的纯 Python 闸门及 CLI。
 - 阶段 3 已实现：增加 EvidenceRecord、ExperimentPlan、结论强度、观察窗口、混杂变量和设计必要性校验。
 - 阶段 4 已实现：增加 ArtifactManifest、六节点 ProvenanceChain、闭环等级和安全降级校验。

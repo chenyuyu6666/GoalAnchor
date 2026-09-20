@@ -9,7 +9,7 @@ GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Eng
 
 ## 当前版本
 
-当前稳定版本为 `v0.3.3`，下一开发目标为 `v0.4.0`；日常开发从 `master` 创建
+当前稳定版本为 `v0.3.4`，下一开发目标为 `v0.4.0`；日常开发从 `master` 创建
 短期工作分支，运行时版本由 `goalanchor.__version__` 统一维护。
 
 - `v0.1.0`：初始 skills 与 Plan Audit 基线；
@@ -27,8 +27,15 @@ GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Eng
 
 ## 当前仓库实现
 
-本仓库当前包含 GoalAnchor 直接维护的 Codex Skills、v1 规划文档及配套脚本，不是独立的 Web 服务或业务应用。
-Skill 的行为由 `SKILL.md` 定义；阶段 1 已提供无第三方运行时依赖的 `goalanchor/` Python 契约与状态模型，阶段 2 已增加 Q1–Q5、VERIFY、EXECUTE 和 PLAN_CHANGED 闸门，阶段 3 已增加证据强度与实验可信度校验，阶段 4 已增加交付闭环/provenance，阶段 5 已增加 Review/Graphify 结果适配。
+本仓库包含 GoalAnchor 直接维护的 Agent Skills、契约库与配套脚本，不是独立的 Web 服务或业务应用。
+
+`goalanchor/` 是零第三方运行时依赖的 Python 契约库，按阶段提供：契约与生命周期状态模型、Q1–Q5/VERIFY/EXECUTE/PLAN_CHANGED 闸门、证据强度与实验校验、交付闭环与 provenance、Review/Graphify 结果适配、五 Gate 治理映射、决策与轻量授权、Verification 闭环，以及**有限多 Agent Review Service**——多 Reviewer 同上下文并行、主 Agent（Arbiter）汇总、争议包复审、独立 Meta Reviewer 审核、`max_rounds=2` 封顶后 `STOPPED` + DecisionReport 交用户决策。
+
+执行层（`agent_runtime.py` + `platforms.py`）提供多平台 Agent 调度：内置 `codex`/`claude`/`gemini`/`opencode` 适配（提示词全部经 stdin 传入，规避 Windows `.cmd` 转义与 argv 长度限制），同一轮 Reviewer 强制不同 profile 并发，平台输出解析兼容直接 JSON、信封包装与正文夹带 JSON；支持瞬时失败重试（`retries`）、dry-run 预览、`platforms --probe` 环境与认证自检、token 用量审计（`tokens_used`/`usage_summary`）；提示词支持 `"language": "zh"` 中文模板。宿主原生子 Agent 拉起的会话在宿主 UI 可见（`review-prompt` 渲染 + `gate --phase review-cycle` 校验），无头平台调度为备用路径。
+
+CLI 入口：`install` / `check`（Skill 安装）、`gate --phase …`（确定性闸门）、`review-cycle`（别名 `review-run`，完整调度）、`review-prompt`（逐角色提示词渲染）、`platforms`（环境自检）。
+
+`v0.4.0` 尚未发布；持续开发任务与每次改动记录见 `D:/Project/GoalAnchor/Doc/GoalAnchor-开发任务与变更记录.md`。
 
 ## 多 Agent 兼容
 
@@ -38,7 +45,9 @@ GoalAnchor 的规则入口使用标准 `SKILL.md`，可按目标安装到 Codex�
 python -m goalanchor install --target claude --scope project --project-root . --source skills/goalanchor --dry-run --json
 ```
 
-规则正文不依赖宿主专用工具或 API；宿主差异只由目录映射和可选界面元数据处理。
+规则正文不依赖宿主专用工具或 API；宿主差异只由目录映射、可选界面元数据和执行层适配器处理。多 Agent 审核的调度协议、平台适配与配置格式见
+[skills/goalanchor/references/agent-runtime.md](skills/goalanchor/references/agent-runtime.md)，
+可运行示例见 [examples/multi-platform-review/](examples/multi-platform-review/)。
 
 ## v1 交付边界
 
@@ -100,6 +109,21 @@ python -m venv .venv
 测试任务定义、支持的检查类型和 JSON 报告格式见
 [GoalAnchor-自动测试任务.md](docs/GoalAnchor-自动测试任务.md)。
 
+Phase 6 固定基准：
+
+```powershell
+.\.venv\Scripts\python.exe scripts/run_phase6_benchmark.py
+```
+
+多 Agent Review 使用统一 JSON-over-stdio 桥接协议：Reviewer 并行，Arbiter 与 Meta Reviewer
+按轮次收敛。配置格式见 `skills/goalanchor/references/agent-runtime.md`，入口为：
+
+```powershell
+python -m goalanchor review-cycle --request review-request.json --config agent-config.json
+```
+
+基准说明和开发者最小示例见 `D:/Project/GoalAnchor/Doc/GoalAnchor-Phase6-Benchmark与开发者示例.md`。
+
 对话体验测试不是 Python 单元测试。请在实际 GoalAnchor 对话上下文中读取并执行
 [GoalAnchor-对话体验测试任务.md](docs/GoalAnchor-对话体验测试任务.md)，它会按固定案例检查目标保持、证据边界、决策链接、状态切换和不过度拦截，并输出 `DIALOGUE_TEST_REPORT`。
 
@@ -115,8 +139,8 @@ Graphify 的运行时版本按 `skills/graphify/.graphify_version` 管理，Deep
 ## 知识图谱
 
 当前项目图谱保存在仓库外的
-`D:/Project/GoalAnchor/Doc/Project-Code-Knowledge-Graph/graphify-out/`，包括交互式 HTML、JSON 数据和分析报告。
-该目录不属于本仓库 Git 根目录；如需版本化，应为文档目录建立独立仓库，或在本仓库保存指向它的版本清单。
+`D:/Project/GoalAnchor/Doc/GoalAnchor-Knowledge-Graph/graphify-out/`，包括交互式 HTML、JSON 数据和分析报告，图谱根指向本仓库目录。
+该目录不属于本仓库 Git 根目录；如需版本化，应为文档目录建立独立仓库，或在本仓库保存指向它的版本清单。代码更新后在该目录运行 `graphify update .` 刷新。
 
 ## 开发与提交
 
