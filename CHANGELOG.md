@@ -3,7 +3,7 @@
 本文件按 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 组织，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
-## [未发布]
+## [0.4.0] - 2026-09-20
 
 ### v0.4.0 目标内容
 
