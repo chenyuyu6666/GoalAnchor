@@ -3,6 +3,13 @@
 本文件按 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 组织，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.4.1] - 2026-09-20
+
+### Fixed
+
+- SKILL.md 门控边界澄清:DIALOGUE-07 对话体验测试暴露"量化验收标准归属"歧义(R1/R2 PASS、R3 FAIL)。Q1 明确语义化验收在目标/blocker/决策链接完整时成立,PLAN 阶段缺量化阈值不是有效 FAIL 理由;VERIFY 明确量化阈值在首个 EXIT_CRITERION 固定,无它启动动作是 VERIFY 违规。
+- 澄清后 DIALOGUE-07 复测 3/3 一致 PASS(见 `Doc/validation/2026-09-20-dialogue-v0.4.1-case07-retest.md`)。
+
 ## [0.4.0] - 2026-09-20
 
 ### v0.4.0 目标内容
