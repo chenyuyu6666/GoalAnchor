@@ -1,0 +1,30 @@
+{
+  "reviewer_id": "meta-reviewer",
+  "round_number": 1,
+  "arbiter_id": "arbiter",
+  "verdict": "WARN",
+  "summary": "独立复核共享材料后认同 Arbiter 的 WARN 裁决,其结论有据且无事实性错误。已核实 reviewer-1 与 reviewer-2 均给出 WARN 且发现高度收敛、无相互矛盾;E-1(回归测试通过)与 E-2(基准无劣化)仅为断言级结论,既不能证明登录超时缺陷本身已被修复、'通过验收'已达成,也不能证明'必须保留原有 API'约束被满足——候选方案将 session 校验改为惰性刷新,改变了校验时机与过期/失效语义这一可观察行为,而材料未提供任何契约测试或兼容性证据。同时材料中无回归实际发生或约束被实际违反的迹象,缺口属证据完备性不足,故 WARN 而非 PASS/FAIL 的严重度判断恰当;Arbiter 对 Reviewer 结论的采纳、证据缺口归纳及补充要求(修复验证、API 兼容性证据、基准口径)具体可执行。本审查不持异议,维持 WARN。",
+  "findings": [
+    {
+      "finding_id": "MF-1",
+      "issue": "修复有效性与验收闭环证据缺失:E-1(回归测试通过)与 E-2(基准无劣化)均为断言级结论,未附测试范围、用例清单或基准数值口径;没有任何证据直接证明登录超时缺陷本身已被修复(如修复前可复现失败、修复后通过的针对性验证),目标中'通过验收'亦无可追溯的达成证据。回归测试通过只表明未破坏既有行为,不等同于缺陷被修复。",
+      "evidence_refs": ["E-1 回归测试通过", "E-2 基准无劣化"],
+      "decision_impact": "阻止给出 PASS:在补充针对超时缺陷的修复前后对照验证或验收结论之前,可信收敛只能部分成立,应维持 WARN。",
+      "remaining_uncertainty": "材料未说明回归测试是否新增登录超时场景用例;若已包含针对性用例并通过,该缺口可部分缓解,但现有材料无法确认。",
+      "source_refs": ["ReviewContext.goal", "ReviewContext.evidence_refs", "ReviewContext.candidate"],
+      "status": "OPEN"
+    },
+    {
+      "finding_id": "MF-2",
+      "issue": "约束'必须保留原有 API'缺乏兼容性证据:候选方案将 session 校验改为惰性刷新,改变了会话校验的时机与过期/失效语义,属可观察的行为变化;材料中无 API 契约测试、语义对照或兼容性说明,E-1 亦未说明是否覆盖原公开 API 行为契约,无法确认该约束被满足。",
+      "evidence_refs": ["必须保留原有 API", "将 session 校验改为惰性刷新并补充回归测试", "E-1 回归测试通过"],
+      "decision_impact": "阻止给出 PASS:在补充 API 兼容性证据(契约测试或校验时机/失效语义对照)之前,不应无条件通过,应维持 WARN。",
+      "remaining_uncertainty": "'原有 API'的口径(仅接口签名还是含行为契约)材料未界定,若仅指签名则惰性刷新可能不构成违反;但在无任何兼容性证据的情况下,保守判定该约束未被证明满足。",
+      "source_refs": ["ReviewContext.constraints", "ReviewContext.candidate", "ReviewContext.evidence_refs"],
+      "status": "OPEN"
+    }
+  ],
+  "context_fingerprint": "ab6568e3c3a7def80a0ebd2eb245ca60ca971e851897fcf51ce2a80e42ae62fd",
+  "agrees_with_arbiter": true,
+  "isolated": true
+}

@@ -1,0 +1,15 @@
+{
+  "language": "zh",
+  "platforms": {
+    "claude": {"timeout_seconds": 300},
+    "codex": {"timeout_seconds": 300},
+    "echo": {"argv": ["python", "examples/multi-platform-review/echo-agent.py", "clean", "-p", "{prompt}"]}
+  },
+  "profiles": {
+    "real-claude": {"platform": "claude", "roles": ["reviewer"]},
+    "real-codex": {"platform": "codex", "roles": ["reviewer"]},
+    "echo-arbiter": {"platform": "echo", "roles": ["arbiter"]},
+    "echo-meta": {"platform": "echo", "roles": ["meta_reviewer"]}
+  },
+  "role_bindings": {"arbiter": "echo-arbiter", "meta_reviewer": "echo-meta"}
+}

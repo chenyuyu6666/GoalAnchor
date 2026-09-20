@@ -32,6 +32,9 @@ test-results/
 .env.*
 !.env.example
 
+# Security tooling local cache
+.mimosa/
+
 # Operating-system files
 .DS_Store
 Thumbs.db

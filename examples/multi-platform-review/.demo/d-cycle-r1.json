@@ -1,0 +1,150 @@
+{
+  "context": {
+    "goal": "修复登录超时缺陷并通过验收",
+    "prompt": "审核以下候选结论是否达到可信收敛、可以关闭缺陷并通过验收",
+    "constraints": [
+      "不得引入回归",
+      "必须保留原有 API"
+    ],
+    "evidence_refs": [
+      "E-1 超时场景回归用例通过",
+      "E-2 基准无劣化"
+    ],
+    "candidate": "已将 session 校验改为惰性刷新;补充了超时场景回归用例并通过(E-1);基准无劣化(E-2);建议关闭缺陷并验收通过"
+  },
+  "risk": "HIGH",
+  "reviewer_results": [
+    {
+      "reviewer_id": "reviewer-1",
+      "round_number": 1,
+      "verdict": "WARN",
+      "findings": [
+        {
+          "finding_id": "R1-F1",
+          "issue": "候选结论将 session 校验改为惰性刷新，这是一项对外可观察的行为变更，但没有任何证据直接验证约束「必须保留原有 API」（例如 API 签名、返回值、错误码兼容性验证），该约束处于未证实状态。",
+          "evidence_refs": [
+            "E-1 超时场景回归用例通过",
+            "candidate: 已将 session 校验改为惰性刷新"
+          ],
+          "decision_impact": "在补充 API 兼容性验证（如针对原有校验路径的契约/行为对比测试）之前，不应关闭缺陷并验收通过。",
+          "remaining_uncertainty": "无法从现有证据判断惰性刷新是否改变了原有校验逻辑的对外行为（错误码、返回结构、其他依赖该校验的端点），只能确认超时场景本身通过。",
+          "source_refs": [
+            "ReviewContext.constraints[1]",
+            "ReviewContext.candidate"
+          ],
+          "status": "OPEN"
+        },
+        {
+          "finding_id": "R1-F2",
+          "issue": "约束「不得引入回归」仅由超时场景回归用例（E-1）与基准测试（E-2）部分覆盖，缺少全量回归套件通过的证据；惰性刷新属于语义变更，未验证其他会话相关场景（如无效 token 拒绝、并发刷新、多端登录）是否受影响。",
+          "evidence_refs": [
+            "E-1 超时场景回归用例通过",
+            "E-2 基准无劣化"
+          ],
+          "decision_impact": "验收前应补充全量回归执行结果或既有回归用例通过的明确证据，否则关闭缺陷存在其他场景隐性回归的残留风险。",
+          "remaining_uncertainty": "项目是否存在更广的回归套件及其是否已被执行无从判断；现有证据仅能支持「超时场景已修复且性能无劣化」这一局部结论。",
+          "source_refs": [
+            "ReviewContext.constraints[0]",
+            "ReviewContext.evidence_refs"
+          ],
+          "status": "OPEN"
+        }
+      ],
+      "isolated": true,
+      "context_fingerprint": "f49d1b4cdd477cf4da80d8792bd6dce4bf35be09cbbb95c8b73424115f8d0cc0"
+    },
+    {
+      "reviewer_id": "reviewer-2",
+      "round_number": 1,
+      "verdict": "WARN",
+      "findings": [
+        {
+          "finding_id": "R2-F1",
+          "issue": "约束「必须保留原有 API」没有任何证据支撑:候选结论仅引用 E-1(超时场景)与 E-2(基准性能),二者均未验证惰性刷新改动是否改变了对外 API 行为(如响应结构、刷新语义、调用时序)",
+          "evidence_refs": [
+            "E-1 超时场景回归用例通过",
+            "E-2 基准无劣化"
+          ],
+          "decision_impact": "在补充 API 兼容性验证(契约测试或原有调用方回归)之前,不应关闭缺陷或通过验收",
+          "remaining_uncertainty": "惰性刷新是否引入了对外可见的行为差异尚无法从现有证据判断",
+          "source_refs": [
+            "examples/multi-platform-review/.demo/d-r2.txt"
+          ],
+          "status": "OPEN"
+        },
+        {
+          "finding_id": "R2-F2",
+          "issue": "约束「不得引入回归」的证据范围过窄:仅有一条超时场景回归用例通过,没有全量回归套件或其他核心场景(正常登录、过期刷新失败、并发会话等)的通过记录",
+          "evidence_refs": [
+            "E-1 超时场景回归用例通过"
+          ],
+          "decision_impact": "建议补跑完整回归套件并记录结果后再决策;若全量回归通过可升级为收敛",
+          "remaining_uncertainty": "非超时路径在改动后是否仍正常未知,可能存在未被发现的回归",
+          "source_refs": [
+            "examples/multi-platform-review/.demo/d-r2.txt"
+          ],
+          "status": "OPEN"
+        }
+      ],
+      "isolated": true,
+      "context_fingerprint": "f49d1b4cdd477cf4da80d8792bd6dce4bf35be09cbbb95c8b73424115f8d0cc0"
+    }
+  ],
+  "arbiter": {
+    "arbiter_id": "arbiter",
+    "round_number": 1,
+    "verdict": "FAIL",
+    "summary": "两位 Reviewer 独立给出 WARN,发现成立且相互收敛:惰性刷新是对外可观察的行为变更,而「必须保留原有 API」约束零证据、「不得引入回归」约束仅有单场景回归覆盖。本仲裁与 Reviewer 的发现一致,但不同意其严重度判定。",
+    "rationale": "被审核对象不是「修复是否完成」,而是一个明确的关闭请求:「建议关闭缺陷并验收通过」。按 GoalAnchor 证据纪律,验收闭环不得被局部验证替代:一条约束(保留原有 API)证据强度为零,另一条(不得引入回归)仅单场景覆盖,此时「关闭并验收」的结论强度超过证据强度。因此正确裁决不是有条件的 WARN(WARN 意味着方向认可、补证据后可收敛),而是 FAIL——拒绝本次关闭请求,退回补充 API 兼容性验证(契约/行为对比)与全量回归结果后重新提交。Reviewers 的 WARN 实际上低估了证据缺口对「关闭请求」的阻断性,故 disagrees_with_reviewers=true。",
+    "reviewer_ids": [
+      "reviewer-1",
+      "reviewer-2"
+    ],
+    "context_fingerprint": "f49d1b4cdd477cf4da80d8792bd6dce4bf35be09cbbb95c8b73424115f8d0cc0",
+    "disagrees_with_reviewers": true
+  },
+  "meta_review": {
+    "reviewer_id": "meta-reviewer",
+    "round_number": 1,
+    "arbiter_id": "arbiter",
+    "verdict": "FAIL",
+    "summary": "独立复核共享材料后,认同 Arbiter 将严重度从两位 Reviewer 的 WARN 升级为 FAIL 的裁决。核实要点:(1) 事实性准确——约束「必须保留原有 API」在 E-1/E-2 中确为零证据,「不得引入回归」仅由超时场景单用例(E-1)与性能基准(E-2)覆盖;(2) 升级理由成立——本 context 是关闭/验收请求,对关闭决策而言,一条显式约束零证据即意味着「关闭并验收」的结论强度超过证据强度,正确裁决是拒绝本次关闭请求并退回补证;(3) 与 Reviewer 无实质矛盾——两位 Reviewer 的 decision_impact 本身已写明「不应关闭缺陷并验收通过」,Arbiter 仅将裁决标签与其决策影响对齐;(4) 退回路径具体可执行。故 agrees_with_arbiter=true,维持 FAIL。",
+    "findings": [
+      {
+        "finding_id": "MF-1",
+        "issue": "关闭/验收请求缺少「必须保留原有 API」约束的任何证据:候选将 session 校验改为惰性刷新,属校验时机与失效语义的可观察变更,而 E-1 与 E-2 均未验证 API 契约兼容性,该约束证据强度为零。",
+        "evidence_refs": [
+          "E-1 超时场景回归用例通过",
+          "E-2 基准无劣化"
+        ],
+        "decision_impact": "支持 FAIL(拒绝本次关闭请求):补充 API 兼容性验证之前不得关闭缺陷并通过验收。",
+        "remaining_uncertainty": "「原有 API」口径未界定;零证据下保守判定该约束未被证明满足。",
+        "source_refs": [
+          "ReviewContext.constraints[1]",
+          "ReviewContext.candidate"
+        ],
+        "status": "OPEN"
+      },
+      {
+        "finding_id": "MF-2",
+        "issue": "「不得引入回归」约束仅有单场景覆盖:唯一的功能性回归证据是超时场景用例(E-1),无效 token 拒绝、并发刷新、多端登录等场景及全量回归套件的执行情况均无证据。",
+        "evidence_refs": [
+          "E-1 超时场景回归用例通过",
+          "E-2 基准无劣化"
+        ],
+        "decision_impact": "支持 FAIL(拒绝本次关闭请求):需补跑全量回归或提供明确证据后重新提交。",
+        "remaining_uncertainty": "若全量回归已通过仅未记录,补交结果即可收敛。",
+        "source_refs": [
+          "ReviewContext.constraints[0]",
+          "ReviewContext.evidence_refs"
+        ],
+        "status": "OPEN"
+      }
+    ],
+    "context_fingerprint": "f49d1b4cdd477cf4da80d8792bd6dce4bf35be09cbbb95c8b73424115f8d0cc0",
+    "agrees_with_arbiter": true,
+    "isolated": true
+  },
+  "round_number": 1,
+  "max_rounds": 2
+}

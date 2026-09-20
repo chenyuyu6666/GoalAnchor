@@ -1,0 +1,48 @@
+{
+  "agent_bindings": [
+    {
+      "agent_id": "reviewer-1",
+      "platform": "claude",
+      "profile_id": "real-claude",
+      "role": "reviewer",
+      "round_number": 1
+    },
+    {
+      "agent_id": "reviewer-2",
+      "platform": "codex",
+      "profile_id": "real-codex",
+      "role": "reviewer",
+      "round_number": 1
+    },
+    {
+      "agent_id": "arbiter",
+      "platform": "echo",
+      "profile_id": "echo-arbiter",
+      "role": "arbiter",
+      "round_number": 1
+    },
+    {
+      "agent_id": "meta-reviewer",
+      "platform": "echo",
+      "profile_id": "echo-meta",
+      "role": "meta_reviewer",
+      "round_number": 1
+    }
+  ],
+  "arbiter": "offline echo agent agrees with reviewers",
+  "decision_report": null,
+  "has_dispute_packet": false,
+  "meta_review": "offline echo agent agrees with arbiter",
+  "next_state": null,
+  "outcome": "PASS",
+  "required_action": null,
+  "reviewer_ids": [
+    "reviewer-1",
+    "reviewer-2"
+  ],
+  "round_number": 1,
+  "verdicts": [
+    "WARN",
+    "WARN"
+  ]
+}

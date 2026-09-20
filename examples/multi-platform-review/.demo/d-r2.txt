@@ -1,0 +1,33 @@
+# GoalAnchor reviewer review (round 1)
+
+You are one of several independent reviewers running in parallel on different agents. Judge only from the material below; do not assume any other reviewer's verdict and do not optimize for agreement.
+
+Respond with EXACTLY ONE JSON object and nothing else: no markdown fences, no prose before or after. Use these exact values: agent_id="reviewer-2", round_number=1, context_fingerprint="f49d1b4cdd477cf4da80d8792bd6dce4bf35be09cbbb95c8b73424115f8d0cc0".
+
+Required JSON shape (fill the remaining fields):
+
+{"reviewer_id": "<use the exact agent_id below>", "round_number": <integer>, "verdict": "PASS|WARN|FAIL", "findings": [], "isolated": true, "context_fingerprint": "<use the exact fingerprint below>"}
+
+Field rules: verdict is one of PASS, WARN, FAIL. findings must be a non-empty array when verdict is WARN or FAIL and [] when PASS. Each finding is {"finding_id": str, "issue": str, "evidence_refs": [str, at least one], "decision_impact": str, "remaining_uncertainty": str, "source_refs": [str], "status": "OPEN"}.
+
+## ReviewContext (immutable, identical for every reviewer)
+
+fingerprint: f49d1b4cdd477cf4da80d8792bd6dce4bf35be09cbbb95c8b73424115f8d0cc0
+
+```json
+
+{
+  "goal": "修复登录超时缺陷并通过验收",
+  "prompt": "审核以下候选结论是否达到可信收敛、可以关闭缺陷并通过验收",
+  "constraints": [
+    "不得引入回归",
+    "必须保留原有 API"
+  ],
+  "evidence_refs": [
+    "E-1 超时场景回归用例通过",
+    "E-2 基准无劣化"
+  ],
+  "candidate": "已将 session 校验改为惰性刷新;补充了超时场景回归用例并通过(E-1);基准无劣化(E-2);建议关闭缺陷并验收通过"
+}
+
+```

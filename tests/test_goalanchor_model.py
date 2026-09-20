@@ -70,6 +70,9 @@ def test_blocker_cannot_replace_goal_and_blocked_requires_blocker() -> None:
     assert blocked.task_objective == "交付睡眠—唤醒—恢复稳定闭环"
     assert blocked.current_blocking_uncertainty != blocked.task_objective
 
+    with pytest.raises(ContractValidationError, match="HUMAN_DECISION_REQUIRED stage"):
+        make_contract(stage=LifecycleState.HUMAN_DECISION_REQUIRED)
+
 
 def test_work_item_round_trip_preserves_decision_link_and_status() -> None:
     item = WorkItem(
@@ -189,8 +192,41 @@ def test_lifecycle_transitions_are_explicit_and_bounded() -> None:
     assert blocked.stage is LifecycleState.BLOCKED
     assert transition(blocked, LifecycleState.REPLAN).stage is LifecycleState.REPLAN
 
+    waiting = transition(
+        contract,
+        LifecycleState.HUMAN_DECISION_REQUIRED,
+        blocking_uncertainty="存在两个同样可行的方案，需要用户选择",
+    )
+    assert transition(waiting, LifecycleState.PLAN).stage is LifecycleState.PLAN
+    assert transition(waiting, LifecycleState.EXECUTE).stage is LifecycleState.EXECUTE
+
+    stopped = transition(
+        contract,
+        LifecycleState.STOPPED,
+        blocking_uncertainty="用户终止当前路径",
+    )
+    assert stopped.stage is LifecycleState.STOPPED
+    with pytest.raises(InvalidTransitionError):
+        transition(stopped, LifecycleState.EXECUTE)
+    with pytest.raises(InvalidTransitionError):
+        transition(stopped, LifecycleState.PLAN)
+
+    replanned = transition(blocked, LifecycleState.REPLAN)
+    assert transition(
+        replanned,
+        LifecycleState.STOPPED,
+        blocking_uncertainty="重新规划路径后仍明确终止",
+    ).stage is LifecycleState.STOPPED
+
 
 def test_transition_table_is_json_friendly_and_stable() -> None:
     table = allowed_transitions()
-    assert table["PLAN"] == ("VERIFY", "BLOCKED", "REPLAN")
+    assert table["PLAN"] == (
+        "VERIFY",
+        "HUMAN_DECISION_REQUIRED",
+        "BLOCKED",
+        "STOPPED",
+        "REPLAN",
+    )
+    assert table["STOPPED"] == ()
     assert table["CLOSED"] == ()

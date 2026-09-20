@@ -32,7 +32,9 @@ class LifecycleState(str, Enum):
     PLAN = "PLAN"
     VERIFY = "VERIFY"
     EXECUTE = "EXECUTE"
+    HUMAN_DECISION_REQUIRED = "HUMAN_DECISION_REQUIRED"
     BLOCKED = "BLOCKED"
+    STOPPED = "STOPPED"
     REPLAN = "REPLAN"
     CLOSED = "CLOSED"
 
@@ -368,8 +370,13 @@ class GoalContract:
             raise ContractValidationError("plan_revision must be a non-negative integer")
         if self.plan_revision < 0:
             raise ContractValidationError("plan_revision must be a non-negative integer")
-        if self.stage == LifecycleState.BLOCKED and self.current_blocking_uncertainty is None:
-            raise ContractValidationError("BLOCKED stage requires current_blocking_uncertainty")
+        if self.stage in {
+            LifecycleState.BLOCKED,
+            LifecycleState.HUMAN_DECISION_REQUIRED,
+        } and self.current_blocking_uncertainty is None:
+            raise ContractValidationError(
+                f"{self.stage.value} stage requires current_blocking_uncertainty"
+            )
         if self.stage == LifecycleState.CLOSED and self.current_blocking_uncertainty is not None:
             raise ContractValidationError("CLOSED stage cannot retain a blocking uncertainty")
 
@@ -478,11 +485,34 @@ _PLAN_FIELD_COMPARISONS: tuple[tuple[PlanChangeField, str], ...] = (
 
 
 _ALLOWED_TRANSITIONS: dict[LifecycleState, frozenset[LifecycleState]] = {
-    LifecycleState.PLAN: frozenset({LifecycleState.VERIFY, LifecycleState.BLOCKED, LifecycleState.REPLAN}),
-    LifecycleState.VERIFY: frozenset({LifecycleState.EXECUTE, LifecycleState.BLOCKED, LifecycleState.REPLAN}),
-    LifecycleState.EXECUTE: frozenset({LifecycleState.CLOSED, LifecycleState.BLOCKED, LifecycleState.REPLAN}),
+    LifecycleState.PLAN: frozenset({
+        LifecycleState.VERIFY,
+        LifecycleState.HUMAN_DECISION_REQUIRED,
+        LifecycleState.BLOCKED,
+        LifecycleState.STOPPED,
+        LifecycleState.REPLAN,
+    }),
+    LifecycleState.VERIFY: frozenset({
+        LifecycleState.EXECUTE,
+        LifecycleState.HUMAN_DECISION_REQUIRED,
+        LifecycleState.BLOCKED,
+        LifecycleState.STOPPED,
+        LifecycleState.REPLAN,
+    }),
+    LifecycleState.EXECUTE: frozenset({
+        LifecycleState.CLOSED,
+        LifecycleState.HUMAN_DECISION_REQUIRED,
+        LifecycleState.BLOCKED,
+        LifecycleState.STOPPED,
+        LifecycleState.REPLAN,
+    }),
+    LifecycleState.HUMAN_DECISION_REQUIRED: frozenset({
+        LifecycleState.PLAN,
+        LifecycleState.EXECUTE,
+    }),
     LifecycleState.BLOCKED: frozenset({LifecycleState.REPLAN}),
-    LifecycleState.REPLAN: frozenset({LifecycleState.PLAN}),
+    LifecycleState.REPLAN: frozenset({LifecycleState.PLAN, LifecycleState.STOPPED}),
+    LifecycleState.STOPPED: frozenset(),
     LifecycleState.CLOSED: frozenset(),
 }
 
@@ -490,7 +520,9 @@ _STATE_ORDER: tuple[LifecycleState, ...] = (
     LifecycleState.PLAN,
     LifecycleState.VERIFY,
     LifecycleState.EXECUTE,
+    LifecycleState.HUMAN_DECISION_REQUIRED,
     LifecycleState.BLOCKED,
+    LifecycleState.STOPPED,
     LifecycleState.REPLAN,
     LifecycleState.CLOSED,
 )
