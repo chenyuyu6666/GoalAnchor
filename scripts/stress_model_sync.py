@@ -497,7 +497,12 @@ def scenario_divergence_fuzz(cases: int, seed: int = 20260921) -> dict:
 
 
 def scenario_cli_end_to_end(runs: int) -> dict:
-    """Full CLI process per run on the offline example; --model alternates."""
+    """Full CLI process per run on the offline example; --model alternates.
+
+    Each run also exercises the machine-readable ``warnings`` channel: the
+    pinned leg must stay silent, and an unpinned copy of the same config must
+    report ``MODEL_NOT_PINNED`` with a null ``main_model``.
+    """
 
     example = ROOT / "examples" / "multi-platform-review"
     request_path = example / "request.json"
@@ -536,10 +541,46 @@ def scenario_cli_end_to_end(runs: int) -> dict:
             failures.append(
                 f"run {index}: models_used={payload.get('usage_summary', {}).get('models_used')}"
             )
+        if payload.get("warnings") != []:
+            failures.append(f"run {index}: pinned warnings={payload.get('warnings')}")
+        unpinned_config = json.loads(config_path.read_text(encoding="utf-8"))
+        unpinned_config.pop("model", None)
+        with tempfile.TemporaryDirectory() as tmp:
+            unpinned_path = Path(tmp) / "config-unpinned.json"
+            unpinned_path.write_text(json.dumps(unpinned_config), encoding="utf-8")
+            unpinned_run = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "goalanchor",
+                    "review-cycle",
+                    "--request",
+                    str(request_path),
+                    "--config",
+                    str(unpinned_path),
+                ],
+                capture_output=True,
+                encoding="utf-8",
+                errors="replace",
+                cwd=ROOT,
+                timeout=300,
+            )
+        if unpinned_run.returncode != 0:
+            failures.append(
+                f"run {index}: unpinned exit {unpinned_run.returncode}: "
+                f"{unpinned_run.stderr[-300:]}"
+            )
+            continue
+        unpinned_payload = json.loads(unpinned_run.stdout)
+        codes = [item.get("code") for item in unpinned_payload.get("warnings", [])]
+        if codes != ["MODEL_NOT_PINNED"]:
+            failures.append(f"run {index}: unpinned warnings={codes}")
+        if unpinned_payload.get("usage_summary", {}).get("main_model") is not None:
+            failures.append(f"run {index}: unpinned main_model is not null")
     return {
         "scenario": "cli_end_to_end",
         "iterations": runs,
-        "checks": runs * 2,
+        "checks": runs * 5,
         "failures": failures,
     }
 

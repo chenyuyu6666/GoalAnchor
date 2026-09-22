@@ -1590,6 +1590,11 @@ class TestModelConsistency:
             "confirmed_by": "user",
             "reason": "用户确认允许该评审使用独立模型",
         }
+        divergence_warnings = [
+            item for item in payload["warnings"] if item["code"] == "MODEL_DIVERGENCE_APPROVED"
+        ]
+        assert len(divergence_warnings) == 1
+        assert divergence_warnings[0]["confirmed_by"] == "user"
         by_agent = {item["agent_id"]: item["model"] for item in payload["agent_bindings"]}
         assert by_agent["reviewer-2"] == "other-model"
         assert by_agent["reviewer-1"] == "main-model"
@@ -1721,6 +1726,23 @@ class TestModelConsistency:
         err = capsys.readouterr().err
         assert exit_code == 2
         assert "model_divergence" in err
+        unpinned_path = tmp_path / "unpinned.json"
+        unpinned_path.write_text(
+            json.dumps(_dispatch_config(tmp_path)), encoding="utf-8"
+        )
+        exit_code = compat.main(
+            [
+                "review-cycle",
+                "--request",
+                str(request_path),
+                "--config",
+                str(unpinned_path),
+                "--dry-run",
+            ]
+        )
+        payload = json.loads(capsys.readouterr().out)
+        assert exit_code == 0
+        assert [item["code"] for item in payload["warnings"]] == ["MODEL_NOT_PINNED"]
         ok_path = tmp_path / "ok.json"
         ok_path.write_text(
             json.dumps(_dispatch_config(tmp_path, model="main-model")), encoding="utf-8"
@@ -1739,6 +1761,7 @@ class TestModelConsistency:
         assert exit_code == 0
         assert payload["main_model"] == "main-model"
         assert payload["model_divergence"] is None
+        assert payload["warnings"] == []
 
     def test_hardcoded_model_flag_in_argv_is_rejected(self, context):
         config = PlatformDispatchConfig.from_dict(
@@ -1846,6 +1869,8 @@ class TestModelConsistency:
         assert "no sub-agent model pinned" in captured.err
         assert payload["usage_summary"]["main_model"] is None
         assert payload["usage_summary"]["models_used"] == []
+        assert [item["code"] for item in payload["warnings"]] == ["MODEL_NOT_PINNED"]
+        assert "platform default model" in payload["warnings"][0]["message"]
 
     def test_pinned_dispatch_warns_nothing_and_audits_main_model(
         self, tmp_path, context, capsys
@@ -1871,3 +1896,23 @@ class TestModelConsistency:
         assert exit_code == 0
         assert "no sub-agent model pinned" not in captured.err
         assert payload["usage_summary"]["main_model"] == "main-model"
+        assert payload["warnings"] == []
+
+    def test_legacy_bridge_collects_no_warnings(self):
+        from goalanchor import compat
+
+        adapter = adapter_from_config(
+            {
+                "role_bindings": {"reviewer": "euclid"},
+                "profiles": {
+                    "euclid": {
+                        "display_name": "Euclid",
+                        "roles": ["reviewer"],
+                        "command": ["goalanchor-host-bridge", "--profile", "euclid"],
+                    }
+                },
+            }
+        )
+        warnings, declared = compat._model_audit_warnings(adapter, {})
+        assert warnings == []
+        assert declared is None

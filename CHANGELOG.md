@@ -3,7 +3,11 @@
 本文件按 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 组织，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
-## [未发布] - 2026-09-21
+## [未发布] - 2026-09-22
+
+### Added
+
+- 机器可读告警通道:`review-cycle`(含别名 `review-run`)与 `review-cycle --dry-run` 的 JSON 输出新增顶层 `warnings` 数组(恒为数组,可为空,形状确定)。`MODEL_NOT_PINNED` 标记未钉定主模型的平台调度(stderr 人类可读告警保留),`MODEL_DIVERGENCE_APPROVED` 标记配置携带用户确认的 `model_divergence`(条目回显 `confirmed_by`);stdio bridge 按设计边界不产生告警。只读 stdout 的自动化流水线由此获得固定的审计锚点,不再依赖 stderr 文本或 usage_summary 内层字段。
 
 ### Fixed
 
@@ -15,6 +19,8 @@
 ### Tests
 
 - 新增多轮压测:独立脚本 `scripts/stress_model_sync.py`(全离线,6 场景可调强度:争议轮全角色重拉、主模型切换同步、并发派发、失败重试逐 attempt 校验、分歧拦截 fuzz、整进程 CLI 端到端),默认强度一轮 709 项校验零失败;`tests/test_stress_model_sync.py` 以小强度子集进 CI(全套 195 passed)。
+- warnings 通道测试:未钉定结构化告警、已钉定零噪声、分歧确认告警回显 `confirmed_by`、dry-run 同通道(未钉定/已钉定两腿)、legacy bridge 收集器边界(196 passed,同步 `validate-multi-round.ps1` 基线 195→196)。
+- 压测 CLI 端到端场景每轮增加 pinned `warnings==[]` 与去 model 配置副本 `MODEL_NOT_PINNED`+`main_model=null` 断言(默认强度一轮 739 项校验零失败)。
 
 ## [0.4.1] - 2026-09-20
 
