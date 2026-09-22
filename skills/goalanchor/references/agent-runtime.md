@@ -213,25 +213,42 @@ which breaks the review contract.
   `"model_divergence": {"confirmed_by": "<user>", "reason": "<why>"}`. The
   confirmation is echoed into the run output for audit.
 - Unpinned runs are loud, never silent: a platform dispatch without a
-  declared model prints a stderr warning and reports `usage_summary.main_model`
-  as `null`; a config that hardcodes the platform's model flag in `argv`
-  (which would let the hardcoded value win over the injected one) is rejected
-  in favor of a `{model}` placeholder; and a declared model on a
-  stdio-bridge configuration is rejected outright, because the bridge
-  protocol carries no model field and could never honor it.
+  declared main model prints a stderr warning and reports
+  `usage_summary.main_model` as `null`. Every enabled platform profile's argv
+  template is validated at config load, before any agent is launched (a
+  profile kept around unused should be marked `enabled: false`, and disabled
+  profiles are skipped by both the argv check and the divergence check). An
+  argv that carries the platform's model flag with its own literal value —
+  bare (`-m preset`) or attached (`--model=opus`) — is rejected, even when a
+  `{model}` placeholder is also present; the placeholder itself may sit alone
+  or attach to the flag (`-m {model}`, `--model={model}`) and is filled in
+  place. The glued short form (`-mopus`) is deliberately NOT detected: it
+  cannot be told apart from an unrelated option with the same prefix
+  (`-max-tokens`), so never glue the model value — use `-m <value>` or the
+  placeholder. A declared model on a stdio-bridge profile is rejected
+  outright (in both the legacy bridge config and a bridge profile inside a
+  platform dispatch config), because the bridge protocol carries no model
+  field and could never honor it.
 - Machine-readable warnings channel: `review-cycle` and `review-cycle
   --dry-run` outputs carry a top-level `warnings` array (possibly empty, so
   the shape stays deterministic) next to the human-readable stderr text.
-  `MODEL_NOT_PINNED` marks an unpinned platform dispatch;
-  `MODEL_DIVERGENCE_APPROVED` marks a config carrying a user-approved
-  `model_divergence` (the entry echoes `confirmed_by`). Stdio-bridge runs
-  emit no warnings by design.
+  `MODEL_NOT_PINNED` means the main agent's model is not declared, so
+  sub-agent consistency cannot be enforced — sub-agents may run on
+  platform/profile-declared models or on a platform default; it fires even
+  when platform-level pins are present, because the guarantee itself is what
+  is unavailable. `MODEL_DIVERGENCE_APPROVED` marks a config carrying a
+  user-approved `model_divergence` (the entry echoes `confirmed_by`).
+  Stdio-bridge runs emit no warnings by design.
 - Every `agent_bindings` entry records the effective `model` (`null` for
   stdio-bridge profiles, which manage their own model), and `usage_summary`
   lists `models_used`; use them together with `warnings` to verify the pin
   held for the whole cycle.
-- `probe_platform` accepts the same `model` argument, so availability probes
-  exercise the identical pinned-model invocation.
+- `platforms --config <cfg> --probe` uses the model the dispatch would pin
+  for each platform — the same precedence, resolved through the first enabled
+  profile bound to that platform (profile > platform > top-level) — so a
+  probe exercises the same pinned-model invocation. The config is validated
+  before any probe runs, so an invalid config fails fast without spending a
+  probe call.
 
 ## Host integration
 

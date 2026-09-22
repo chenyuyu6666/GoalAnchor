@@ -887,6 +887,81 @@ class TestPlatformReviewCycle:
         assert by_name["codex"]["probe"] == "ok"
         assert by_name["gemini"]["probe"] == "not-installed"
 
+    def test_platforms_probe_uses_config_model(self, tmp_path, capsys, monkeypatch):
+        from goalanchor import compat
+
+        calls: list = []
+        monkeypatch.setattr("shutil.which", lambda name: f"/fake/{name}")
+        monkeypatch.setattr(
+            "goalanchor.platforms.probe_platform",
+            lambda name, timeout_seconds=120.0, model=None: (
+                calls.append((name, model)) or {"platform": name, "probe": "ok"}
+            ),
+        )
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "model": "main-model",
+                    "model_divergence": {
+                        "confirmed_by": "user",
+                        "reason": "test fixture: platform-level model differs on purpose",
+                    },
+                    "platforms": {"claude": {"model": "platform-claude"}},
+                    "profiles": {
+                        "r": {"platform": "claude", "roles": ["reviewer"]},
+                        "c": {
+                            "platform": "codex",
+                            "roles": ["reviewer"],
+                            "model": "profile-codex",
+                        },
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        exit_code = compat.main(["platforms", "--config", str(config_path), "--probe"])
+        assert exit_code == 0
+        by_name = dict(calls)
+        # each probe uses the model the dispatch would pin for that platform:
+        # platform-level first, then a profile-level pin, then the top-level
+        # main model
+        assert by_name["claude"] == "platform-claude"
+        assert by_name["codex"] == "profile-codex"
+        assert by_name["gemini"] == "main-model"
+        assert set(by_name) == {"codex", "claude", "gemini", "opencode"}
+
+    def test_platforms_invalid_config_fails_before_probing(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        from goalanchor import compat
+
+        probed: list = []
+        monkeypatch.setattr("shutil.which", lambda name: f"/fake/{name}")
+        monkeypatch.setattr(
+            "goalanchor.platforms.probe_platform",
+            lambda name, timeout_seconds=120.0, model=None: (
+                probed.append(name) or {"platform": name, "probe": "ok"}
+            ),
+        )
+        config_path = tmp_path / "broken.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "model": "main-model",
+                    "profiles": {"r": {"platform": "custom", "roles": ["reviewer"]}},
+                    "platforms": {
+                        "custom": {"argv": ["tool", "-m", "preset", "-p", "{prompt}"]}
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        exit_code = compat.main(["platforms", "--config", str(config_path), "--probe"])
+        assert exit_code == 2
+        assert probed == []
+        assert "already carries" in capsys.readouterr().err
+
     def test_platforms_list_with_config_profiles(self, tmp_path, capsys):
         from goalanchor import compat
 
@@ -1644,16 +1719,17 @@ class TestModelConsistency:
         monkeypatch.setattr(
             "goalanchor.platforms._run_subprocess", self._fake_subprocess(captured)
         )
-        config = PlatformDispatchConfig.from_dict(
-            {
-                "profiles": {
-                    "r": {"platform": "custom", "roles": ["reviewer"]},
-                },
-                "platforms": {
-                    "custom": {"argv": ["tool", "{model}", "--run"]},
-                },
-            }
-        )
+        with pytest.raises(AgentRuntimeError, match="no model is configured"):
+            PlatformDispatchConfig.from_dict(
+                {
+                    "profiles": {
+                        "r": {"platform": "custom", "roles": ["reviewer"]},
+                    },
+                    "platforms": {
+                        "custom": {"argv": ["tool", "{model}", "--run"]},
+                    },
+                }
+            )
         request = AgentRequest(
             role=AgentRole.REVIEWER,
             agent_id="reviewer-1",
@@ -1661,8 +1737,6 @@ class TestModelConsistency:
             risk=ReviewRisk.LOW,
             context=context,
         )
-        with pytest.raises(AgentRuntimeError, match="no model is configured"):
-            PlatformAgentRouter(config).dispatch("r", request)
         pinned = PlatformDispatchConfig.from_dict(
             {
                 "model": "main-model",
@@ -1763,23 +1837,137 @@ class TestModelConsistency:
         assert payload["model_divergence"] is None
         assert payload["warnings"] == []
 
-    def test_hardcoded_model_flag_in_argv_is_rejected(self, context):
+    def test_hardcoded_model_flag_in_argv_is_rejected(self):
+        # The rejection happens at config load, before any agent can launch.
+        with pytest.raises(AgentRuntimeError, match=r"\{model\}"):
+            PlatformDispatchConfig.from_dict(
+                {
+                    "model": "main-model",
+                    "profiles": {"r": {"platform": "custom", "roles": ["reviewer"]}},
+                    "platforms": {"custom": {"argv": ["tool", "-m", "preset", "-p", "{prompt}"]}},
+                }
+            )
+
+    def test_attached_flag_spellings_are_rejected(self):
+        from goalanchor.platforms import _apply_model
+
+        for argv, flag in (
+            (("claude", "--model=opus", "-p"), "--model"),
+            (("gemini", "-m=opus"), "-m"),
+        ):
+            with pytest.raises(AgentRuntimeError, match="already carries"):
+                _apply_model(argv, "main-model", model_flag=flag)
+        # an unrelated option sharing the long-flag prefix is not a model flag
+        assert _apply_model(
+            ("tool", "--model-config=x", "{prompt}"), "main-model", model_flag="--model"
+        ) == ("tool", "--model", "main-model", "--model-config=x", "{prompt}")
+        # documented boundary: the glued short form cannot be told apart from
+        # an unrelated same-prefix option, so it is not detected
+        assert _apply_model(
+            ("tool", "-max-tokens", "4000", "{prompt}"), "main-model", model_flag="-m"
+        ) == ("tool", "-m", "main-model", "-max-tokens", "4000", "{prompt}")
+
+    def test_flag_with_placeholder_value_is_accepted(self):
+        # `-m {model}` / `--model={model}` is the placeholder site, not a
+        # hardcoded override: it must fill in place instead of being rejected.
+        from goalanchor.platforms import _apply_model
+
+        assert _apply_model(
+            ("tool", "-m", "{model}", "-p", "{prompt}"), "main-model", model_flag="-m"
+        ) == ("tool", "-m", "main-model", "-p", "{prompt}")
+        assert _apply_model(
+            ("claude", "--model={model}", "-p"), "main-model", model_flag="--model"
+        ) == ("claude", "--model=main-model", "-p")
+        assert _apply_model(
+            ("tool", "-m{model}", "-p"), "main-model", model_flag="-m"
+        ) == ("tool", "-mmain-model", "-p")
+        assert _apply_model(
+            ("tool", "{model}", "-p"), "main-model", model_flag="-m"
+        ) == ("tool", "main-model", "-p")
+
+    def test_placeholder_outside_the_model_slot_is_literal(self):
+        # `{model}` inside another argument is text, not a model slot: the
+        # flag pair must still be injected (skipping it would leave the
+        # sub-agent unpinned while the audit records a pinned model), and the
+        # literal text is passed through.
+        from goalanchor.platforms import _apply_model
+
+        assert _apply_model(
+            ("tool", "--note", "run as {model}", "-p", "{prompt}"),
+            "main-model",
+            model_flag="-m",
+        ) == ("tool", "-m", "main-model", "--note", "run as {model}", "-p", "{prompt}")
+        # ... and without a declared model it stays literal, as in v0.5.0
+        assert _apply_model(
+            ("tool", "--tag={model}", "-p"), None, model_flag="-m"
+        ) == ("tool", "--tag={model}", "-p")
+
+    def test_placeholder_plus_hardcoded_flag_is_rejected(self):
+        # A {model} placeholder does not excuse a second, hardcoded model flag:
+        # the substituted value would sit next to it and usually lose.
+        from goalanchor.platforms import _apply_model
+
+        with pytest.raises(AgentRuntimeError, match="already carries"):
+            _apply_model(
+                ("tool", "{model}", "--model=evil", "-p"),
+                "main-model",
+                model_flag="--model",
+            )
+
+    def test_disabled_profile_divergence_is_skipped(self):
+        # A disabled profile never dispatches, so its divergent model must not
+        # block the config — disabling a diverging profile is the natural fix.
         config = PlatformDispatchConfig.from_dict(
             {
                 "model": "main-model",
-                "profiles": {"r": {"platform": "custom", "roles": ["reviewer"]}},
-                "platforms": {"custom": {"argv": ["tool", "-m", "preset", "-p", "{prompt}"]}},
+                "platforms": {"custom": {"argv": ["tool", "-p", "{prompt}"]}},
+                "profiles": {
+                    "on": {"platform": "custom", "roles": ["reviewer"]},
+                    "off": {
+                        "platform": "custom",
+                        "roles": ["reviewer"],
+                        "enabled": False,
+                        "model": "other-model",
+                    },
+                },
             }
         )
-        request = AgentRequest(
-            role=AgentRole.REVIEWER,
-            agent_id="reviewer-1",
-            round_number=1,
-            risk=ReviewRisk.LOW,
-            context=context,
+        assert config.binding("on").platform == "custom"
+
+    def test_bridge_profile_model_rejected_in_platform_config(self):
+        # A bridge profile inside a platform-shaped config cannot honor a
+        # declared model either; it must be rejected like the legacy path.
+        with pytest.raises(AgentRuntimeError, match="stdio bridge command"):
+            PlatformDispatchConfig.from_dict(
+                {
+                    "platforms": {"custom": {"argv": ["tool", "{model}"]}},
+                    "profiles": {
+                        "b": {
+                            "command": ["bridge", "--profile", "b"],
+                            "roles": ["reviewer"],
+                            "model": "ignored",
+                        }
+                    },
+                }
+            )
+
+    def test_disabled_profile_argv_is_not_preflighted(self):
+        # A disabled profile never dispatches (binding() rejects it and
+        # AgentCatalog.select skips it), so its unusable argv must not fail
+        # the whole config.
+        config = PlatformDispatchConfig.from_dict(
+            {
+                "platforms": {
+                    "live": {"argv": ["tool", "-p", "{prompt}"]},
+                    "dead": {"argv": ["tool", "{model}"]},
+                },
+                "profiles": {
+                    "on": {"platform": "live", "roles": ["reviewer"]},
+                    "off": {"platform": "dead", "roles": ["reviewer"], "enabled": False},
+                },
+            }
         )
-        with pytest.raises(AgentRuntimeError, match=r"\{model\}"):
-            PlatformAgentRouter(config).dispatch("r", request)
+        assert config.binding("on").platform == "live"
 
     def test_custom_model_flag_override(self, context, monkeypatch):
         captured: list = []
@@ -1866,11 +2054,13 @@ class TestModelConsistency:
         captured = capsys.readouterr()
         payload = json.loads(captured.out)
         assert exit_code == 0 and payload["outcome"] == "PASS"
-        assert "no sub-agent model pinned" in captured.err
+        assert "consistency cannot be enforced" in captured.err
         assert payload["usage_summary"]["main_model"] is None
         assert payload["usage_summary"]["models_used"] == []
         assert [item["code"] for item in payload["warnings"]] == ["MODEL_NOT_PINNED"]
-        assert "platform default model" in payload["warnings"][0]["message"]
+        message = payload["warnings"][0]["message"]
+        assert "consistency cannot be enforced" in message
+        assert "no sub-agent model is pinned" not in message
 
     def test_pinned_dispatch_warns_nothing_and_audits_main_model(
         self, tmp_path, context, capsys
@@ -1916,3 +2106,45 @@ class TestModelConsistency:
         warnings, declared = compat._model_audit_warnings(adapter, {})
         assert warnings == []
         assert declared is None
+
+    def test_platform_level_pin_warns_consistency_unverified(
+        self, tmp_path, context, capsys
+    ):
+        """Every sub-agent is pinned to the platform model, but the main model
+        is undeclared, so consistency cannot be enforced: the warning must say
+        exactly that instead of claiming nothing is pinned."""
+
+        from goalanchor import compat
+
+        log_path = tmp_path / "argv.log"
+        config = self._dispatch_config_with_argv_log(tmp_path, log_path)
+        for platform in ("fake-clean", "fake-envelope", "fake-noisy"):
+            config["platforms"][platform]["model"] = "platform-model"
+        request_path = self._write_request(tmp_path, context)
+        config_path = tmp_path / "config.json"
+        config_path.write_text(json.dumps(config), encoding="utf-8")
+        exit_code = compat.main(
+            [
+                "review-cycle",
+                "--request",
+                str(request_path),
+                "--config",
+                str(config_path),
+            ]
+        )
+        captured_out = capsys.readouterr()
+        payload = json.loads(captured_out.out)
+        assert exit_code == 0
+        assert [item["code"] for item in payload["warnings"]] == ["MODEL_NOT_PINNED"]
+        message = payload["warnings"][0]["message"]
+        assert "consistency cannot be enforced" in message
+        assert "no sub-agent model is pinned" not in message
+        assert payload["usage_summary"]["main_model"] is None
+        # the platform-level pin did reach the dispatch
+        assert payload["usage_summary"]["models_used"] == ["platform-model"]
+        pinned_invocations = [
+            argv
+            for argv in self._read_argv_log(log_path)
+            if "-m" in argv and argv[argv.index("-m") + 1] == "platform-model"
+        ]
+        assert pinned_invocations

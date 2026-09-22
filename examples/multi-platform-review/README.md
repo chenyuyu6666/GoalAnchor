@@ -116,10 +116,17 @@ python -m goalanchor gate --phase review-cycle --record cycle.json
 - 每条 `agent_bindings` 记录实际使用的 `model`(stdio bridge 恒为 null,
   桥接宿主自管模型),`usage_summary.models_used` 汇总全程模型,可用于
   核对整个审核周期是否始终钉在主模型上。
-- 静默失效路径全部关闭:未声明 `model` 的平台调度会向 stderr 打印告警且
-  `usage_summary.main_model` 为 null;`argv` 里硬编码模型 flag(会盖过注入值)
-  改为要求使用 `{model}` 占位符,否则拒绝;stdio bridge 配置上声明 `model`
-  直接报错(桥接协议不携带模型字段,无法兑现)。
+- 静默失效路径全部关闭:未声明主模型的平台调度会向 stderr 打印告警、
+  输出 `warnings` 含 `MODEL_NOT_PINNED` 且 `usage_summary.main_model` 为 null
+  (告警含义=主模型未声明、一致性保证不可执行,即使 platform/profile 级已有钉定);
+  `argv` 里带自有取值的模型 flag(裸写 `-m preset` 或附着 `--model=opus`,
+  即使同时存在 `{model}` 占位符)在**配置加载阶段**拒绝;占位符本身可独立或
+  附着于 flag(`-m {model}`、`--model={model}`)并原地填充;紧贴短选项
+  (`-mopus`)因无法与同前缀无关选项(`-max-tokens`)区分而不做检测——不要把
+  取值紧贴模型 flag;桥接 profile(含平台配置里的桥接 profile)声明 `model`
+  直接报错(桥接协议不携带模型字段,无法兑现)。`python -m goalanchor platforms
+  --config <cfg> --probe` 按 dispatch 同一优先级(profile 级 > 平台级 > 顶层)
+  解析出的模型探测,且配置无效时先失败、不消耗探测调用。
 
 ## Reviewer 结果的验收标准
 
