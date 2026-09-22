@@ -3,6 +3,19 @@
 本文件按 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 组织，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [未发布] - 2026-09-21
+
+### Fixed
+
+- 多平台调度模型一致性(紧急修复):部分平台在子 Agent 未指定模型时回落到自身默认模型,导致与主 Agent 模型不一致、审核失败。现在子 Agent 强制与主 Agent 同模型:配置顶层 `"model"` 或 `review-cycle --model <主模型>`(覆盖配置,每次运行重传当前值即实现主模型中途切换后的同步)声明主模型,内置平台按各自 flag 注入(`codex -m`、`claude --model`、`gemini -m`、`opencode -m`),自定义平台支持 `argv` 内 `{model}` 占位符或默认 `-m` 插入(`platforms.<name>.model_flag` 可覆盖);生效优先级 profile `model` > `platforms.<name>.model` > 顶层 `"model"`。
+- 未经用户确认的模型分歧在配置加载阶段即拒绝(`review-cycle` 与 `--dry-run` 均预检),不会启动任何 Agent;确需不同模型必须先暂停询问用户,并将决定记录为 `"model_divergence": {"confirmed_by": "...", "reason": "..."}`,确认信息回显进运行输出供审计。
+- 模型审计:每条 `agent_bindings` 记录实际 `model`(stdio bridge 恒为 null),`usage_summary` 新增 `models_used`;`platforms` 报告输出 `model_flag`/`main_model`/`model_divergence`;`probe_platform` 支持 `model` 参数以按钉定模型探测。SKILL.md 派发序列新增"Pin the model"步骤(逐轮复检主模型、切换即同步、分歧先询问),`agent-runtime.md` 与示例文档同步补充模型一致性章节。
+- 关闭三条静默失效路径(审查发现):①`argv` 硬编码模型 flag 时注入会产生重复 flag、末尾者(硬编码值)生效而静默推翻钉定——现在直接拒绝并要求改用 `{model}` 占位符;②stdio bridge 配置上声明的 `model` 被静默忽略——桥接协议不携带模型字段,现在直接报错;③未声明任何模型的平台调度无任何提示——现在向 stderr 打印告警,且 `usage_summary` 新增 `main_model` 字段(未声明为 null)供审计。
+
+### Tests
+
+- 新增多轮压测:独立脚本 `scripts/stress_model_sync.py`(全离线,6 场景可调强度:争议轮全角色重拉、主模型切换同步、并发派发、失败重试逐 attempt 校验、分歧拦截 fuzz、整进程 CLI 端到端),默认强度一轮 709 项校验零失败;`tests/test_stress_model_sync.py` 以小强度子集进 CI(全套 195 passed)。
+
 ## [0.4.1] - 2026-09-20
 
 ### Fixed

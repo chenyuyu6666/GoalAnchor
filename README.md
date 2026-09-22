@@ -25,7 +25,7 @@ GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Eng
 版本说明见 [CHANGELOG.md](CHANGELOG.md)，分支、提交和发布流程见
 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
-完整工程问题定义位于 `D:/Project/GoalAnchor/Doc/GoalAnchor-核心工程问题定义.md`。
+完整工程问题定义位于 `D:/Project/GoalAnchor/Doc/00_总览与入口/GoalAnchor-核心工程问题定义.md`。
 
 ## 当前仓库实现
 
@@ -33,11 +33,11 @@ GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Eng
 
 `goalanchor/` 是零第三方运行时依赖的 Python 契约库，按阶段提供：契约与生命周期状态模型、Q1–Q5/VERIFY/EXECUTE/PLAN_CHANGED 闸门、证据强度与实验校验、交付闭环与 provenance、Review/Graphify 结果适配、五 Gate 治理映射、决策与轻量授权、Verification 闭环，以及**有限多 Agent Review Service**——多 Reviewer 同上下文并行、主 Agent（Arbiter）汇总、争议包复审、独立 Meta Reviewer 审核、`max_rounds=2` 封顶后 `STOPPED` + DecisionReport 交用户决策。
 
-执行层（`agent_runtime.py` + `platforms.py`）提供多平台 Agent 调度：内置 `codex`/`claude`/`gemini`/`opencode` 适配（提示词全部经 stdin 传入，规避 Windows `.cmd` 转义与 argv 长度限制），同一轮 Reviewer 强制不同 profile 并发，平台输出解析兼容直接 JSON、信封包装与正文夹带 JSON；支持瞬时失败重试（`retries`）、dry-run 预览、`platforms --probe` 环境与认证自检、token 用量审计（`tokens_used`/`usage_summary`）；提示词支持 `"language": "zh"` 中文模板。宿主原生子 Agent 拉起的会话在宿主 UI 可见（`review-prompt` 渲染 + `gate --phase review-cycle` 校验），无头平台调度为备用路径。
+执行层（`agent_runtime.py` + `platforms.py`）提供多平台 Agent 调度：内置 `codex`/`claude`/`gemini`/`opencode` 适配（提示词全部经 stdin 传入，规避 Windows `.cmd` 转义与 argv 长度限制），同一轮 Reviewer 强制不同 profile 并发，平台输出解析兼容直接 JSON、信封包装与正文夹带 JSON；支持瞬时失败重试（`retries`）、dry-run 预览、`platforms --probe` 环境与认证自检、token 用量审计（`tokens_used`/`usage_summary`）；提示词支持 `"language": "zh"` 中文模板。**模型一致性强制**：子 Agent 必须与主 Agent 同模型——顶层 `"model"` 或 `review-cycle --model` 声明主模型并按平台 flag 注入（`codex -m`、`claude --model`、`gemini -m`、`opencode -m`），与主模型不同的 profile 在配置加载即拒绝（不启动任何 Agent），确需分歧须先经用户确认并记录 `model_divergence`。宿主原生子 Agent 拉起的会话在宿主 UI 可见（`review-prompt` 渲染 + `gate --phase review-cycle` 校验），无头平台调度为备用路径。
 
 CLI 入口：`install` / `check`（Skill 安装）、`gate --phase …`（确定性闸门）、`review-cycle`（别名 `review-run`，完整调度）、`review-prompt`（逐角色提示词渲染）、`platforms`（环境自检）。
 
-当前版本为 `v0.4.1`（v0.4.0 六阶段路线与 v0.4.1 门控边界澄清均已发布）；持续开发任务与每次改动记录见 `D:/Project/GoalAnchor/Doc/GoalAnchor-开发任务与变更记录.md`。
+当前版本为 `v0.4.1`（v0.4.0 六阶段路线与 v0.4.1 门控边界澄清均已发布）；持续开发任务与每次改动记录见 `D:/Project/GoalAnchor/Doc/04_任务记录/GoalAnchor-开发任务与变更记录.md`。
 
 ## 多 Agent 兼容
 
@@ -59,23 +59,23 @@ python -m goalanchor install --target claude --scope project --project-root . --
 - 防伪闭环：Containment、Root Fix、Build Success、Artifact Verified 和 Product Closure 不得相互替代；
 - 不建设 Web 服务、数据库、常驻后台或通用项目管理平台。
 
-阶段计划、接口决策和验收规则位于：
+阶段计划、接口决策和验收规则位于（`Doc/` 目录自 2026-09-22 起按 `NN_名称` 分类规则组织，完整索引见 `D:/Project/GoalAnchor/Doc/README.md`）：
 
-- `D:/Project/GoalAnchor/Doc/GoalAnchor-任务计划.md`
-- `D:/Project/GoalAnchor/Doc/GoalAnchor-核心工程问题定义.md`
-- `D:/Project/GoalAnchor/Doc/GoalAnchor-项目定位.md`
-- `D:/Project/GoalAnchor/Doc/GoalAnchor-术语表.md`
-- `D:/Project/GoalAnchor/Doc/ADR-0001-GoalAnchor-v1接口.md`
-- `D:/Project/GoalAnchor/Doc/GoalAnchor-v1用户场景.md`
-- `D:/Project/GoalAnchor/Doc/GoalAnchor-阶段1-契约与状态模型.md`
-- `D:/Project/GoalAnchor/Doc/GoalAnchor-阶段2-闸门.md`
-- `D:/Project/GoalAnchor/Doc/GoalAnchor-阶段3-证据与实验.md`
-- `D:/Project/GoalAnchor/Doc/GoalAnchor-阶段4-闭环与Provenance.md`
-- `D:/Project/GoalAnchor/Doc/GoalAnchor-阶段5-工具集成.md`
-- `D:/Project/GoalAnchor/Doc/GoalAnchor-阶段6-测试与回归.md`
-- `D:/Project/GoalAnchor/Doc/GoalAnchor-效果验证协议.md`
-- `D:/Project/GoalAnchor/Doc/GoalAnchor-P0多平台兼容矩阵.md`
-- `D:/Project/GoalAnchor/Doc/GoalAnchor-设计-基于性能对话案例.md`
+- `D:/Project/GoalAnchor/Doc/00_总览与入口/GoalAnchor-任务计划.md`
+- `D:/Project/GoalAnchor/Doc/00_总览与入口/GoalAnchor-核心工程问题定义.md`
+- `D:/Project/GoalAnchor/Doc/00_总览与入口/GoalAnchor-项目定位.md`
+- `D:/Project/GoalAnchor/Doc/00_总览与入口/GoalAnchor-术语表.md`
+- `D:/Project/GoalAnchor/Doc/01_设计与决策/ADR-0001-GoalAnchor-v1接口.md`
+- `D:/Project/GoalAnchor/Doc/00_总览与入口/GoalAnchor-v1用户场景.md`
+- `D:/Project/GoalAnchor/Doc/02_开发规格/GoalAnchor-阶段1-契约与状态模型.md`
+- `D:/Project/GoalAnchor/Doc/02_开发规格/GoalAnchor-阶段2-闸门.md`
+- `D:/Project/GoalAnchor/Doc/02_开发规格/GoalAnchor-阶段3-证据与实验.md`
+- `D:/Project/GoalAnchor/Doc/02_开发规格/GoalAnchor-阶段4-闭环与Provenance.md`
+- `D:/Project/GoalAnchor/Doc/02_开发规格/GoalAnchor-阶段5-工具集成.md`
+- `D:/Project/GoalAnchor/Doc/02_开发规格/GoalAnchor-阶段6-测试与回归.md`
+- `D:/Project/GoalAnchor/Doc/01_设计与决策/GoalAnchor-效果验证协议.md`
+- `D:/Project/GoalAnchor/Doc/01_设计与决策/GoalAnchor-P0多平台兼容矩阵.md`
+- `D:/Project/GoalAnchor/Doc/01_设计与决策/GoalAnchor-设计-基于性能对话案例.md`
 
 ## Skill 目录
 
@@ -124,7 +124,7 @@ Phase 6 固定基准：
 python -m goalanchor review-cycle --request review-request.json --config agent-config.json
 ```
 
-基准说明和开发者最小示例见 `D:/Project/GoalAnchor/Doc/GoalAnchor-Phase6-Benchmark与开发者示例.md`。
+基准说明和开发者最小示例见 `D:/Project/GoalAnchor/Doc/02_开发规格/GoalAnchor-Phase6-Benchmark与开发者示例.md`。
 
 对话体验测试不是 Python 单元测试。请在实际 GoalAnchor 对话上下文中读取并执行
 [GoalAnchor-对话体验测试任务.md](docs/GoalAnchor-对话体验测试任务.md)，它会按固定案例检查目标保持、证据边界、决策链接、状态切换和不过度拦截，并输出 `DIALOGUE_TEST_REPORT`。

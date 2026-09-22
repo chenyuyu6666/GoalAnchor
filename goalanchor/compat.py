@@ -365,6 +365,15 @@ def _parser() -> argparse.ArgumentParser:
         review_cycle.add_argument("--request", required=True, type=Path)
         review_cycle.add_argument("--config", required=True, type=Path)
         review_cycle.add_argument(
+            "--model",
+            default=None,
+            help=(
+                "pin every sub-agent to this model; pass the main agent's CURRENT "
+                "model (re-checked at each run so a mid-run switch stays in sync); "
+                "overrides the config's top-level 'model'"
+            ),
+        )
+        review_cycle.add_argument(
             "--dry-run",
             action="store_true",
             help="render the round-1 reviewer prompts without invoking any agent",
@@ -597,7 +606,30 @@ def _require_risk_declaration(data: Mapping[str, object]) -> dict[str, object] |
     return {"declared_by": declared_by.strip(), "reason": reason.strip()}
 
 
-def _run_external_review_cycle(request_path: Path, config_path: Path) -> dict[str, object]:
+def _declared_main_model(adapter) -> str | None:
+    """The pinned main model of a platform dispatch, warning when missing.
+
+    Returns ``None`` for stdio-bridge adapters (the bridge host manages its
+    own sub-agent model, so there is nothing to warn about).
+    """
+
+    declared = getattr(adapter, "declared_main_model", None)
+    if not callable(declared):
+        return None
+    model = declared()
+    if model is None:
+        print(
+            "goalanchor: warning: no sub-agent model pinned; pass --model <main-model> "
+            "or set the config's top-level 'model' so sub-agents cannot fall back to "
+            "a platform default model",
+            file=sys.stderr,
+        )
+    return model
+
+
+def _run_external_review_cycle(
+    request_path: Path, config_path: Path, model: str | None = None
+) -> dict[str, object]:
     from .platforms import adapter_from_config
     from .review_service import ReviewContext, ReviewRisk
     from .agent_runtime import run_review_cycle_with_adapter
@@ -609,6 +641,8 @@ def _run_external_review_cycle(request_path: Path, config_path: Path) -> dict[st
         raise ValueError("review-cycle request or config is not valid JSON") from exc
     if not isinstance(request, Mapping) or not isinstance(config, Mapping):
         raise ValueError("review-cycle request and config must be JSON objects")
+    if model:
+        config = {**config, "model": model}
     try:
         context = ReviewContext.from_dict(request["context"])
         risk = ReviewRisk(request["risk"])
@@ -616,6 +650,7 @@ def _run_external_review_cycle(request_path: Path, config_path: Path) -> dict[st
         raise ValueError(f"review-cycle request is missing required field: {exc.args[0]}") from exc
     risk_declaration = _require_risk_declaration(request)
     adapter = adapter_from_config(config)
+    declared_model = _declared_main_model(adapter)
     result = run_review_cycle_with_adapter(
         context,
         risk,
@@ -626,6 +661,9 @@ def _run_external_review_cycle(request_path: Path, config_path: Path) -> dict[st
     payload = result.to_dict()
     if risk_declaration is not None:
         payload["risk_declaration"] = risk_declaration
+    model_divergence = config.get("model_divergence")
+    if isinstance(model_divergence, Mapping) and model_divergence:
+        payload["model_divergence"] = dict(model_divergence)
     usage_report = getattr(adapter, "usage_report", None)
     if callable(usage_report) and not payload.get("agent_bindings"):
         payload["agent_bindings"] = list(usage_report())
@@ -637,6 +675,14 @@ def _run_external_review_cycle(request_path: Path, config_path: Path) -> dict[st
             for item in bindings
             if isinstance(item.get("tokens_used"), int)
         ),
+        "models_used": sorted(
+            {
+                item["model"]
+                for item in bindings
+                if isinstance(item.get("model"), str) and item["model"]
+            }
+        ),
+        "main_model": declared_model,
     }
     return payload
 
@@ -693,17 +739,24 @@ def _run_review_prompt(args) -> str:
     return render_agent_prompt(agent_request, language=args.language)
 
 
-def _dry_run_review_cycle(request_path: Path, config_path: Path) -> dict[str, object]:
+def _dry_run_review_cycle(
+    request_path: Path, config_path: Path, model: str | None = None
+) -> dict[str, object]:
     """Render round-1 reviewer prompts without invoking any agent."""
 
     from .agent_runtime import AgentRequest, AgentRole
-    from .platforms import render_agent_prompt
+    from .platforms import adapter_from_config, render_agent_prompt
     from .review_service import ReviewContext, ReviewRisk, required_reviewers
 
     request = _load_json_file(request_path, "review-cycle request")
     config = _load_json_file(config_path, "review-cycle config")
     if not isinstance(request, Mapping) or not isinstance(config, Mapping):
         raise ValueError("review-cycle request and config must be JSON objects")
+    if model:
+        config = {**config, "model": model}
+    # Fail fast on dispatch/model-consistency errors before any agent launch.
+    adapter = adapter_from_config(config)
+    _declared_main_model(adapter)
     try:
         context = ReviewContext.from_dict(request["context"])
         risk = ReviewRisk(request["risk"])
@@ -725,6 +778,12 @@ def _dry_run_review_cycle(request_path: Path, config_path: Path) -> dict[str, ob
         "dry_run": True,
         "risk": risk.value,
         "required_reviewers": required,
+        "main_model": config.get("model"),
+        "model_divergence": (
+            dict(config["model_divergence"])
+            if isinstance(config.get("model_divergence"), Mapping)
+            else None
+        ),
         "reviewer_prompts": prompts,
         "note": (
             "arbiter and meta_reviewer prompts are generated after the reviewer results "
@@ -739,7 +798,13 @@ def _run_platforms_report(config_path: Path | None, *, probe: bool = False) -> d
     import shutil as _shutil
 
     from .agent_runtime import AgentRole
-    from .platforms import BUILTIN_PLATFORMS, PlatformDispatchConfig, _BUILTIN_ARGV, probe_platform
+    from .platforms import (
+        BUILTIN_PLATFORMS,
+        PlatformDispatchConfig,
+        _BUILTIN_ARGV,
+        _BUILTIN_MODEL_FLAGS,
+        probe_platform,
+    )
 
     def _resolve(argv: tuple[str, ...]) -> str | None:
         found = _shutil.which(argv[0])
@@ -753,6 +818,7 @@ def _run_platforms_report(config_path: Path | None, *, probe: bool = False) -> d
             "platform": name,
             "argv": list(argv),
             "prompt_mode": "stdin" if "{prompt}" not in argv else "argv",
+            "model_flag": _BUILTIN_MODEL_FLAGS.get(name, "-m"),
             "resolved": resolved,
             "available": resolved is not None,
         }
@@ -775,11 +841,14 @@ def _run_platforms_report(config_path: Path | None, *, probe: bool = False) -> d
                 "roles": [role.value for role in profile.roles],
                 "platform": profile.platform,
                 "bridge_command": list(profile.command) if profile.command else None,
+                "model": profile.model,
                 "enabled": profile.enabled,
             }
             for profile in dispatch.profiles
         ]
         report["role_bindings"] = dict(dispatch.role_bindings)
+        report["main_model"] = dispatch.model
+        report["model_divergence"] = dispatch.model_divergence
         reviewer_profiles = [
             profile.profile_id
             for profile in dispatch.profiles
@@ -808,11 +877,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 return 1 if result["outcome"] in {"STOPPED", "HUMAN_DECISION_REQUIRED"} else 0
             return 0 if result["passed"] else 1
         if args.command in ("review-cycle", "review-run"):
+            model_override = getattr(args, "model", None)
             if getattr(args, "dry_run", False):
-                result = _dry_run_review_cycle(args.request, args.config)
+                result = _dry_run_review_cycle(args.request, args.config, model=model_override)
                 print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
                 return 0
-            result = _run_external_review_cycle(args.request, args.config)
+            result = _run_external_review_cycle(args.request, args.config, model=model_override)
             print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
             return 1 if result["outcome"] in {"STOPPED", "HUMAN_DECISION_REQUIRED"} else 0
         if args.command == "platforms":

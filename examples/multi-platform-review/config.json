@@ -1,4 +1,5 @@
 {
+  "model": "main-agent-model",
   "platforms": {
     "codex": {
       "argv": ["python", "examples/multi-platform-review/echo-agent.py", "clean", "-p", "{prompt}"],

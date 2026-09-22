@@ -48,6 +48,16 @@ _BUILTIN_ARGV: dict[str, tuple[str, ...]] = {
     "opencode": ("opencode", "run"),
 }
 
+# Model flag used to pin each built-in platform's sub-agent to the main
+# agent's model. Custom platforms either place a ``{model}`` placeholder in
+# their argv or rely on the default ``-m`` insertion (see ``_apply_model``).
+_BUILTIN_MODEL_FLAGS: dict[str, str] = {
+    "codex": "-m",
+    "claude": "--model",
+    "gemini": "-m",
+    "opencode": "-m",
+}
+
 _ENVELOPE_KEYS: tuple[str, ...] = ("result", "response", "content", "output", "message", "text")
 _RESULT_KEYS: frozenset[str] = frozenset({
     "verdict",
@@ -95,6 +105,53 @@ def _retries(value: object, field_name: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value < 1:
         raise AgentRuntimeError(f"{field_name} must be a positive integer (1 = no retry)")
     return value
+
+
+def _model(value: object, field_name: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str) or not value.strip():
+        raise AgentRuntimeError(f"{field_name} must be a non-empty string when present")
+    return value.strip()
+
+
+def _apply_model(
+    argv: Sequence[str],
+    model: str | None,
+    *,
+    model_flag: str,
+) -> tuple[str, ...]:
+    """Pin the sub-agent model onto a platform argv template.
+
+    A ``{model}`` placeholder is replaced in place; otherwise the
+    ``<model_flag> <model>`` pair is inserted before the prompt-spec section
+    (the first ``{prompt}`` placeholder or flag-like element) so the prompt
+    stays last for both argv and stdin modes, and appended when the template
+    has no such marker.  An argv that already hardcodes the same flag is
+    rejected: injecting a second one would let the hardcoded value win in
+    most CLIs and silently unpin the sub-agent model.
+    """
+
+    items = tuple(argv)
+    if model is None:
+        if "{model}" in items:
+            raise AgentRuntimeError(
+                "argv contains a {model} placeholder but no model is configured"
+            )
+        return items
+    if "{model}" in items:
+        return tuple(model if item == "{model}" else item for item in items)
+    if model_flag in items:
+        raise AgentRuntimeError(
+            f"argv already contains {model_flag!r}; pin the model with a "
+            "'{model}' placeholder instead of a hardcoded flag so the "
+            "sub-agent model cannot be overridden silently"
+        )
+    model_args = (model_flag, model)
+    for index, item in enumerate(items):
+        if index > 0 and (item == "{prompt}" or item.startswith("-")):
+            return items[:index] + model_args + items[index:]
+    return items + model_args
 
 
 def _argv(value: object, field_name: str) -> tuple[str, ...]:
@@ -419,6 +476,8 @@ class PlatformSpec:
     timeout_seconds: float = 600.0
     env: Mapping[str, str] = field(default_factory=dict)
     retries: int = 1
+    model: str | None = None
+    model_flag: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "name", _text(self.name, "platform name"))
@@ -442,6 +501,10 @@ class PlatformSpec:
             raise AgentRuntimeError(f"platforms.{self.name}.env must map strings to strings")
         object.__setattr__(self, "env", dict(self.env))
         object.__setattr__(self, "retries", _retries(self.retries, f"platforms.{self.name}.retries"))
+        object.__setattr__(self, "model", _model(self.model, f"platforms.{self.name}.model"))
+        object.__setattr__(
+            self, "model_flag", _model(self.model_flag, f"platforms.{self.name}.model_flag")
+        )
 
 
 @dataclass(frozen=True)
@@ -459,6 +522,7 @@ class ProfileBinding:
     capabilities: tuple[str, ...] = ()
     enabled: bool = True
     retries: int | None = None
+    model: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "profile_id", _text(self.profile_id, "profile_id"))
@@ -486,6 +550,7 @@ class ProfileBinding:
             raise AgentRuntimeError("timeout_seconds must be a positive finite number")
         if self.retries is not None:
             object.__setattr__(self, "retries", _retries(self.retries, "retries"))
+        object.__setattr__(self, "model", _model(self.model, f"profiles.{self.profile_id}.model"))
         if not isinstance(self.env, Mapping) or any(
             not isinstance(key, str) or not isinstance(value, str)
             for key, value in self.env.items()
@@ -514,6 +579,7 @@ class ProfileBinding:
             capabilities=tuple(payload.get("capabilities", ())),
             enabled=payload.get("enabled", True),
             retries=payload.get("retries"),
+            model=payload.get("model"),
         )
 
     def agent_profile(self) -> AgentProfile:
@@ -538,6 +604,8 @@ class PlatformDispatchConfig:
         capabilities: AgentRuntimeCapabilities | None = None,
         allow_profile_reuse: bool = False,
         language: str = "en",
+        model: str | None = None,
+        model_divergence: Mapping[str, object] | None = None,
     ) -> None:
         profile_list = tuple(profiles)
         if not profile_list:
@@ -579,6 +647,40 @@ class PlatformDispatchConfig:
                 f"language must be one of: {', '.join(_PROMPT_LANGUAGES)}"
             )
         object.__setattr__(self, "language", language)
+        # Model consistency: sub-agents must run on the main agent's current
+        # model. ``model`` is that model; any profile that pins a different
+        # one is rejected at config load — before any agent is launched —
+        # unless the user explicitly approved the divergence.
+        object.__setattr__(self, "model", _model(model, "model"))
+        divergence: dict[str, str] | None = None
+        if model_divergence is not None:
+            if not isinstance(model_divergence, Mapping):
+                raise AgentRuntimeError("model_divergence must be an object")
+            divergence = {
+                "confirmed_by": _text(
+                    model_divergence.get("confirmed_by"), "model_divergence.confirmed_by"
+                ),
+                "reason": _text(
+                    model_divergence.get("reason"), "model_divergence.reason"
+                ),
+            }
+        object.__setattr__(self, "model_divergence", divergence)
+        if self.model is not None and divergence is None:
+            for profile in profile_list:
+                if profile.platform is None:
+                    # Bridge-command profiles run inside a host that manages
+                    # its own model; the platform-CLI guarantee does not apply.
+                    continue
+                platform_model = normalized[profile.platform].model
+                effective = profile.model or platform_model
+                if effective is not None and effective != self.model:
+                    raise AgentRuntimeError(
+                        f"profile {profile.profile_id} pins model {effective!r} but the "
+                        f"main agent model is {self.model!r}: sub-agents must run on the "
+                        "main agent's model. Align the profile/platform model, or record "
+                        'the user-approved exception with "model_divergence": '
+                        '{"confirmed_by": "...", "reason": "..."} before dispatch.'
+                    )
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, object]) -> "PlatformDispatchConfig":
@@ -605,6 +707,8 @@ class PlatformDispatchConfig:
                 timeout_seconds=spec.get("timeout_seconds", 600.0),
                 env=spec.get("env", {}),
                 retries=spec.get("retries", 1),
+                model=spec.get("model"),
+                model_flag=spec.get("model_flag"),
             )
         for name in BUILTIN_PLATFORMS:
             if name not in platforms:
@@ -634,6 +738,8 @@ class PlatformDispatchConfig:
             ),
             allow_profile_reuse=payload.get("allow_profile_reuse", False),
             language=payload.get("language", "en"),
+            model=payload.get("model"),
+            model_divergence=payload.get("model_divergence"),
         )
 
     def binding(self, profile_id: str) -> ProfileBinding:
@@ -656,7 +762,14 @@ class PlatformDispatchConfig:
         overrides_timeout = profile.timeout_seconds is not None
         overrides_env = bool(profile.env)
         overrides_retries = profile.retries is not None
-        if profile.argv is not None or overrides_timeout or overrides_env or overrides_retries:
+        overrides_model = profile.model is not None
+        if (
+            profile.argv is not None
+            or overrides_timeout
+            or overrides_env
+            or overrides_retries
+            or overrides_model
+        ):
             return PlatformSpec(
                 name=platform,
                 argv=profile.argv if profile.argv is not None else spec.argv,
@@ -667,6 +780,8 @@ class PlatformDispatchConfig:
                 ),
                 env=profile.env if profile.env else spec.env,
                 retries=profile.retries if profile.retries is not None else spec.retries,
+                model=profile.model if profile.model is not None else spec.model,
+                model_flag=spec.model_flag,
             )
         return spec
 
@@ -685,8 +800,15 @@ class PlatformAgentRouter:
     def capabilities(self) -> AgentRuntimeCapabilities:
         return self._config.capabilities
 
+    @property
+    def main_model(self) -> str | None:
+        """The main-agent model declared for this dispatch, if any."""
+
+        return self._config.model
+
     def dispatch(self, profile_id: str, request: AgentRequest) -> Mapping[str, object]:
         binding = self._config.binding(profile_id)
+        model = None
         if binding.command is not None:
             argv = binding.command
             input_text: str | None = json.dumps(request.to_dict(), ensure_ascii=False) + "\n"
@@ -696,12 +818,14 @@ class PlatformAgentRouter:
             platform_name = "stdio-bridge"
         else:
             spec = self._config.resolve_platform(binding)
+            model = spec.model or self._config.model
+            model_flag = _BUILTIN_MODEL_FLAGS.get(spec.name) or spec.model_flag or "-m"
+            argv = _apply_model(spec.argv, model, model_flag=model_flag)
             prompt = render_agent_prompt(request, language=self._config.language)
-            if "{prompt}" in spec.argv:
-                argv = _materialize_argv(spec.argv, prompt)
+            if "{prompt}" in argv:
+                argv = _materialize_argv(argv, prompt)
                 input_text = None
             else:
-                argv = spec.argv
                 input_text = prompt
             timeout_seconds = spec.timeout_seconds
             env = spec.env
@@ -728,6 +852,7 @@ class PlatformAgentRouter:
             "round_number": request.round_number,
             "profile_id": binding.profile_id,
             "platform": platform_name,
+            "model": model,
             "attempts": attempt,
         }
         tokens_used = _extract_tokens_used(stderr)
@@ -762,6 +887,15 @@ class PlatformAgentAdapter:
     def usage_report(self) -> tuple[dict[str, object], ...]:
         return self._router.usage_report()
 
+    def declared_main_model(self) -> str | None:
+        """The main-agent model declared for this dispatch, if any.
+
+        ``None`` means sub-agents are not pinned and may fall back to a
+        platform default model.
+        """
+
+        return self._router.main_model
+
 
 def build_platform_adapter(config: PlatformDispatchConfig) -> PlatformAgentAdapter:
     """Route the review runtime through validated platform profiles."""
@@ -785,10 +919,25 @@ def adapter_from_config(payload: Mapping[str, object]):
         )
     if platform_shaped:
         return build_platform_adapter(PlatformDispatchConfig.from_dict(payload))
+    # A stdio bridge delivers the request JSON as-is: the GoalAnchor protocol
+    # carries no model field, so a declared model could never be honored.
+    # Rejecting it keeps the pinning guarantee from silently not applying.
+    declared_model = payload.get("model") is not None or any(
+        isinstance(spec, Mapping) and spec.get("model") is not None
+        for spec in (profiles.values() if isinstance(profiles, Mapping) else ())
+    )
+    if declared_model:
+        raise AgentRuntimeError(
+            "a 'model' was declared but this is a stdio bridge configuration; "
+            "bridge hosts manage their own sub-agent model. Use a platform "
+            "dispatch config (profiles.<id>.platform) to pin models."
+        )
     return JsonStdioAgentAdapter.from_dict(payload)
 
 
-def probe_platform(name: str, timeout_seconds: float = 120.0) -> dict[str, object]:
+def probe_platform(
+    name: str, timeout_seconds: float = 120.0, model: str | None = None
+) -> dict[str, object]:
     """Run one minimal invocation against a built-in platform CLI.
 
     Verifies that the executable resolves, is authenticated, and its output
@@ -799,11 +948,13 @@ def probe_platform(name: str, timeout_seconds: float = 120.0) -> dict[str, objec
         raise AgentRuntimeError(f"unknown platform: {name}")
     spec = PlatformSpec(name=name, argv=_BUILTIN_ARGV[name], timeout_seconds=timeout_seconds)
     prompt = 'Reply with exactly this JSON object and nothing else: {"probe": "ok"}'
-    if "{prompt}" in spec.argv:
-        argv = _materialize_argv(spec.argv, prompt)
+    argv = _apply_model(
+        spec.argv, model, model_flag=_BUILTIN_MODEL_FLAGS.get(name, "-m")
+    )
+    if "{prompt}" in argv:
+        argv = _materialize_argv(argv, prompt)
         input_text = None
     else:
-        argv = spec.argv
         input_text = prompt
     try:
         stdout, _stderr = _run_subprocess(

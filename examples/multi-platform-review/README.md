@@ -96,6 +96,31 @@ python -m goalanchor gate --phase review-cycle --record cycle.json
 - CRITICAL 风险的请求必须携带 `risk_declaration`(非空 `declared_by` 与
   `reason`),否则 CLI 直接拒绝且不调用任何 Agent。
 
+## 模型一致性(主模型同步)
+
+子 Agent 必须与主 Agent 运行**同一个模型**,否则部分平台会回落到自己的默认
+模型导致审核失败。GoalAnchor 在配置层强制这一点:
+
+- 顶层 `"model"` 声明主 Agent 当前模型,或运行时传
+  `review-cycle --model <主模型>`(覆盖配置;每次运行都应重新传入当前值,
+  主模型中途切换后下一轮自动同步)。
+- 生效优先级:profile `model` > `platforms.<name>.model` > 顶层 `"model"`。
+  内置平台使用各自 flag 注入(`codex -m`、`claude --model`、`gemini -m`、
+  `opencode -m`);自定义平台在 `argv` 里放一个 `{model}` 占位符,或依赖
+  默认的 `-m <model>` 插入(`model_flag` 可覆盖 flag)。
+- 未经确认的分歧直接拒绝:任何 profile 解析出的模型与主模型不同时,
+  `review-cycle`/`--dry-run` 在配置加载阶段即失败,**不会启动任何 Agent**。
+  确需用不同模型时,必须先暂停询问用户(保持主模型,还是另选子 Agent 模型),
+  并把用户决定记录进配置:`"model_divergence": {"confirmed_by": "...",
+  "reason": "..."}`,确认信息会回显进运行输出供审计。
+- 每条 `agent_bindings` 记录实际使用的 `model`(stdio bridge 恒为 null,
+  桥接宿主自管模型),`usage_summary.models_used` 汇总全程模型,可用于
+  核对整个审核周期是否始终钉在主模型上。
+- 静默失效路径全部关闭:未声明 `model` 的平台调度会向 stderr 打印告警且
+  `usage_summary.main_model` 为 null;`argv` 里硬编码模型 flag(会盖过注入值)
+  改为要求使用 `{model}` 占位符,否则拒绝;stdio bridge 配置上声明 `model`
+  直接报错(桥接协议不携带模型字段,无法兑现)。
+
 ## Reviewer 结果的验收标准
 
 外部平台返回的结果对象会按 `ReviewerResult` / `ArbiterResult` /
