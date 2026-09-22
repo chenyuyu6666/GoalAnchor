@@ -3,6 +3,23 @@
 本文件按 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 组织，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.5.1] - 2026-09-22
+
+### Fixed
+
+- `MODEL_NOT_PINNED` 告警措辞修正(stderr 与 `warnings` 双通道):原 message 在「platform/profile 级已钉定、仅顶层主模型未声明」的合法配置下断言「未声明任何子 Agent 模型、可能回落平台默认模型」——与事实相反(子 Agent 确被钉定,但一致性保证因主模型缺失而不可执行)。现改为如实说明:主模型未声明 → 一致性不可强制,子 Agent 可能运行于 platform/profile 级声明模型或平台默认值。触发时机不变(主模型未声明即告警,该情形需要信号)。来源:GA-V050-AUDIT 独立审核 AUD1-01/A2-F1(P2)。
+- `argv` 模型 flag 防护:带**自有取值**的模型 flag 一律拒绝——裸写(`-m preset`)与附着值(`--model=opus`);不误拒前缀相近的无关选项(`--model-config=x`)。`{model}` 占位符仅在**模型取值槽**被填充(独立元素、`-m {model}`、`--model={model}`、`--model{model}`),出现在其他参数文本中的 `{model}` 按字面传递;紧贴短选项(`-mopus`)刻意不做检测(无法与同前缀无关选项区分,见第三轮条目②)。来源:AUD1-02 + Meta META-04 + 三轮核验收敛。
+- argv 模板校验前移至**配置加载阶段**(`PlatformDispatchConfig` 构造期),覆盖 `review-cycle`、`--dry-run` 与 `platforms --config` 三条路径:硬编码模型 flag 与「`{model}` 占位符但无模型可填」现在都在启动任何 Agent 之前失败;保留条件语义(无可注入模型时 argv 钉定配置依旧合法)。来源:A2-F4 + Meta META-01/03。
+- 平台配置内的桥接 profile 声明 `model` 现在直接拒绝(此前仅 legacy 桥接配置报错,平台形态配置会静默丢弃该声明并在审计中记为 null)。来源:AUD1-03。
+- `platforms --config <cfg> --probe` 现在按 dispatch 同一优先级解析出的模型探测(profile 级 > 平台级 > 顶层,经该平台首个 enabled profile 解析),且配置在任何探测之前加载校验——无效配置快速失败、不再消耗探测调用。此前新增的 `probe_platform(model=...)` 形参无生产调用点,探测始终走未钉定链路,与文档宣称不符。来源:AUD1-04/A2-F3 + Meta META-03 + 四轮核验收敛。
+- `[0.5.0]` 段 Tests 数字自相矛盾修正(709/195 与 739/196 并存),改为显式标注阶段演进。来源:AUD1-05/A2-F2。
+- 第二轮复核加固(GA-V051-VERIFY):①配置加载期 argv 预检跳过 `enabled=false` 的 profile——它们永不派发(`PlatformDispatchConfig.binding()` 拒绝、`AgentCatalog.select` 跳过),其 argv 不应使整份配置失败;②`{model}` 占位符与带自有取值的硬编码 flag 并存同样拒绝(替换值会与第二个 flag 并存且多数 CLI 后者生效);③`platforms --config --probe` 的模型解析补齐 profile 级钉定;④`declared_main_model` docstring 同步为真实语义(残留的「未钉定/可能回落默认模型」断言清除)。
+- 第三轮核验加固(GA-V051-VERIFY2):①恢复 `-m {model}` / `--model={model}` 合法模板(flag 的取值槽恰为占位符时视为占位符位点并原地填充;上一轮加固曾误拒该写法——占位符与自有取值必须区分);②紧贴短选项(`-mopus`)检测整体移除:无法与同前缀无关选项(`-max-tokens`)区分,保留检测会误拒合法配置,该拼写改为文档明确不覆盖(不要紧贴取值);③分歧校验同样跳过 disabled profile——与 argv 预检口径统一(「不可达 profile 不阻断配置」),同时使「禁用分歧 profile」成为可行修复路径;④probe 模型解析改为与 dispatch 完全同优先级(profile 级 > 平台级 > 顶层,经该平台首个 enabled profile 解析);⑤注释与发布说明修正:`select_agents` 实为 `AgentCatalog.select`;预检口径写明「所有 enabled 平台 profile 均须可派发,未使用者请置 enabled=false」。
+
+### Tests
+
+- 新增/迁移:附着 flag 拼写拒绝(+前缀相近选项不误拒,含自定义平台 `-max-tokens` 合法路径)、`-m {model}`/`--model={model}`/`--model{model}` 合法模板接受、参数文本中的 `{model}` 按字面传递且不跳过注入、`{model}` 与自有取值 flag 并存拒绝、平台形态桥接 profile 声明 model 拒绝、disabled profile 不参与预检且其分歧模型不阻断、platform 级钉定告警措辞真实性(含 argv 注入证据)、`platforms --config --probe` 模型传递(profile/平台/顶层三层优先级)、无效配置先失败零探测;两条既有测试的失败点从派发期迁移到配置加载期(**206 passed**,同步 `validate-multi-round.ps1` 基线 196→201→203→205→206)。
+
 ## [0.5.0] - 2026-09-22
 
 ### Added
@@ -18,7 +35,7 @@
 
 ### Tests
 
-- 新增多轮压测:独立脚本 `scripts/stress_model_sync.py`(全离线,6 场景可调强度:争议轮全角色重拉、主模型切换同步、并发派发、失败重试逐 attempt 校验、分歧拦截 fuzz、整进程 CLI 端到端),默认强度一轮 709 项校验零失败;`tests/test_stress_model_sync.py` 以小强度子集进 CI(全套 195 passed)。
+- 新增多轮压测:独立脚本 `scripts/stress_model_sync.py`(全离线,6 场景可调强度:争议轮全角色重拉、主模型切换同步、并发派发、失败重试逐 attempt 校验、分歧拦截 fuzz、整进程 CLI 端到端);warnings 断言加入前为 709 项校验/195 passed,加入后默认强度一轮 **739 项校验零失败/196 passed**;`tests/test_stress_model_sync.py` 以小强度子集进 CI。
 - warnings 通道测试:未钉定结构化告警、已钉定零噪声、分歧确认告警回显 `confirmed_by`、dry-run 同通道(未钉定/已钉定两腿)、legacy bridge 收集器边界(196 passed,同步 `validate-multi-round.ps1` 基线 195→196)。
 - 压测 CLI 端到端场景每轮增加 pinned `warnings==[]` 与去 model 配置副本 `MODEL_NOT_PINNED`+`main_model=null` 断言(默认强度一轮 739 项校验零失败)。
 
@@ -134,7 +151,8 @@
 使用 `vX.Y.Z 中文变更说明`，并与对应版本标签保持一致。历史提交不会被删除或回写，
 版本边界以标签和本文件为准。
 
-[未发布]: https://gitee.com/chen-yuyu6666/goal-anchor/compare/v0.5.0...master
+[未发布]: https://gitee.com/chen-yuyu6666/goal-anchor/compare/v0.5.1...master
+[0.5.1]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.5.1
 [0.5.0]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.5.0
 [0.4.1]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.4.1
 [0.4.0]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.4.0

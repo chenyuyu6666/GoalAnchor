@@ -9,7 +9,7 @@ GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Eng
 
 ## 当前版本
 
-当前稳定版本为 `v0.5.0`；日常开发从 `master` 创建短期工作分支，运行时版本由
+当前稳定版本为 `v0.5.1`；日常开发从 `master` 创建短期工作分支，运行时版本由
 `goalanchor.__version__` 统一维护。
 
 - `v0.1.0`：初始 skills 与 Plan Audit 基线；
@@ -22,6 +22,7 @@ GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Eng
 - `v0.4.0`：多 Agent 审核协议、多平台 Agent 调度与治理收紧。
 - `v0.4.1`：SKILL.md 门控边界澄清（量化验收标准归属 VERIFY 入口）。
 - `v0.5.0`：子 Agent 模型一致性强制与 warnings 机器可读告警通道。
+- `v0.5.1`：告警措辞修正、flag 拼写防护扩展、配置加载期 argv 预检、probe 钉定（GA-V050-AUDIT 审核修复）。
 
 版本说明见 [CHANGELOG.md](CHANGELOG.md)，分支、提交和发布流程见
 [CONTRIBUTING.md](CONTRIBUTING.md)。
@@ -38,7 +39,7 @@ GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Eng
 
 CLI 入口：`install` / `check`（Skill 安装）、`gate --phase …`（确定性闸门）、`review-cycle`（别名 `review-run`，完整调度）、`review-prompt`（逐角色提示词渲染）、`platforms`（环境自检）。
 
-当前版本为 `v0.5.0`（v0.4.x 路线已发布；v0.5.0 交付子 Agent 模型一致性强制与 warnings 机器可读告警通道）；持续开发任务与每次改动记录见 `D:/Project/GoalAnchor/Doc/04_任务记录/GoalAnchor-开发任务与变更记录.md`。
+当前版本为 `v0.5.1`（v0.4.x 路线已发布；v0.5.x 交付子 Agent 模型一致性强制与 warnings 机器可读告警通道，并按独立审核 GA-V050-AUDIT 修复告警措辞与防护边界）；持续开发任务与每次改动记录见 `D:/Project/GoalAnchor/Doc/04_任务记录/GoalAnchor-开发任务与变更记录.md`。
 
 ## 多 Agent 兼容
 
