@@ -76,6 +76,7 @@ v0.3.2 简化多人协作流程
 - `v0.3.4`：明确 Git 提交规则。
 - `v0.4.0`：多 Agent 审核协议、多平台 Agent 调度与治理收紧。
 - `v0.4.1`：SKILL.md 门控边界澄清（量化验收标准归属 VERIFY 入口）。
+- `v0.5.0`：子 Agent 模型一致性强制与 warnings 机器可读告警通道。
 - 新功能增加 `MINOR`，兼容性修复增加 `PATCH`，破坏性变更增加 `MAJOR`。
 - 运行时版本以 `goalanchor/__init__.py` 导出的 `__version__` 为单一来源。
 - 发布前更新 `CHANGELOG.md`，在 `master` 上使用一个发布聚合提交和同名 `vX.Y.Z` 标签，

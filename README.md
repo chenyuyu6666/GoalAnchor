@@ -9,7 +9,7 @@ GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Eng
 
 ## 当前版本
 
-当前稳定版本为 `v0.4.1`；日常开发从 `master` 创建短期工作分支，运行时版本由
+当前稳定版本为 `v0.5.0`；日常开发从 `master` 创建短期工作分支，运行时版本由
 `goalanchor.__version__` 统一维护。
 
 - `v0.1.0`：初始 skills 与 Plan Audit 基线；
@@ -21,6 +21,7 @@ GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Eng
 - `v0.3.4`：明确 Git 提交规则。
 - `v0.4.0`：多 Agent 审核协议、多平台 Agent 调度与治理收紧。
 - `v0.4.1`：SKILL.md 门控边界澄清（量化验收标准归属 VERIFY 入口）。
+- `v0.5.0`：子 Agent 模型一致性强制与 warnings 机器可读告警通道。
 
 版本说明见 [CHANGELOG.md](CHANGELOG.md)，分支、提交和发布流程见
 [CONTRIBUTING.md](CONTRIBUTING.md)。
@@ -33,11 +34,11 @@ GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Eng
 
 `goalanchor/` 是零第三方运行时依赖的 Python 契约库，按阶段提供：契约与生命周期状态模型、Q1–Q5/VERIFY/EXECUTE/PLAN_CHANGED 闸门、证据强度与实验校验、交付闭环与 provenance、Review/Graphify 结果适配、五 Gate 治理映射、决策与轻量授权、Verification 闭环，以及**有限多 Agent Review Service**——多 Reviewer 同上下文并行、主 Agent（Arbiter）汇总、争议包复审、独立 Meta Reviewer 审核、`max_rounds=2` 封顶后 `STOPPED` + DecisionReport 交用户决策。
 
-执行层（`agent_runtime.py` + `platforms.py`）提供多平台 Agent 调度：内置 `codex`/`claude`/`gemini`/`opencode` 适配（提示词全部经 stdin 传入，规避 Windows `.cmd` 转义与 argv 长度限制），同一轮 Reviewer 强制不同 profile 并发，平台输出解析兼容直接 JSON、信封包装与正文夹带 JSON；支持瞬时失败重试（`retries`）、dry-run 预览、`platforms --probe` 环境与认证自检、token 用量审计（`tokens_used`/`usage_summary`）；提示词支持 `"language": "zh"` 中文模板。**模型一致性强制**：子 Agent 必须与主 Agent 同模型——顶层 `"model"` 或 `review-cycle --model` 声明主模型并按平台 flag 注入（`codex -m`、`claude --model`、`gemini -m`、`opencode -m`），与主模型不同的 profile 在配置加载即拒绝（不启动任何 Agent），确需分歧须先经用户确认并记录 `model_divergence`。宿主原生子 Agent 拉起的会话在宿主 UI 可见（`review-prompt` 渲染 + `gate --phase review-cycle` 校验），无头平台调度为备用路径。
+执行层（`agent_runtime.py` + `platforms.py`）提供多平台 Agent 调度：内置 `codex`/`claude`/`gemini`/`opencode` 适配（提示词全部经 stdin 传入，规避 Windows `.cmd` 转义与 argv 长度限制），同一轮 Reviewer 强制不同 profile 并发，平台输出解析兼容直接 JSON、信封包装与正文夹带 JSON；支持瞬时失败重试（`retries`）、dry-run 预览、`platforms --probe` 环境与认证自检、token 用量审计（`tokens_used`/`usage_summary`）；提示词支持 `"language": "zh"` 中文模板。**模型一致性强制**：子 Agent 必须与主 Agent 同模型——顶层 `"model"` 或 `review-cycle --model` 声明主模型并按平台 flag 注入（`codex -m`、`claude --model`、`gemini -m`、`opencode -m`），与主模型不同的 profile 在配置加载即拒绝（不启动任何 Agent），确需分歧须先经用户确认并记录 `model_divergence`；`review-cycle` 与 `--dry-run` 输出顶层 `warnings` 机器可读告警数组（`MODEL_NOT_PINNED`/`MODEL_DIVERGENCE_APPROVED`），供只读 stdout 的流水线审计。宿主原生子 Agent 拉起的会话在宿主 UI 可见（`review-prompt` 渲染 + `gate --phase review-cycle` 校验），无头平台调度为备用路径。
 
 CLI 入口：`install` / `check`（Skill 安装）、`gate --phase …`（确定性闸门）、`review-cycle`（别名 `review-run`，完整调度）、`review-prompt`（逐角色提示词渲染）、`platforms`（环境自检）。
 
-当前版本为 `v0.4.1`（v0.4.0 六阶段路线与 v0.4.1 门控边界澄清均已发布）；持续开发任务与每次改动记录见 `D:/Project/GoalAnchor/Doc/04_任务记录/GoalAnchor-开发任务与变更记录.md`。
+当前版本为 `v0.5.0`（v0.4.x 路线已发布；v0.5.0 交付子 Agent 模型一致性强制与 warnings 机器可读告警通道）；持续开发任务与每次改动记录见 `D:/Project/GoalAnchor/Doc/04_任务记录/GoalAnchor-开发任务与变更记录.md`。
 
 ## 多 Agent 兼容
 
