@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import math
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-import math
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from .core import ContractValidationError
 from .gates import GateFinding, GateId, GateResult
@@ -203,7 +204,7 @@ class EvidenceRecord:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "EvidenceRecord":
+    def from_dict(cls, payload: Mapping[str, Any]) -> EvidenceRecord:
         data = _mapping(payload, "EvidenceRecord")
         allowed = {
             "evidence_id",
@@ -317,7 +318,7 @@ class ExperimentPlan:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "ExperimentPlan":
+    def from_dict(cls, payload: Mapping[str, Any]) -> ExperimentPlan:
         data = _mapping(payload, "ExperimentPlan")
         allowed = {
             "experiment_id",
@@ -422,7 +423,7 @@ class DesignDecision:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "DesignDecision":
+    def from_dict(cls, payload: Mapping[str, Any]) -> DesignDecision:
         data = _mapping(payload, "DesignDecision")
         allowed = {
             "decision_id",

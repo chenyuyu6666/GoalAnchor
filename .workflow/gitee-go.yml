@@ -1,0 +1,30 @@
+# Gitee Go pipeline — runs on the real remote (https://gitee.com/chen-yuyu6666/goal-anchor)
+# Mirrors the GitHub Actions checks using Gitee Go's step syntax. Enable on the
+# repository's Gitee Go settings (this file is picked up automatically once
+# Gitee Go is switched on for the repo).
+
+version: '1.0'
+name: goalanchor-validate
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+stages:
+  - stage:
+      name: validate
+      strategy:
+        matrix:
+          python: ['3.11', '3.12', '3.13']
+      steps:
+        - step: shell@agent1
+          name: python tests
+          inputs:
+            commands:
+              - python -m pip install -r requirements-dev.txt ruff
+              - python -m ruff check goalanchor tests scripts
+              - python -m pytest -q
+              - python scripts/evaluate_fixtures.py --fixtures tests/fixtures/regression --revision $GITEE_COMMIT_SHA
+              - python scripts/sync_skill_bundle.py --check

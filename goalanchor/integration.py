@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from .core import Claim, ClaimKind, ContractValidationError
 from .gates import GateFinding, GateId, GateResult
@@ -93,7 +94,7 @@ class ReviewFinding:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "ReviewFinding":
+    def from_dict(cls, payload: Mapping[str, Any]) -> ReviewFinding:
         data = _mapping(payload, "ReviewFinding")
         allowed = {
             "finding_id",
@@ -161,7 +162,7 @@ class GraphEvidenceRef:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "GraphEvidenceRef":
+    def from_dict(cls, payload: Mapping[str, Any]) -> GraphEvidenceRef:
         data = _mapping(payload, "GraphEvidenceRef")
         allowed = {
             "node_id",

@@ -7,9 +7,10 @@ zero or more secondary consumers.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Iterable
+from typing import Any
 
 from .core import ContractValidationError, GoalContract, transition
 from .gates import GateId, GateReport, GateResult

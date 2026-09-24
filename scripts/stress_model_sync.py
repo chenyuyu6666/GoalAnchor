@@ -32,7 +32,6 @@ import argparse
 import contextlib
 import io
 import json
-import os
 import random
 import re
 import subprocess
@@ -58,7 +57,6 @@ from goalanchor.platforms import (  # noqa: E402
     adapter_from_config,
 )
 from goalanchor.review_service import ReviewContext  # noqa: E402
-
 
 REVIEWER_AGENT = r"""
 import json, re, os, sys

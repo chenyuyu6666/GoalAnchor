@@ -10,7 +10,7 @@ GoalAnchor 是面向复杂工程任务的**目标锚定与可信收敛框架**�
 | | |
 |---|---|
 | 当前版本 | [`v0.5.1`](CHANGELOG.md) |
-| Python 要求 | 3.9+（运行时**零第三方依赖**） |
+| Python 要求 | 3.11+（运行时**零第三方依赖**；CI 验证 3.11/3.12/3.13） |
 | 分发形态 | 标准 `SKILL.md` + Python 契约库 + CLI |
 | 宿主支持 | Codex、Claude Code、DSH、Zcode、Pi、Cursor、Gemini CLI、OpenCode 等 |
 
@@ -97,8 +97,13 @@ skills/       goalanchor / graphify / deeply 定制 Skill,.system/ 为上游快�
 scripts/      压测、基准、测试任务脚本
 tests/        全量单元测试
 examples/     可运行的离线示例
-docs/         仓库内文档资产(自动测试任务、对话体验测试)
+docs/         仓库内文档资产(随包版本化:自动测试任务、对话体验测试)
 ```
+
+注意两个文档位置的分工，避免混淆：
+
+- **`docs/`（仓库内，小写）**：参与 Git 版本控制、随代码一起发布的文档资产，供脚本与 CI 引用；
+- **`Doc/`（仓库旁，大写）**：独立于本仓库的设计/规格/记录中心（任务计划、ADR、逐次变更记录、知识图谱），不随包发布，入口见其 `README.md`。
 
 `.system/` 下为上游 Skill 快照，除非同步上游否则不直接修改，补丁记录在 [UPSTREAM_SOURCES.md](UPSTREAM_SOURCES.md)。
 

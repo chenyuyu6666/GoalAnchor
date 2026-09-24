@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import importlib.util
 import re
-from pathlib import Path
 import sys
+from pathlib import Path
 
 import yaml
-
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_FILES = sorted((ROOT / "skills").rglob("SKILL.md"))

@@ -7,9 +7,10 @@ strength, or artifact provenance; those are later-stage concerns.
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from .core import (
     ContractValidationError,
@@ -206,7 +207,7 @@ class VerifyRecord:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "VerifyRecord":
+    def from_dict(cls, payload: Mapping[str, Any]) -> VerifyRecord:
         data = _mapping(payload, "VerifyRecord")
         allowed = {
             "verification_object",
@@ -268,7 +269,7 @@ class ExecutePreflight:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "ExecutePreflight":
+    def from_dict(cls, payload: Mapping[str, Any]) -> ExecutePreflight:
         data = _mapping(payload, "ExecutePreflight")
         allowed = {
             "plan_state",
@@ -319,7 +320,7 @@ class StructureReview:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "StructureReview":
+    def from_dict(cls, payload: Mapping[str, Any]) -> StructureReview:
         data = _mapping(payload, "StructureReview")
         allowed = {
             "responsibility_keys",

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from .core import ContractValidationError
 
@@ -66,7 +67,7 @@ class RegressionOutcome:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "RegressionOutcome":
+    def from_dict(cls, payload: Mapping[str, Any]) -> RegressionOutcome:
         if not isinstance(payload, Mapping):
             raise ContractValidationError("RegressionOutcome must be a JSON object")
         return cls(
@@ -131,7 +132,7 @@ class VersionRun:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "VersionRun":
+    def from_dict(cls, payload: Mapping[str, Any]) -> VersionRun:
         if not isinstance(payload, Mapping):
             raise ContractValidationError("VersionRun must be a JSON object")
         return cls(

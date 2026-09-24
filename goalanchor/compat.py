@@ -8,15 +8,14 @@ CLI, shell, model, or subagent API.
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 import hashlib
 import json
 import os
-from pathlib import Path
 import shutil
 import sys
-from typing import Mapping, Sequence
-
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from pathlib import Path
 
 SKILL_ID = "goalanchor"
 _SKILL_FILE = "SKILL.md"
@@ -182,8 +181,13 @@ def find_skill_source(source: str | Path | None = None) -> Path:
     if source is not None:
         candidates = [Path(source).expanduser()]
     else:
-        package_root = Path(__file__).resolve().parents[1]
+        package_dir = Path(__file__).resolve().parent
+        package_root = package_dir.parent
+        # Prefer the skill bundled inside the installed package (works for pip
+        # installs); fall back to the repository checkout when running from a
+        # clone, then the current working directory.
         candidates = [
+            package_dir / "_skill",
             package_root / "skills" / SKILL_ID,
             Path.cwd() / "skills" / SKILL_ID,
         ]
@@ -422,16 +426,16 @@ def _parser() -> argparse.ArgumentParser:
 def _run_gate(phase: str, record_path: Path) -> dict[str, object]:
     """Load a JSON record and run only the requested pure gate."""
 
-    from .core import GoalContract, WorkItem
-    from .gates import (
-        ExecutePreflight,
-        StructureReview,
-        VerifyRecord,
-        check_execute,
-        check_plan_change,
-        check_verify,
-        evaluate_plan,
+    from .closure import (
+        ArtifactManifest,
+        ClosureRecord,
+        ProvenanceChain,
+        check_artifact_manifest,
+        check_closure,
+        check_provenance,
+        verify_artifact_file,
     )
+    from .core import GoalContract, WorkItem
     from .evidence import (
         DesignDecision,
         EvidenceRecord,
@@ -441,14 +445,14 @@ def _run_gate(phase: str, record_path: Path) -> dict[str, object]:
         check_evidence,
         check_experiment,
     )
-    from .closure import (
-        ArtifactManifest,
-        ClosureRecord,
-        ProvenanceChain,
-        check_artifact_manifest,
-        check_closure,
-        check_provenance,
-        verify_artifact_file,
+    from .gates import (
+        ExecutePreflight,
+        StructureReview,
+        VerifyRecord,
+        check_execute,
+        check_plan_change,
+        check_verify,
+        evaluate_plan,
     )
     from .integration import ReviewFinding, check_graphify_output, check_review_output
     from .review_service import (
@@ -664,9 +668,9 @@ def _model_audit_warnings(
 def _run_external_review_cycle(
     request_path: Path, config_path: Path, model: str | None = None
 ) -> dict[str, object]:
+    from .agent_runtime import run_review_cycle_with_adapter
     from .platforms import adapter_from_config
     from .review_service import ReviewContext, ReviewRisk
-    from .agent_runtime import run_review_cycle_with_adapter
 
     try:
         request = json.loads(request_path.read_text(encoding="utf-8"))
@@ -835,10 +839,10 @@ def _run_platforms_report(config_path: Path | None, *, probe: bool = False) -> d
 
     from .agent_runtime import AgentRole
     from .platforms import (
-        BUILTIN_PLATFORMS,
-        PlatformDispatchConfig,
         _BUILTIN_ARGV,
         _BUILTIN_MODEL_FLAGS,
+        BUILTIN_PLATFORMS,
+        PlatformDispatchConfig,
         probe_platform,
     )
 

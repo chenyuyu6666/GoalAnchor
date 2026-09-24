@@ -1,20 +1,21 @@
 from __future__ import annotations
 
+import pytest
+
 from goalanchor import (
     ContractValidationError,
     GateFinding,
     GateId,
     GateReport,
     GateResult,
-    GovernanceGate,
     GoalContract,
+    GovernanceGate,
     LifecycleState,
     apply_suggested_transition,
     governance_owners,
     map_gate_report,
     map_gate_result,
 )
-import pytest
 
 
 def make_result(gate_id: GateId, passed: bool = True) -> GateResult:

@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
+import hashlib
+import re
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-import hashlib
-import re
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from .core import ContractValidationError
 from .gates import GateFinding, GateId, GateResult
-
 
 _SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
 
@@ -172,7 +172,7 @@ class ArtifactManifest:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "ArtifactManifest":
+    def from_dict(cls, payload: Mapping[str, Any]) -> ArtifactManifest:
         data = _mapping(payload, "ArtifactManifest")
         allowed = {
             "manifest_id",
@@ -255,7 +255,7 @@ class ProvenanceNode:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "ProvenanceNode":
+    def from_dict(cls, payload: Mapping[str, Any]) -> ProvenanceNode:
         data = _mapping(payload, "ProvenanceNode")
         allowed = {"node_id", "kind", "identifier", "sha256", "revision", "available"}
         _reject_unknown(data, allowed, "ProvenanceNode")
@@ -288,7 +288,7 @@ class ProvenanceLink:
         return {"source_id": self.source_id, "target_id": self.target_id}
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "ProvenanceLink":
+    def from_dict(cls, payload: Mapping[str, Any]) -> ProvenanceLink:
         data = _mapping(payload, "ProvenanceLink")
         _reject_unknown(data, {"source_id", "target_id"}, "ProvenanceLink")
         if {"source_id", "target_id"} - set(data):
@@ -318,7 +318,7 @@ class ProvenanceChain:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "ProvenanceChain":
+    def from_dict(cls, payload: Mapping[str, Any]) -> ProvenanceChain:
         data = _mapping(payload, "ProvenanceChain")
         _reject_unknown(data, {"nodes", "links"}, "ProvenanceChain")
         if "nodes" not in data or "links" not in data:
@@ -392,7 +392,7 @@ class ClosureRecord:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "ClosureRecord":
+    def from_dict(cls, payload: Mapping[str, Any]) -> ClosureRecord:
         data = _mapping(payload, "ClosureRecord")
         allowed = {
             "requested_level",
@@ -641,7 +641,11 @@ def _has_at_least(record: ClosureRecord, level: ClosureLevel) -> bool:
         test_object = record.test_object or (
             None if record.artifact_manifest is None else record.artifact_manifest.test_object
         )
-        return bool(_has_at_least(record, ClosureLevel.ARTIFACT_VERIFIED) and record.system_validation_passed and test_object)
+        return bool(
+            _has_at_least(record, ClosureLevel.ARTIFACT_VERIFIED)
+            and record.system_validation_passed
+            and test_object
+        )
     if level is ClosureLevel.PRODUCT_CLOSURE:
         return bool(
             _has_at_least(record, ClosureLevel.ROOT_FIX)

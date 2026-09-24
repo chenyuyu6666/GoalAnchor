@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
-from pathlib import Path
 import subprocess
 import sys
 import urllib.error
-
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE_PATH = (

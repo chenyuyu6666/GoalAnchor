@@ -10,13 +10,13 @@ from goalanchor import (
     AgentRole,
     AgentRuntimeCapabilities,
     ArbiterResult,
+    JsonStdioAgentAdapter,
     MetaReviewResult,
     ReviewContext,
-    ReviewRisk,
-    ReviewVerdict,
     ReviewerResult,
     ReviewFinding,
-    JsonStdioAgentAdapter,
+    ReviewRisk,
+    ReviewVerdict,
     run_review_cycle_with_dispatcher,
 )
 

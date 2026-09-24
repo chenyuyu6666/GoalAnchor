@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
 from goalanchor import RegressionOutcome, VersionRun, compare_version_runs
 from goalanchor.core import ContractValidationError
-
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE_DIR = ROOT / "tests" / "fixtures" / "regression"

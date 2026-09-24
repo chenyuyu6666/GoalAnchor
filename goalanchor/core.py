@@ -9,9 +9,10 @@ provenance are intentionally left to later stages.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from enum import Enum
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 
 class GoalAnchorError(ValueError):
@@ -157,7 +158,7 @@ class Claim:
             )
         object.__setattr__(self, "basis", basis)
 
-    def reclassify(self, kind: ClaimKind, *, basis: str) -> "Claim":
+    def reclassify(self, kind: ClaimKind, *, basis: str) -> Claim:
         """Return a deliberately reclassified copy with an explicit basis."""
 
         target = _enum_value(kind, ClaimKind, "kind")
@@ -178,7 +179,7 @@ class Claim:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "Claim":
+    def from_dict(cls, payload: Mapping[str, Any]) -> Claim:
         data = _mapping(payload, "Claim")
         _reject_unknown(data, {"text", "kind", "source", "basis"}, "Claim")
         missing = {"text", "kind", "source"} - set(data)
@@ -197,7 +198,7 @@ class Claim:
         return _canonical_json(self.to_dict())
 
     @classmethod
-    def from_json(cls, payload: str) -> "Claim":
+    def from_json(cls, payload: str) -> Claim:
         try:
             decoded = json.loads(payload)
         except (TypeError, json.JSONDecodeError) as exc:
@@ -272,7 +273,7 @@ class WorkItem:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "WorkItem":
+    def from_dict(cls, payload: Mapping[str, Any]) -> WorkItem:
         data = _mapping(payload, "WorkItem")
         allowed = {
             "item_id",
@@ -313,7 +314,7 @@ class WorkItem:
         return _canonical_json(self.to_dict())
 
     @classmethod
-    def from_json(cls, payload: str) -> "WorkItem":
+    def from_json(cls, payload: str) -> WorkItem:
         try:
             decoded = json.loads(payload)
         except (TypeError, json.JSONDecodeError) as exc:
@@ -396,7 +397,7 @@ class GoalContract:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "GoalContract":
+    def from_dict(cls, payload: Mapping[str, Any]) -> GoalContract:
         data = _mapping(payload, "GoalContract")
         required = {
             "task_objective",
@@ -437,7 +438,7 @@ class GoalContract:
         return _canonical_json(self.to_dict())
 
     @classmethod
-    def from_json(cls, payload: str) -> "GoalContract":
+    def from_json(cls, payload: str) -> GoalContract:
         try:
             decoded = json.loads(payload)
         except (TypeError, json.JSONDecodeError) as exc:

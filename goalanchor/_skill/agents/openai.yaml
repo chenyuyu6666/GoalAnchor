@@ -1,0 +1,3 @@
+interface:
+  display_name: "GoalAnchor"
+  short_description: "Anchor goals before verification or execution"
