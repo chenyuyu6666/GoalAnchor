@@ -9,7 +9,7 @@ It blocks four recurring failure modes — goal drift, error accumulation, fake 
 
 | | |
 |---|---|
-| Current version | [`v0.5.1`](CHANGELOG.md) |
+| Current version | [`v0.6.0`](CHANGELOG.md) |
 | Requires | Python 3.11+ (**zero third-party runtime dependencies**; CI runs 3.11/3.12/3.13) |
 | Distribution | A standard `SKILL.md`, a Python contract library, and a CLI |
 | Supported hosts | Codex, Claude Code, DSH, Zcode, Pi, Cursor, Gemini CLI, OpenCode, and more |
