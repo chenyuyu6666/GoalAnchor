@@ -1,13 +1,13 @@
 ---
-name: plan-audit
+name: goalanchor
 description: >-
-  Gate a formed external plan, patch, or agent conclusion before Codex investigates
-  or executes it. Also use when the user explicitly authorizes Autonomous Closure or
+  GoalAnchor's portable guard for a formed external plan, patch, or agent conclusion before investigation
+  or execution. Also use when the user explicitly authorizes Autonomous Closure or
   end-to-end autonomous convergence. Do not use for ordinary tasks without either
   condition.
 ---
 
-# Plan Audit
+# GoalAnchor
 
 Use `PLAN -> VERIFY -> EXECUTE` when an external proposal may be adopted, the user
 requests an audit, or the user explicitly enables Autonomous Closure. Ordinary
@@ -62,7 +62,7 @@ exactly and in this order; do not replace them with synonyms.
 - `Q5 Structure`: no clear over-design, duplicate responsibility, implicit coupling,
   public-path hack, or needless regression surface.
 
-Five `【是】`: `✅ PLAN AUDIT PASS`. Otherwise `❌ PLAN AUDIT FAIL`, name failures, give
+Five `【是】`: `✅ GOALANCHOR PASS`. Otherwise `❌ GOALANCHOR FAIL`, name failures, give
 the smallest repair, print `STOP`, and do not execute. In ordinary mode this stops the
 current plan. In Autonomous Closure, it stops execution of the failed plan but permits
 an autonomous minimal revision and a return here. PASS permits verification only; it is
@@ -134,7 +134,7 @@ Return to VERIFY, inspect the underlying source/log/config/runtime evidence, and
 decision there. Do not let the recheck create a patch, architecture, or investigation tree.
 
 Success: `✅ VALIDATION PASS`. Refutation: `❌ STAGE 2 VALIDATION FAIL`, never
-`PLAN AUDIT FAIL`; PLAN already passed. A changed plan returns to PLAN.
+`GOALANCHOR FAIL`; PLAN already passed. A changed plan returns to PLAN.
 
 ## EXECUTE
 

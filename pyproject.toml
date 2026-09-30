@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "goalanchor"
+dynamic = ["version"]
+description = "目标锚定与可信收敛框架"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "陈煜宇", email = "chenyuyu6666@gmail.com"}]
+dependencies = []
+
+[project.scripts]
+goalanchor = "goalanchor.compat:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "goalanchor.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["goalanchor*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

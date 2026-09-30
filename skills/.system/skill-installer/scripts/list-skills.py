@@ -58,7 +58,13 @@ def _list_skills(repo: str, path: str, ref: str) -> list[str]:
                 f"https://github.com/{repo}/tree/{ref}/{path}"
             ) from exc
         raise ListError(f"Failed to fetch skills: HTTP {exc.code}") from exc
-    data = json.loads(payload.decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError) as exc:
+        reason = getattr(exc, "reason", exc)
+        raise ListError(f"Failed to fetch skills: {reason}") from exc
+    try:
+        data = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ListError("Unexpected non-JSON skills listing response.") from exc
     if not isinstance(data, list):
         raise ListError("Unexpected skills listing response.")
     skills = [item["name"] for item in data if item.get("type") == "dir"]

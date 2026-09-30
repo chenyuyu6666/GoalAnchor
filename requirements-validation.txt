@@ -1,0 +1,2 @@
+# YAML frontmatter and agent metadata validation
+PyYAML>=6.0,<7.0
