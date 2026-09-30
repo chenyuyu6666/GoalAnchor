@@ -55,6 +55,10 @@ exactly and in this order; do not replace them with synonyms.
   safe implementation or acceptance action. A diagnostic step is justified when its
   possible outcomes can materially change that next action; it is not justified merely
   because it is useful, confidence-improving, or completeness-improving.
+  For an investigation, diagnostic, or A/B step, the reason must name the blocking
+  uncertainty and explain how materially different outcomes change the next action.
+  "The scope is limited" or "the investigation is useful" is not sufficient evidence
+  of minimum necessity.
 - `Q5 Structure`: no clear over-design, duplicate responsibility, implicit coupling,
   public-path hack, or needless regression surface.
 
@@ -99,6 +103,11 @@ evidence conflicting with the working model, investigation expanding without shr
 the blocking uncertainty, or accumulating local explanations or patches to maintain the
 model.
 
+Do not trigger Premise Recheck merely because unresolved uncertainties exist, one
+validation check failed, or multiple design candidates are being compared. These
+conditions alone are not fixation signals. A bounded investigation may continue normally
+while its scope, decision relevance, and `EXIT_CRITERION` remain valid.
+
 If delegation is unavailable, perform the same bounded premise recheck explicitly in the
 current context and state that context isolation was unavailable. Do not present it as
 independent validation.
@@ -111,17 +120,18 @@ from the main agent.
 
 Ask only:
 
-1. Which upstream assumptions does the current path rely on without direct evidence?
+1. Which upstream assumptions or implementation framings does the current path rely on
+   without evidence or constraints showing that they are necessary?
 2. Which earliest unproven assumption, if false, would invalidate the most downstream
    reasoning?
 3. What is the lowest-cost check that could confirm or refute that assumption?
 4. If recent derived reasoning is discarded and only primary observations/direct evidence
    are kept, what should be verified first?
 
-The recheck may recommend only `CONTINUE_CURRENT_MODEL`, `BACKTRACK_TO: <assumption>`, or
-`RESET_PROBLEM_MODEL`. Its recommendation is not evidence. Return to VERIFY, inspect the
-underlying source/log/config/runtime evidence, and make the decision there. Do not let the
-recheck create a patch, architecture, or investigation tree.
+The recheck may recommend only `CONTINUE_CURRENT_MODEL`, `BACKTRACK_TO: <premise or
+implementation framing>`, or `RESET_PROBLEM_MODEL`. Its recommendation is not evidence.
+Return to VERIFY, inspect the underlying source/log/config/runtime evidence, and make the
+decision there. Do not let the recheck create a patch, architecture, or investigation tree.
 
 Success: `✅ VALIDATION PASS`. Refutation: `❌ STAGE 2 VALIDATION FAIL`, never
 `PLAN AUDIT FAIL`; PLAN already passed. A changed plan returns to PLAN.
