@@ -137,5 +137,14 @@ pwsh Doc\03_验证与测试\validate-multi-round.ps1 -Rounds 2
 
 ## 参与贡献
 
-短期分支 `feature/*`、`fix/*`、`chore/*`；日常提交 `type(scope): 说明`，仅发布聚合提交使用 `vX.Y.Z` + 同名标签。
-完整规范见 [CONTRIBUTING.md](CONTRIBUTING.md)，宿主适配见 [AGENT-COMPATIBILITY.md](AGENT-COMPATIBILITY.md)。
+开发、Git 提交与维护更新**必须遵循** [docs/开发Git提交与维护更新规范.md](docs/开发Git提交与维护更新规范.md)，要点：
+
+- **分支**：从最新 `master` 创建短期分支（`feature/`、`fix/`、`refactor/`、`docs/`、`test/`、`chore/`、`hotfix/`），不直接在稳定分支开发；
+- **提交**：日常提交 `type(scope): 说明`（feat / fix / docs / test / refactor / chore）；涉及逻辑的提交正文包含影响范围、关键决策、验证结果与剩余风险；
+- **提交拓扑**：历史保持「工作提交 → 合并提交 → `vX.Y.Z` 发布聚合提交 → 同名标签」的固定结构；已发布的提交、合并节点和标签不移动、不复用、不删除；
+- **版本**：版本号只在发布聚合提交更新；发布后同步 CHANGELOG、README、CONTRIBUTING 的版本引用；
+- **验证**：提交前至少通过 `pytest -q`、`ruff check .`、`git diff --check`，按变更范围追加专项验证并在正文记录实际命令与结果；
+- **回滚**：未发布问题用反向/修复提交恢复；已发布版本发新补丁版本，不移动旧标签；
+- **AI 协作**：AI 的开发、提交与推送操作边界同样在该规范中约定（远端写操作需明确授权），交付须按固定格式报告。
+
+仓库级细则以 [CONTRIBUTING.md](CONTRIBUTING.md)、[CHANGELOG.md](CHANGELOG.md) 与 `pyproject.toml` 为准，与上述规范冲突时先修正规范来源；宿主适配见 [AGENT-COMPATIBILITY.md](AGENT-COMPATIBILITY.md)。

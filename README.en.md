@@ -137,5 +137,14 @@ rebuild it from the repo root with `graphify update .` after code changes.
 
 ## Contributing
 
-Use short-lived `feature/*`, `fix/*`, or `chore/*` branches; daily commits use `type(scope): description`, and only the release aggregate commit uses `vX.Y.Z` with a matching tag.
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guidelines and [AGENT-COMPATIBILITY.md](AGENT-COMPATIBILITY.md) for host adaptation.
+Development, Git commits, and maintenance updates **must follow** [docs/开发Git提交与维护更新规范.md](docs/开发Git提交与维护更新规范.md) (the development/commit/maintenance specification). Key points:
+
+- **Branches**: create short-lived branches (`feature/`, `fix/`, `refactor/`, `docs/`, `test/`, `chore/`, `hotfix/`) from the latest `master`; never develop on the stable branch directly;
+- **Commits**: daily commits use `type(scope): description` (feat / fix / docs / test / refactor / chore); commits touching logic include scope, key decisions, verification results, and remaining risks in the body;
+- **Commit topology**: history keeps the fixed structure "work commits → merge commit → `vX.Y.Z` release aggregate commit → matching tag"; published commits, merge nodes, and tags are never moved, reused, or deleted;
+- **Versions**: the version number changes only in the release aggregate commit; after a release, sync CHANGELOG, README, and CONTRIBUTING references;
+- **Verification**: at minimum `pytest -q`, `ruff check .`, and `git diff --check` before every commit, plus scoped checks recorded with real commands and results in the body;
+- **Rollback**: unreleased issues revert via reverse/fix commits; released versions get a new patch version — old tags never move;
+- **AI collaboration**: the boundaries for AI-driven development, commits, and pushes (remote writes require explicit authorization) and the delivery-report format are defined in the same specification.
+
+Repository-level details live in [CONTRIBUTING.md](CONTRIBUTING.md), [CHANGELOG.md](CHANGELOG.md), and `pyproject.toml`; when they conflict with the specification, fix the source of truth first. Host adaptation: [AGENT-COMPATIBILITY.md](AGENT-COMPATIBILITY.md).
