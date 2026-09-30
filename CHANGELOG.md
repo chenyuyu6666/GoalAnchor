@@ -32,8 +32,6 @@
 - 新增 `examples/multi-platform-review/`（离线 echo Agent、离线/真实平台配置）与平台实测记录（claude 2.1.272 / codex-cli 0.154.0 真机全链路）。
 - `agent_runtime` Meta 回调签名新增本轮 Reviewer 结果参数（破坏性变更，调用点已同步）。
 
-运行时版本仍保持 `0.3.4`，待发布聚合时切换为 `0.4.0`。
-
 - 阶段 2 已实现：增加 Q1–Q5、VERIFY、EXECUTE 和 PLAN_CHANGED 的纯 Python 闸门及 CLI。
 - 阶段 3 已实现：增加 EvidenceRecord、ExperimentPlan、结论强度、观察窗口、混杂变量和设计必要性校验。
 - 阶段 4 已实现：增加 ArtifactManifest、六节点 ProvenanceChain、闭环等级和安全降级校验。
@@ -117,7 +115,9 @@
 使用 `vX.Y.Z 中文变更说明`，并与对应版本标签保持一致。历史提交不会被删除或回写，
 版本边界以标签和本文件为准。
 
-[未发布]: https://gitee.com/chen-yuyu6666/goal-anchor/compare/v0.3.4...master
+[未发布]: https://gitee.com/chen-yuyu6666/goal-anchor/compare/v0.4.1...master
+[0.4.1]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.4.1
+[0.4.0]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.4.0
 [0.3.4]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.3.4
 [0.3.3]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.3.3
 [0.3.1]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.3.1

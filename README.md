@@ -37,7 +37,7 @@ GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Eng
 
 CLI 入口：`install` / `check`（Skill 安装）、`gate --phase …`（确定性闸门）、`review-cycle`（别名 `review-run`，完整调度）、`review-prompt`（逐角色提示词渲染）、`platforms`（环境自检）。
 
-`v0.4.0` 尚未发布；持续开发任务与每次改动记录见 `D:/Project/GoalAnchor/Doc/GoalAnchor-开发任务与变更记录.md`。
+当前版本为 `v0.4.1`（v0.4.0 六阶段路线与 v0.4.1 门控边界澄清均已发布）；持续开发任务与每次改动记录见 `D:/Project/GoalAnchor/Doc/GoalAnchor-开发任务与变更记录.md`。
 
 ## 多 Agent 兼容
 
