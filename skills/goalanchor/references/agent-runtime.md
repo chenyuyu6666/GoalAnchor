@@ -86,6 +86,7 @@ argv override):
 
 ```json
 {
+  "model": "<main agent's current model>",
   "platforms": {
     "codex": {"timeout_seconds": 600}
   },
@@ -102,12 +103,14 @@ argv override):
 Run it with:
 
 ```text
-python -m goalanchor review-cycle --request review-request.json --config agent-config.json
+python -m goalanchor review-cycle --request review-request.json --config agent-config.json --model <main-model>
 ```
 
 The request contains `context`, `risk`, and optional `max_rounds`. The command
 prints the aggregated `ReviewServiceResult` plus an `agent_bindings` audit
-array (agent_id → profile → platform → round → attempts). Risk
+array (agent_id → profile → platform → model → round → attempts) and a
+`usage_summary` carrying `models_used` together with the declared
+`main_model`. Risk
 LOW/MEDIUM/HIGH/CRITICAL requires 1/2/2/3 distinct `reviewer` profiles — LOW
 is never review-free, and every non-LOW risk gets at least two independent
 reviewers. A runnable offline example lives in
@@ -184,6 +187,43 @@ The request contains `context`, `risk`, and optional `max_rounds`. The bridge
 receives the exact same `ReviewContext` fingerprint for every reviewer. A
 dispute packet is included in the next round without changing the original
 context.
+
+## Model consistency
+
+Sub-agents must run on the same model the main agent is running at spawn
+time. Some platforms silently fall back to their own default model otherwise,
+which breaks the review contract.
+
+- Declare the main agent's CURRENT model under the top-level `"model"` key
+  (or pass `review-cycle --model <main-model>`, which overrides the config).
+  Re-check the model at every dispatch: when the main agent switches models
+  mid-session, the next dispatch — and every remaining role in the current
+  cycle — must carry the new model.
+- Effective model precedence: profile `model` > `platforms.<name>.model` >
+  top-level `model`. Built-in platforms receive the model through their own
+  flag (`codex -m`, `claude --model`, `gemini -m`, `opencode -m`); custom
+  platforms either place one `{model}` placeholder in their `argv` or rely on
+  a `-m <model>` insertion before the prompt-spec section (set
+  `platforms.<name>.model_flag` to override the flag).
+- Divergence is rejected before any launch: when a profile resolves to a
+  model different from the main model, `review-cycle` (and `--dry-run`)
+  fails at config load, before any agent is invoked. To run a different
+  model on purpose, stop before dispatch, ask the user (keep the main model,
+  or pick another for the sub-agents), and record the answer in the config:
+  `"model_divergence": {"confirmed_by": "<user>", "reason": "<why>"}`. The
+  confirmation is echoed into the run output for audit.
+- Unpinned runs are loud, never silent: a platform dispatch without a
+  declared model prints a stderr warning and reports `usage_summary.main_model`
+  as `null`; a config that hardcodes the platform's model flag in `argv`
+  (which would let the hardcoded value win over the injected one) is rejected
+  in favor of a `{model}` placeholder; and a declared model on a
+  stdio-bridge configuration is rejected outright, because the bridge
+  protocol carries no model field and could never honor it.
+- Every `agent_bindings` entry records the effective `model` (`null` for
+  stdio-bridge profiles, which manage their own model), and `usage_summary`
+  lists `models_used`; use them to verify the pin held for the whole cycle.
+- `probe_platform` accepts the same `model` argument, so availability probes
+  exercise the identical pinned-model invocation.
 
 ## Host integration
 

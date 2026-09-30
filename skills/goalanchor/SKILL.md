@@ -114,20 +114,28 @@ For an audit that requires independent review, perform this dispatch sequence:
 1. Discover the host's enabled Agent profiles and their capabilities.
 2. Bind distinct profiles to `reviewer-1`, `reviewer-2` (and more when risk requires it),
    `arbiter`, and `meta_reviewer`; do not silently reuse one profile for independent roles.
-3. Preferred path - keep the review visible: render each role prompt with
+3. Pin the model: spawn every subagent on the same model the main agent is running right
+   now, and re-check the current model at every round (dispute rounds included); when it
+   changed, spawn all remaining roles on the new model. A different subagent model requires
+   stopping before any spawn and asking the user (keep the main model, or pick another for
+   the subagents) and recording that answer. In the headless path pass
+   `review-cycle --model <main-model>` or set the config's top-level `"model"`; a profile
+   pinning a different model without a user-confirmed `model_divergence` is rejected
+   before any launch.
+4. Preferred path - keep the review visible: render each role prompt with
    `python -m goalanchor review-prompt --request <request.json> --role <role>
    --agent-id <id> --round 1` and spawn the host's OWN subagent mechanism with those
    prompts, reviewers concurrently. Host-native sessions keep every subagent
    conversation visible in the host UI; the JSON replies stay inspectable.
-4. Collect the JSON replies and validate the round deterministically with
+5. Collect the JSON replies and validate the round deterministically with
    `python -m goalanchor gate --phase review-cycle --record <cycle.json>`; dispute
    rounds re-render the prompts with `--dispute <packet.json>` and re-spawn the same
    roles, still bounded by `max_rounds`.
-5. Only when the host cannot spawn subagents but platform CLIs are reachable, fall back
+6. Only when the host cannot spawn subagents but platform CLIs are reachable, fall back
    to headless dispatch: `python -m goalanchor review-cycle --request <request.json>
-   --config <config.json>`, and verify the returned `agent_bindings` audit array
-   (agent_id → profile → platform → round).
-6. If no independent dispatcher is available at all, report `delegation_unavailable` and
+   --config <config.json> --model <main-model>`, and verify the returned
+   `agent_bindings` audit array (agent_id → profile → platform → model → round).
+7. If no independent dispatcher is available at all, report `delegation_unavailable` and
    do not claim that a main-agent pass was an independent review.
 
 ### Optional Premise Recheck

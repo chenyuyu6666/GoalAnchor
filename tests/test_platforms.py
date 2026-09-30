@@ -21,6 +21,7 @@ from goalanchor.agent_runtime import (
 )
 from goalanchor.integration import ReviewFinding
 from goalanchor.platforms import (
+    PlatformAgentRouter,
     PlatformDispatchConfig,
     ProfileBinding,
     adapter_from_config,
@@ -1383,3 +1384,490 @@ class TestCliReviewCycle:
         err = capsys.readouterr().err
         assert exit_code == 2
         assert "does not match the schema" in err
+
+
+class TestModelConsistency:
+    """Sub-agents must run on the main agent's current model."""
+
+    @staticmethod
+    def _fake_subprocess(captured: list):
+        def fake(argv, *, input_text, timeout_seconds, env):
+            captured.append(tuple(argv))
+            prompt = input_text
+            if prompt is None:
+                prompt = argv[list(argv).index("-p") + 1] if "-p" in argv else argv[-1]
+            if not prompt.lstrip().startswith("{"):
+                agent_id = re.search(r'agent_id="([^"]+)"', prompt).group(1)
+                round_number = int(re.search(r"round (\d+)", prompt).group(1))
+                fingerprint = re.search(
+                    r'context_fingerprint="([0-9a-f]{64})"', prompt
+                ).group(1)
+                payload = {
+                    "reviewer_id": agent_id,
+                    "round_number": round_number,
+                    "verdict": "PASS",
+                    "findings": [],
+                    "isolated": True,
+                    "context_fingerprint": fingerprint,
+                }
+            else:
+                payload = json.loads(prompt)
+            return json.dumps(payload), ""
+
+        return fake
+
+    @staticmethod
+    def _dispatch_config_with_argv_log(tmp_path, log_path, **overrides):
+        """Dispatch config whose platform scripts log their argv to a file.
+
+        Each process writes its own ``<log_path>.<pid>`` so parallel
+        reviewers never interleave lines.
+        """
+
+        agent = _write_script(
+            tmp_path,
+            "agent_logged.py",
+            FAKE_AGENT.replace(
+                "import json, re, sys\n",
+                "import json, re, os, sys\n"
+                "_log = os.environ.get('GOALANCHOR_ARGV_LOG')\n"
+                "if _log:\n"
+                "    with open(f'{_log}.{os.getpid()}', 'a', encoding='utf-8') as _fh:\n"
+                "        _fh.write(json.dumps(sys.argv[1:]) + '\\n')\n",
+                1,
+            ),
+        )
+        config = _dispatch_config(tmp_path, **overrides)
+        for spec in config["platforms"].values():
+            spec["argv"] = [sys.executable, agent] + list(spec["argv"])[2:]
+            spec["env"] = {"GOALANCHOR_ARGV_LOG": str(log_path)}
+        return config
+
+    @staticmethod
+    def _read_argv_log(log_path) -> list:
+        lines: list = []
+        for fragment in sorted(log_path.parent.glob(log_path.name + ".*")):
+            lines.extend(
+                json.loads(line)
+                for line in fragment.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            )
+        return lines
+
+    @staticmethod
+    def _write_request(tmp_path, context) -> Path:
+        request_path = tmp_path / "request.json"
+        request_path.write_text(
+            json.dumps({"context": context.to_dict(), "risk": "HIGH", "max_rounds": 2}),
+            encoding="utf-8",
+        )
+        return request_path
+
+    def test_builtin_model_flags_injected(self, context, monkeypatch):
+        captured: list = []
+        monkeypatch.setattr(
+            "goalanchor.platforms._run_subprocess", self._fake_subprocess(captured)
+        )
+        expected = {
+            "codex": ("codex", "exec", "-m", "main-model", "-"),
+            "claude": ("claude", "--model", "main-model", "-p"),
+            "gemini": ("gemini", "-m", "main-model"),
+            "opencode": ("opencode", "run", "-m", "main-model"),
+        }
+        for name, argv in expected.items():
+            config = PlatformDispatchConfig.from_dict(
+                {
+                    "model": "main-model",
+                    "profiles": {"r": {"platform": name, "roles": ["reviewer"]}},
+                }
+            )
+            request = AgentRequest(
+                role=AgentRole.REVIEWER,
+                agent_id="reviewer-1",
+                round_number=1,
+                risk=ReviewRisk.LOW,
+                context=context,
+            )
+            PlatformAgentRouter(config).dispatch("r", request)
+            assert captured[-1] == argv, name
+
+    def test_top_level_model_reaches_subprocess_and_audit(
+        self, tmp_path, context, capsys
+    ):
+        from goalanchor import compat
+
+        log_path = tmp_path / "argv.log"
+        request_path = self._write_request(tmp_path, context)
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(
+                self._dispatch_config_with_argv_log(tmp_path, log_path, model="main-model")
+            ),
+            encoding="utf-8",
+        )
+        exit_code = compat.main(
+            [
+                "review-cycle",
+                "--request",
+                str(request_path),
+                "--config",
+                str(config_path),
+            ]
+        )
+        payload = json.loads(capsys.readouterr().out)
+        assert exit_code == 0 and payload["outcome"] == "PASS"
+        bindings = payload["agent_bindings"]
+        assert {item["model"] for item in bindings} == {"main-model"}
+        assert payload["usage_summary"]["models_used"] == ["main-model"]
+        lines = self._read_argv_log(log_path)
+        assert lines
+        for argv in lines:
+            flag_index = argv.index("-m")
+            assert argv[flag_index + 1] == "main-model"
+            # the prompt stays last and intact after the flag insertion
+            assert argv.index("-p") == flag_index + 2
+
+    def test_divergent_profile_model_rejected_before_any_launch(
+        self, tmp_path, context, capsys, monkeypatch
+    ):
+        from goalanchor import compat
+
+        captured: list = []
+        monkeypatch.setattr(
+            "goalanchor.platforms._run_subprocess", self._fake_subprocess(captured)
+        )
+        config = _dispatch_config(tmp_path, model="main-model")
+        config["profiles"]["volt"]["model"] = "other-model"
+        request_path = tmp_path / "request.json"
+        config_path = tmp_path / "config.json"
+        request_path.write_text(
+            json.dumps({"context": context.to_dict(), "risk": "HIGH"}),
+            encoding="utf-8",
+        )
+        config_path.write_text(json.dumps(config), encoding="utf-8")
+        exit_code = compat.main(
+            [
+                "review-cycle",
+                "--request",
+                str(request_path),
+                "--config",
+                str(config_path),
+            ]
+        )
+        err = capsys.readouterr().err
+        assert exit_code == 2
+        assert "model_divergence" in err
+        assert "other-model" in err and "main-model" in err
+        assert captured == []
+
+    def test_divergent_model_runs_only_with_user_confirmation(
+        self, tmp_path, context, capsys
+    ):
+        from goalanchor import compat
+
+        log_path = tmp_path / "argv.log"
+        config = self._dispatch_config_with_argv_log(tmp_path, log_path, model="main-model")
+        config["profiles"]["volt"]["model"] = "other-model"
+        config["model_divergence"] = {
+            "confirmed_by": "user",
+            "reason": "用户确认允许该评审使用独立模型",
+        }
+        request_path = self._write_request(tmp_path, context)
+        config_path = tmp_path / "config.json"
+        config_path.write_text(json.dumps(config), encoding="utf-8")
+        exit_code = compat.main(
+            [
+                "review-cycle",
+                "--request",
+                str(request_path),
+                "--config",
+                str(config_path),
+            ]
+        )
+        payload = json.loads(capsys.readouterr().out)
+        assert exit_code == 0 and payload["outcome"] == "PASS"
+        assert payload["model_divergence"] == {
+            "confirmed_by": "user",
+            "reason": "用户确认允许该评审使用独立模型",
+        }
+        by_agent = {item["agent_id"]: item["model"] for item in payload["agent_bindings"]}
+        assert by_agent["reviewer-2"] == "other-model"
+        assert by_agent["reviewer-1"] == "main-model"
+        assert sorted(payload["usage_summary"]["models_used"]) == [
+            "main-model",
+            "other-model",
+        ]
+        # the confirmed divergent profile receives its own model flag; the
+        # rest stay pinned to the main model
+        lines = self._read_argv_log(log_path)
+        by_mode = {argv[0]: argv[argv.index("-m") + 1] for argv in lines}
+        assert by_mode["noisy"] == "other-model"
+        assert set(by_mode.values()) == {"main-model", "other-model"}
+
+    def test_cli_model_flag_overrides_config(self, tmp_path, context, capsys):
+        from goalanchor import compat
+
+        request_path = tmp_path / "request.json"
+        config_path = tmp_path / "config.json"
+        request_path.write_text(
+            json.dumps({"context": context.to_dict(), "risk": "HIGH", "max_rounds": 2}),
+            encoding="utf-8",
+        )
+        config_path.write_text(
+            json.dumps(_dispatch_config(tmp_path, model="stale-model")),
+            encoding="utf-8",
+        )
+        exit_code = compat.main(
+            [
+                "review-cycle",
+                "--request",
+                str(request_path),
+                "--config",
+                str(config_path),
+                "--model",
+                "fresh-main-model",
+            ]
+        )
+        payload = json.loads(capsys.readouterr().out)
+        assert exit_code == 0 and payload["outcome"] == "PASS"
+        assert payload["usage_summary"]["models_used"] == ["fresh-main-model"]
+
+    def test_custom_platform_model_placeholder_and_missing_model_error(
+        self, context, monkeypatch
+    ):
+        captured: list = []
+        monkeypatch.setattr(
+            "goalanchor.platforms._run_subprocess", self._fake_subprocess(captured)
+        )
+        config = PlatformDispatchConfig.from_dict(
+            {
+                "profiles": {
+                    "r": {"platform": "custom", "roles": ["reviewer"]},
+                },
+                "platforms": {
+                    "custom": {"argv": ["tool", "{model}", "--run"]},
+                },
+            }
+        )
+        request = AgentRequest(
+            role=AgentRole.REVIEWER,
+            agent_id="reviewer-1",
+            round_number=1,
+            risk=ReviewRisk.LOW,
+            context=context,
+        )
+        with pytest.raises(AgentRuntimeError, match="no model is configured"):
+            PlatformAgentRouter(config).dispatch("r", request)
+        pinned = PlatformDispatchConfig.from_dict(
+            {
+                "model": "main-model",
+                "profiles": {"r": {"platform": "custom", "roles": ["reviewer"]}},
+                "platforms": {"custom": {"argv": ["tool", "{model}", "--run"]}},
+            }
+        )
+        PlatformAgentRouter(pinned).dispatch("r", request)
+        assert captured[-1] == ("tool", "main-model", "--run")
+
+    def test_platform_model_precedence(self, context, monkeypatch):
+        captured: list = []
+        monkeypatch.setattr(
+            "goalanchor.platforms._run_subprocess", self._fake_subprocess(captured)
+        )
+        config = PlatformDispatchConfig.from_dict(
+            {
+                "profiles": {
+                    "plain": {"platform": "custom", "roles": ["reviewer"]},
+                    "override": {"platform": "custom", "roles": ["reviewer"], "model": "profile-model"},
+                },
+                "platforms": {"custom": {"argv": ["tool", "{model}"], "model": "platform-model"}},
+            }
+        )
+        request = AgentRequest(
+            role=AgentRole.REVIEWER,
+            agent_id="reviewer-1",
+            round_number=1,
+            risk=ReviewRisk.LOW,
+            context=context,
+        )
+        PlatformAgentRouter(config).dispatch("plain", request)
+        assert captured[-1] == ("tool", "platform-model")
+        PlatformAgentRouter(config).dispatch("override", request)
+        assert captured[-1] == ("tool", "profile-model")
+
+    def test_dry_run_validates_model_consistency_and_reports_main_model(
+        self, tmp_path, context, capsys
+    ):
+        from goalanchor import compat
+
+        request_path = tmp_path / "request.json"
+        request_path.write_text(
+            json.dumps({"context": context.to_dict(), "risk": "HIGH"}),
+            encoding="utf-8",
+        )
+        divergent = _dispatch_config(tmp_path, model="main-model")
+        divergent["profiles"]["volt"]["model"] = "other-model"
+        config_path = tmp_path / "divergent.json"
+        config_path.write_text(json.dumps(divergent), encoding="utf-8")
+        exit_code = compat.main(
+            [
+                "review-cycle",
+                "--request",
+                str(request_path),
+                "--config",
+                str(config_path),
+                "--dry-run",
+            ]
+        )
+        err = capsys.readouterr().err
+        assert exit_code == 2
+        assert "model_divergence" in err
+        ok_path = tmp_path / "ok.json"
+        ok_path.write_text(
+            json.dumps(_dispatch_config(tmp_path, model="main-model")), encoding="utf-8"
+        )
+        exit_code = compat.main(
+            [
+                "review-cycle",
+                "--request",
+                str(request_path),
+                "--config",
+                str(ok_path),
+                "--dry-run",
+            ]
+        )
+        payload = json.loads(capsys.readouterr().out)
+        assert exit_code == 0
+        assert payload["main_model"] == "main-model"
+        assert payload["model_divergence"] is None
+
+    def test_hardcoded_model_flag_in_argv_is_rejected(self, context):
+        config = PlatformDispatchConfig.from_dict(
+            {
+                "model": "main-model",
+                "profiles": {"r": {"platform": "custom", "roles": ["reviewer"]}},
+                "platforms": {"custom": {"argv": ["tool", "-m", "preset", "-p", "{prompt}"]}},
+            }
+        )
+        request = AgentRequest(
+            role=AgentRole.REVIEWER,
+            agent_id="reviewer-1",
+            round_number=1,
+            risk=ReviewRisk.LOW,
+            context=context,
+        )
+        with pytest.raises(AgentRuntimeError, match=r"\{model\}"):
+            PlatformAgentRouter(config).dispatch("r", request)
+
+    def test_custom_model_flag_override(self, context, monkeypatch):
+        captured: list = []
+        monkeypatch.setattr(
+            "goalanchor.platforms._run_subprocess", self._fake_subprocess(captured)
+        )
+        config = PlatformDispatchConfig.from_dict(
+            {
+                "model": "main-model",
+                "profiles": {"r": {"platform": "custom", "roles": ["reviewer"]}},
+                "platforms": {"custom": {"argv": ["tool", "-p", "{prompt}"], "model_flag": "--model"}},
+            }
+        )
+        request = AgentRequest(
+            role=AgentRole.REVIEWER,
+            agent_id="reviewer-1",
+            round_number=1,
+            risk=ReviewRisk.LOW,
+            context=context,
+        )
+        PlatformAgentRouter(config).dispatch("r", request)
+        # argv mode: the model flag precedes the prompt slot, prompt stays last
+        assert captured[-1][:4] == ("tool", "--model", "main-model", "-p")
+        assert "GoalAnchor reviewer review" in captured[-1][4]
+
+    def test_legacy_bridge_config_rejects_declared_model(self, tmp_path, context, capsys):
+        from goalanchor import compat
+
+        with pytest.raises(AgentRuntimeError, match="stdio bridge configuration"):
+            adapter_from_config(
+                {
+                    "profiles": {
+                        "r": {"roles": ["reviewer"], "command": ["bridge"], "model": "m"}
+                    }
+                }
+            )
+        request_path = tmp_path / "request.json"
+        config_path = tmp_path / "config.json"
+        request_path.write_text(
+            json.dumps({"context": context.to_dict(), "risk": "LOW"}),
+            encoding="utf-8",
+        )
+        config_path.write_text(
+            json.dumps(
+                {
+                    "model": "main-model",
+                    "profiles": {"r": {"roles": ["reviewer"], "command": ["bridge"]}},
+                }
+            ),
+            encoding="utf-8",
+        )
+        exit_code = compat.main(
+            [
+                "review-cycle",
+                "--request",
+                str(request_path),
+                "--config",
+                str(config_path),
+            ]
+        )
+        err = capsys.readouterr().err
+        assert exit_code == 2
+        assert "stdio bridge configuration" in err
+
+    def test_unpinned_platform_dispatch_warns_and_audits_null(
+        self, tmp_path, context, capsys
+    ):
+        from goalanchor import compat
+
+        request_path = self._write_request(tmp_path, context)
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(_dispatch_config(tmp_path)), encoding="utf-8"
+        )
+        exit_code = compat.main(
+            [
+                "review-cycle",
+                "--request",
+                str(request_path),
+                "--config",
+                str(config_path),
+            ]
+        )
+        captured = capsys.readouterr()
+        payload = json.loads(captured.out)
+        assert exit_code == 0 and payload["outcome"] == "PASS"
+        assert "no sub-agent model pinned" in captured.err
+        assert payload["usage_summary"]["main_model"] is None
+        assert payload["usage_summary"]["models_used"] == []
+
+    def test_pinned_dispatch_warns_nothing_and_audits_main_model(
+        self, tmp_path, context, capsys
+    ):
+        from goalanchor import compat
+
+        request_path = self._write_request(tmp_path, context)
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(_dispatch_config(tmp_path, model="main-model")), encoding="utf-8"
+        )
+        exit_code = compat.main(
+            [
+                "review-cycle",
+                "--request",
+                str(request_path),
+                "--config",
+                str(config_path),
+            ]
+        )
+        captured = capsys.readouterr()
+        payload = json.loads(captured.out)
+        assert exit_code == 0
+        assert "no sub-agent model pinned" not in captured.err
+        assert payload["usage_summary"]["main_model"] == "main-model"
