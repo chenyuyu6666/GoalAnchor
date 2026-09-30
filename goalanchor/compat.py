@@ -606,25 +606,57 @@ def _require_risk_declaration(data: Mapping[str, object]) -> dict[str, object] |
     return {"declared_by": declared_by.strip(), "reason": reason.strip()}
 
 
-def _declared_main_model(adapter) -> str | None:
-    """The pinned main model of a platform dispatch, warning when missing.
+def _model_audit_warnings(
+    adapter, config: Mapping[str, object]
+) -> tuple[list[dict[str, str]], str | None]:
+    """Collect machine-readable model-consistency warnings for CLI output.
 
-    Returns ``None`` for stdio-bridge adapters (the bridge host manages its
-    own sub-agent model, so there is nothing to warn about).
+    Platform dispatches without a declared main model get ``MODEL_NOT_PINNED``
+    (the stderr text stays for humans); a user-approved model divergence gets
+    ``MODEL_DIVERGENCE_APPROVED`` so pipelines can see the exception without
+    knowing the config key. Legacy stdio-bridge adapters manage their own
+    model and produce no warnings by design.
+
+    Returns the warnings list and the declared main model (``None`` when the
+    adapter does not declare one).
     """
 
+    warnings: list[dict[str, str]] = []
     declared = getattr(adapter, "declared_main_model", None)
-    if not callable(declared):
-        return None
-    model = declared()
-    if model is None:
-        print(
-            "goalanchor: warning: no sub-agent model pinned; pass --model <main-model> "
-            "or set the config's top-level 'model' so sub-agents cannot fall back to "
-            "a platform default model",
-            file=sys.stderr,
-        )
-    return model
+    model = None
+    if callable(declared):
+        model = declared()
+        if model is None:
+            print(
+                "goalanchor: warning: no sub-agent model pinned; pass --model <main-model> "
+                "or set the config's top-level 'model' so sub-agents cannot fall back to "
+                "a platform default model",
+                file=sys.stderr,
+            )
+            warnings.append(
+                {
+                    "code": "MODEL_NOT_PINNED",
+                    "message": (
+                        "no sub-agent model is pinned; sub-agents may fall back to the "
+                        "platform default model. Pass --model <main-model> or set the "
+                        "config's top-level 'model'."
+                    ),
+                }
+            )
+        divergence = config.get("model_divergence")
+        if isinstance(divergence, Mapping) and divergence:
+            warnings.append(
+                {
+                    "code": "MODEL_DIVERGENCE_APPROVED",
+                    "message": (
+                        "a user-approved model divergence is recorded; sub-agents are "
+                        "intentionally allowed to run on models other than the main "
+                        "agent's current model."
+                    ),
+                    "confirmed_by": str(divergence.get("confirmed_by", "")),
+                }
+            )
+    return warnings, model
 
 
 def _run_external_review_cycle(
@@ -650,7 +682,7 @@ def _run_external_review_cycle(
         raise ValueError(f"review-cycle request is missing required field: {exc.args[0]}") from exc
     risk_declaration = _require_risk_declaration(request)
     adapter = adapter_from_config(config)
-    declared_model = _declared_main_model(adapter)
+    warnings, declared_model = _model_audit_warnings(adapter, config)
     result = run_review_cycle_with_adapter(
         context,
         risk,
@@ -661,6 +693,7 @@ def _run_external_review_cycle(
     payload = result.to_dict()
     if risk_declaration is not None:
         payload["risk_declaration"] = risk_declaration
+    payload["warnings"] = warnings
     model_divergence = config.get("model_divergence")
     if isinstance(model_divergence, Mapping) and model_divergence:
         payload["model_divergence"] = dict(model_divergence)
@@ -756,7 +789,7 @@ def _dry_run_review_cycle(
         config = {**config, "model": model}
     # Fail fast on dispatch/model-consistency errors before any agent launch.
     adapter = adapter_from_config(config)
-    _declared_main_model(adapter)
+    warnings, _ = _model_audit_warnings(adapter, config)
     try:
         context = ReviewContext.from_dict(request["context"])
         risk = ReviewRisk(request["risk"])
@@ -779,6 +812,7 @@ def _dry_run_review_cycle(
         "risk": risk.value,
         "required_reviewers": required,
         "main_model": config.get("model"),
+        "warnings": warnings,
         "model_divergence": (
             dict(config["model_divergence"])
             if isinstance(config.get("model_divergence"), Mapping)

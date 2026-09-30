@@ -219,9 +219,17 @@ which breaks the review contract.
   in favor of a `{model}` placeholder; and a declared model on a
   stdio-bridge configuration is rejected outright, because the bridge
   protocol carries no model field and could never honor it.
+- Machine-readable warnings channel: `review-cycle` and `review-cycle
+  --dry-run` outputs carry a top-level `warnings` array (possibly empty, so
+  the shape stays deterministic) next to the human-readable stderr text.
+  `MODEL_NOT_PINNED` marks an unpinned platform dispatch;
+  `MODEL_DIVERGENCE_APPROVED` marks a config carrying a user-approved
+  `model_divergence` (the entry echoes `confirmed_by`). Stdio-bridge runs
+  emit no warnings by design.
 - Every `agent_bindings` entry records the effective `model` (`null` for
   stdio-bridge profiles, which manage their own model), and `usage_summary`
-  lists `models_used`; use them to verify the pin held for the whole cycle.
+  lists `models_used`; use them together with `warnings` to verify the pin
+  held for the whole cycle.
 - `probe_platform` accepts the same `model` argument, so availability probes
   exercise the identical pinned-model invocation.
 
