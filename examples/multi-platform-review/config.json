@@ -1,0 +1,43 @@
+{
+  "platforms": {
+    "codex": {
+      "argv": ["python", "examples/multi-platform-review/echo-agent.py", "clean", "-p", "{prompt}"],
+      "timeout_seconds": 300
+    },
+    "claude": {
+      "argv": ["python", "examples/multi-platform-review/echo-agent.py", "claude-like", "-p", "{prompt}"]
+    },
+    "gemini": {
+      "argv": ["python", "examples/multi-platform-review/echo-agent.py", "prose-like", "-p", "{prompt}"]
+    }
+  },
+  "profiles": {
+    "Euclid": {
+      "platform": "claude",
+      "roles": ["reviewer"],
+      "display_name": "Euclid",
+      "capabilities": ["independent-analysis"]
+    },
+    "Fermat": {
+      "platform": "gemini",
+      "roles": ["reviewer"],
+      "display_name": "Fermat"
+    },
+    "Gauss": {
+      "platform": "codex",
+      "roles": ["arbiter"]
+    },
+    "Noether": {
+      "platform": "codex",
+      "roles": ["meta_reviewer"]
+    }
+  },
+  "role_bindings": {
+    "arbiter": "Gauss",
+    "meta_reviewer": "Noether"
+  },
+  "capabilities": {
+    "supports_parallel": true,
+    "max_concurrency": 4
+  }
+}

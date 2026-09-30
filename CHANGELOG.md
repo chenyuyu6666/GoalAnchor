@@ -5,6 +5,28 @@
 
 ## [未发布]
 
+### v0.4.0 目标内容
+
+- 增加生命周期状态 `HUMAN_DECISION_REQUIRED` 和 `STOPPED`。
+- 增加五 Gate 兼容映射、DecisionRecord、轻量 Authorization 和 Verification 闭环。
+- 增加有限 Multi-Agent Review 协议：统一上下文、Reviewer、Arbiter、DisputePacket、Meta Review、DecisionReport 和 JSON CLI 入口。
+- 增加平台无关的命名 Agent Profile/Dispatcher、Reviewer 并行调度及 JSON-over-stdio 桥接协议。
+- 增加 Phase 6 固定 Benchmark 与开发者最小示例。
+
+### 执行层与治理收紧（2026-09-20）
+
+- 多平台 Agent 调度适配：内置 `codex`/`claude`/`gemini`/`opencode`（提示词走 stdin，规避 Windows `.cmd` 转义与 argv 上限），codex 回显解析、平台 env/超时/重试（含空 stdout）、`platforms --probe` 环境与认证自检。
+- 宿主可见调度路径：`review-prompt` 逐角色渲染 + 宿主原生子 Agent 拉起 + `gate --phase review-cycle` 确定性校验；无头 `review-cycle`（别名 `review-run`）降为备用。
+- 多审强制策略：风险深度 `LOW=1 / MEDIUM=2 / HIGH=2 / CRITICAL=3`，LOW 不再免审。
+- Meta Reviewer 可核验：请求携带本轮 Reviewer 原始结果；HIGH/CRITICAL 下 Meta 裁决与 Arbiter 裁决不一致视为争议。
+- CRITICAL 强制 `risk_declaration` 签署（`declared_by`/`reason`），缺失即拒绝且不调用任何 Agent。
+- 审计与对账：`agent_bindings`（profile/平台/轮次/attempts/`tokens_used`）并入 `ReviewServiceResult`，`review-cycle` 输出 `usage_summary`；瞬时失败可配 `retries` 重试。
+- 提示词支持 `"language": "zh"` 中文模板（schema 与精确取值行保持机器锚定）；`review-cycle --dry-run` 预览。
+- 新增 `examples/multi-platform-review/`（离线 echo Agent、离线/真实平台配置）与平台实测记录（claude 2.1.272 / codex-cli 0.154.0 真机全链路）。
+- `agent_runtime` Meta 回调签名新增本轮 Reviewer 结果参数（破坏性变更，调用点已同步）。
+
+运行时版本仍保持 `0.3.4`，待发布聚合时切换为 `0.4.0`。
+
 - 阶段 2 已实现：增加 Q1–Q5、VERIFY、EXECUTE 和 PLAN_CHANGED 的纯 Python 闸门及 CLI。
 - 阶段 3 已实现：增加 EvidenceRecord、ExperimentPlan、结论强度、观察窗口、混杂变量和设计必要性校验。
 - 阶段 4 已实现：增加 ArtifactManifest、六节点 ProvenanceChain、闭环等级和安全降级校验。

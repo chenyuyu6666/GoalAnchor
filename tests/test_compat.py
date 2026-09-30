@@ -30,6 +30,7 @@ def test_supported_hosts_have_explicit_project_and_user_mapping() -> None:
         "gemini",
         "opencode",
         "pi",
+        "zcode",
         "custom",
     } <= set(HOSTS)
     for spec in HOSTS.values():
@@ -118,6 +119,13 @@ def test_custom_destination_is_explicit_and_no_shell_is_required(tmp_path: Path)
     with pytest.raises(ValueError, match="custom host"):
         resolve_destination("custom", scope="user", home=tmp_path)
 
+    zcode = resolve_destination(
+        "zcode", scope="user", destination=tmp_path / "zcode-skills"
+    )
+    assert zcode == tmp_path / "zcode-skills" / SKILL_ID
+    with pytest.raises(ValueError, match="zcode host"):
+        resolve_destination("zcode", scope="user", home=tmp_path)
+
 
 def test_source_skill_has_portable_minimum_metadata() -> None:
     source = find_skill_source(SOURCE)
@@ -175,7 +183,7 @@ def test_install_and_check_are_repeatable(tmp_path: Path) -> None:
 
 
 def test_every_known_host_can_install_a_project_skill(tmp_path: Path) -> None:
-    for target in sorted(name for name in HOSTS if name != "custom"):
+    for target in sorted(name for name in HOSTS if name not in {"custom", "zcode"}):
         project = tmp_path / target
         installed = install_skill(
             target,

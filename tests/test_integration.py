@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 
 import pytest
 
@@ -123,3 +124,238 @@ def test_integration_cli_returns_pass_and_fail(tmp_path: Path, capsys) -> None:
     failed_path.write_text(json.dumps({"nodes": [{"label": "no source"}]}), encoding="utf-8")
     assert main(["gate", "--phase", "graphify", "--record", str(failed_path)]) == 1
     assert json.loads(capsys.readouterr().out)["passed"] is False
+
+
+def test_review_cycle_cli_accepts_external_agent_results(tmp_path: Path, capsys) -> None:
+    from goalanchor import ReviewContext
+
+    review_context = ReviewContext(
+        goal="判断候选方案",
+        prompt="按同一提示独立审核",
+        constraints=("不能偷换目标",),
+        evidence_refs=("E-1",),
+        candidate="方案 A",
+    )
+    context = review_context.to_dict()
+    fingerprint = review_context.fingerprint
+    finding = {
+        "finding_id": "F1",
+        "issue": "存在争议",
+        "evidence_refs": ["E-1"],
+        "decision_impact": "是否继续",
+        "remaining_uncertainty": "争议是否解决",
+    }
+    record = {
+        "context": context,
+        "risk": "HIGH",
+        "round_number": 1,
+        "max_rounds": 2,
+        "reviewer_results": [
+            {
+                "reviewer_id": "A",
+                "round_number": 1,
+                "verdict": "PASS",
+                "findings": [],
+                "context_fingerprint": fingerprint,
+            },
+            {
+                "reviewer_id": "B",
+                "round_number": 1,
+                "verdict": "FAIL",
+                "findings": [finding],
+                "context_fingerprint": fingerprint,
+            },
+        ],
+        "arbiter": {
+            "arbiter_id": "arbiter",
+            "round_number": 1,
+            "verdict": "PASS",
+            "summary": "主 Agent 汇总",
+            "rationale": "需要复审",
+            "reviewer_ids": ["A", "B"],
+            "context_fingerprint": fingerprint,
+            "disagrees_with_reviewers": True,
+        },
+        "meta_review": {
+            "reviewer_id": "meta",
+            "round_number": 1,
+            "arbiter_id": "arbiter",
+            "verdict": "FAIL",
+            "summary": "主 Agent 判断需要复审",
+            "findings": [finding],
+            "context_fingerprint": fingerprint,
+            "agrees_with_arbiter": False,
+        },
+    }
+    path = tmp_path / "review-cycle.json"
+    path.write_text(json.dumps(record, ensure_ascii=False), encoding="utf-8")
+    assert main(["gate", "--phase", "review-cycle", "--record", str(path)]) == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["outcome"] == "REVIEW_REQUIRED"
+    assert output["has_dispute_packet"] is True
+
+
+def test_review_cycle_cli_stops_and_reports_after_second_unresolved_round(
+    tmp_path: Path, capsys
+) -> None:
+    from goalanchor import ReviewContext
+
+    context = {
+        "goal": "判断候选方案",
+        "prompt": "按同一提示独立审核",
+        "constraints": ["不能偷换目标"],
+        "evidence_refs": ["E-1"],
+        "candidate": "方案 A",
+    }
+    fingerprint = ReviewContext(**context).fingerprint
+    finding = {
+        "finding_id": "F2",
+        "issue": "第二轮仍存在高风险争议",
+        "evidence_refs": ["E-1"],
+        "decision_impact": "是否停止当前路径",
+        "remaining_uncertainty": "用户需要选择下一步",
+    }
+    record = {
+        "context": context,
+        "risk": "HIGH",
+        "round_number": 2,
+        "max_rounds": 2,
+        "reviewer_results": [
+            {
+                "reviewer_id": "A",
+                "round_number": 2,
+                "verdict": "PASS",
+                "findings": [],
+                "context_fingerprint": fingerprint,
+            },
+            {
+                "reviewer_id": "B",
+                "round_number": 2,
+                "verdict": "FAIL",
+                "findings": [finding],
+                "context_fingerprint": fingerprint,
+            },
+        ],
+        "arbiter": {
+            "arbiter_id": "arbiter",
+            "round_number": 2,
+            "verdict": "PASS",
+            "summary": "主 Agent 仍倾向通过",
+            "rationale": "仍不同意 Reviewer B",
+            "reviewer_ids": ["A", "B"],
+            "context_fingerprint": fingerprint,
+            "disagrees_with_reviewers": True,
+        },
+        "meta_review": {
+            "reviewer_id": "meta",
+            "round_number": 2,
+            "arbiter_id": "arbiter",
+            "verdict": "FAIL",
+            "summary": "Meta Reviewer 仍不同意主 Agent",
+            "findings": [finding],
+            "context_fingerprint": fingerprint,
+            "agrees_with_arbiter": False,
+        },
+    }
+    path = tmp_path / "review-cycle-stopped.json"
+    path.write_text(json.dumps(record, ensure_ascii=False), encoding="utf-8")
+    assert main(["gate", "--phase", "review-cycle", "--record", str(path)]) == 1
+    output = json.loads(capsys.readouterr().out)
+    assert output["outcome"] == "STOPPED"
+    assert output["next_state"] == "STOPPED"
+    assert output["decision_report"]["required_user_decision"]
+
+
+def test_review_cycle_command_dispatches_named_profiles(tmp_path: Path, capsys) -> None:
+    from goalanchor import ReviewContext
+
+    bridge = tmp_path / "bridge.py"
+    bridge.write_text(
+        """
+import json
+import sys
+
+request = json.load(sys.stdin)
+role = request["role"]
+fingerprint = request["context"]["fingerprint"]
+if role == "reviewer":
+    result = {
+        "reviewer_id": request["agent_id"],
+        "round_number": request["round_number"],
+        "verdict": "PASS",
+        "findings": [],
+        "isolated": True,
+        "context_fingerprint": fingerprint,
+    }
+elif role == "arbiter":
+    result = {
+        "arbiter_id": "arbiter",
+        "round_number": request["round_number"],
+        "verdict": "PASS",
+        "summary": "汇总 Reviewer",
+        "rationale": "所有 Reviewer 通过",
+        "reviewer_ids": [item["reviewer_id"] for item in request["reviewer_results"]],
+        "context_fingerprint": fingerprint,
+        "disagrees_with_reviewers": False,
+    }
+else:
+    result = {
+        "reviewer_id": "meta-reviewer",
+        "round_number": request["round_number"],
+        "arbiter_id": "arbiter",
+        "verdict": "PASS",
+        "summary": "独立复核通过",
+        "findings": [],
+        "context_fingerprint": fingerprint,
+        "agrees_with_arbiter": True,
+        "isolated": True,
+    }
+print(json.dumps(result, ensure_ascii=False))
+""".strip(),
+        encoding="utf-8",
+    )
+    review_context = ReviewContext(
+        goal="判断候选方案",
+        prompt="独立审核",
+        constraints=("不能偷换目标",),
+        evidence_refs=("E-1",),
+        candidate="方案 A",
+    )
+    request_path = tmp_path / "request.json"
+    request_path.write_text(
+        json.dumps(
+            {
+                "context": review_context.to_dict(),
+                "risk": "HIGH",
+                "max_rounds": 1,
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    command = [sys.executable, str(bridge)]
+    config_path = tmp_path / "agents.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "role_bindings": {
+                    "reviewer-1": "euclid",
+                    "reviewer-2": "hera",
+                    "arbiter": "arbiter",
+                    "meta_reviewer": "meta",
+                },
+                "capabilities": {"supports_parallel": True, "max_concurrency": 2},
+                "profiles": {
+                    "euclid": {"display_name": "Euclid", "roles": ["reviewer"], "command": command},
+                    "hera": {"display_name": "Hera", "roles": ["reviewer"], "command": command},
+                    "arbiter": {"display_name": "Arbiter", "roles": ["arbiter"], "command": command},
+                    "meta": {"display_name": "Meta Reviewer", "roles": ["meta_reviewer"], "command": command},
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["review-cycle", "--request", str(request_path), "--config", str(config_path)]) == 0
+    assert json.loads(capsys.readouterr().out)["outcome"] == "PASS"

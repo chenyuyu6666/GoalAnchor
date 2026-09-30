@@ -23,6 +23,7 @@ npm-debug.log*
 # Generated graph, image, and runtime output
 **/graphify-out/
 **/output/
+**/.demo/
 test-results/
 *.tmp
 *.temp
@@ -31,6 +32,9 @@ test-results/
 .env
 .env.*
 !.env.example
+
+# Security tooling local cache
+.mimosa/
 
 # Operating-system files
 .DS_Store

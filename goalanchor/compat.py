@@ -92,6 +92,13 @@ HOSTS: dict[str, HostSpec] = {
         project_dir=(".pi", "skills"),
         notes="Pi project or user skills root",
     ),
+    "zcode": HostSpec(
+        name="zcode",
+        user_env=None,
+        user_dir="",
+        project_dir=(),
+        notes="Zcode requires an explicit skill root because its native discovery path is host-configured",
+    ),
     # A custom destination is the honest fallback for tools with a different
     # discovery convention.  It keeps this module from making unsupported
     # claims about every host in the ecosystem.
@@ -125,7 +132,7 @@ def _user_base(spec: HostSpec, environ: Mapping[str, str], home: Path) -> Path:
         if configured:
             return Path(configured).expanduser()
     if not spec.user_dir:
-        raise ValueError("custom host requires an explicit destination")
+        raise ValueError(f"{spec.name} host requires an explicit destination")
     return home / spec.user_dir
 
 
@@ -344,11 +351,62 @@ def _parser() -> argparse.ArgumentParser:
             "provenance",
             "closure",
             "review",
+            "review-cycle",
             "graphify",
         ),
     )
     gate.add_argument("--record", required=True, type=Path)
     gate.add_argument("--json", action="store_true", help="emit machine-readable JSON")
+    for cycle_name, cycle_help in (
+        ("review-cycle", "run a bounded multi-Agent review through a JSON-over-stdio bridge"),
+        ("review-run", "alias of review-cycle"),
+    ):
+        review_cycle = subparsers.add_parser(cycle_name, help=cycle_help)
+        review_cycle.add_argument("--request", required=True, type=Path)
+        review_cycle.add_argument("--config", required=True, type=Path)
+        review_cycle.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="render the round-1 reviewer prompts without invoking any agent",
+        )
+        review_cycle.add_argument("--json", action="store_true", help="emit machine-readable JSON")
+    platforms_parser = subparsers.add_parser(
+        "platforms",
+        help="report built-in platform adapters and profile dispatch readiness",
+    )
+    platforms_parser.add_argument("--config", type=Path, default=None)
+    platforms_parser.add_argument(
+        "--probe",
+        action="store_true",
+        help="run one minimal invocation per available built-in platform (costs tokens)",
+    )
+    platforms_parser.add_argument("--json", action="store_true", help="emit machine-readable JSON")
+    review_prompt = subparsers.add_parser(
+        "review-prompt",
+        help="render the per-role review prompt for host-native (visible) subagents",
+    )
+    review_prompt.add_argument("--request", required=True, type=Path)
+    review_prompt.add_argument(
+        "--role", required=True, choices=("reviewer", "arbiter", "meta_reviewer")
+    )
+    review_prompt.add_argument("--agent-id", default=None, help="defaults to the role name")
+    review_prompt.add_argument("--round", type=int, default=1)
+    review_prompt.add_argument(
+        "--reviewer-results",
+        type=Path,
+        default=None,
+        help="required for --role arbiter; optional for meta_reviewer",
+    )
+    review_prompt.add_argument(
+        "--arbiter-result", type=Path, default=None, help="required for --role meta_reviewer"
+    )
+    review_prompt.add_argument("--dispute", type=Path, default=None)
+    review_prompt.add_argument(
+        "--language",
+        default="en",
+        choices=("en", "zh"),
+        help="prompt prose language; headers and schema stay machine-anchored",
+    )
     return parser
 
 
@@ -383,7 +441,14 @@ def _run_gate(phase: str, record_path: Path) -> dict[str, object]:
         check_provenance,
         verify_artifact_file,
     )
-    from .integration import check_graphify_output, check_review_output
+    from .integration import ReviewFinding, check_graphify_output, check_review_output
+    from .review_service import (
+        ArbiterResult,
+        MetaReviewResult,
+        ReviewContext,
+        ReviewerResult,
+        evaluate_review_cycle,
+    )
 
     try:
         payload = json.loads(record_path.read_text(encoding="utf-8"))
@@ -452,11 +517,285 @@ def _run_gate(phase: str, record_path: Path) -> dict[str, object]:
             return check_closure(record).to_dict()
         if phase == "review":
             return check_review_output(data).to_dict()
+        if phase == "review-cycle":
+            declaration = _require_risk_declaration(data)
+            context = ReviewContext.from_dict(data["context"])
+            reviewer_results = tuple(
+                ReviewerResult(
+                    reviewer_id=item["reviewer_id"],
+                    round_number=item["round_number"],
+                    verdict=item["verdict"],
+                    findings=tuple(ReviewFinding.from_dict(finding) for finding in item.get("findings", ())),
+                    isolated=item.get("isolated", True),
+                    context_fingerprint=item.get("context_fingerprint"),
+                )
+                for item in data["reviewer_results"]
+            )
+            arbiter_data = data["arbiter"]
+            try:
+                arbiter = ArbiterResult(**arbiter_data)
+            except TypeError as exc:
+                raise ValueError(f"arbiter result does not match the schema: {exc}") from exc
+            meta_data = data.get("meta_review")
+            if meta_data is None:
+                meta = None
+            else:
+                try:
+                    meta = MetaReviewResult(
+                        reviewer_id=meta_data["reviewer_id"],
+                        round_number=meta_data["round_number"],
+                        arbiter_id=meta_data["arbiter_id"],
+                        verdict=meta_data["verdict"],
+                        summary=meta_data["summary"],
+                        findings=tuple(ReviewFinding.from_dict(finding) for finding in meta_data.get("findings", ())),
+                        context_fingerprint=meta_data["context_fingerprint"],
+                        agrees_with_arbiter=meta_data["agrees_with_arbiter"],
+                        isolated=meta_data.get("isolated", True),
+                    )
+                except TypeError as exc:
+                    raise ValueError(f"meta review does not match the schema: {exc}") from exc
+            result = evaluate_review_cycle(
+                context,
+                data["risk"],
+                reviewer_results,
+                arbiter,
+                meta,
+                round_number=data["round_number"],
+                max_rounds=data.get("max_rounds", 2),
+            )
+            payload = result.to_dict()
+            if declaration is not None:
+                payload["risk_declaration"] = declaration
+            return payload
         if phase == "graphify":
             return check_graphify_output(data).to_dict()
     except KeyError as exc:
         raise ValueError(f"gate record is missing required field: {exc.args[0]}") from exc
     raise ValueError(f"unsupported gate phase: {phase}")
+
+
+def _require_risk_declaration(data: Mapping[str, object]) -> dict[str, object] | None:
+    """CRITICAL reviews must carry a signed risk declaration in the record."""
+
+    declaration = data.get("risk_declaration")
+    if data.get("risk") != "CRITICAL":
+        if declaration is None:
+            return None
+        if not isinstance(declaration, Mapping):
+            raise ValueError("risk_declaration must be a JSON object")
+        return dict(declaration)
+    if not isinstance(declaration, Mapping):
+        raise ValueError(
+            "CRITICAL risk requires risk_declaration with non-empty declared_by and reason"
+        )
+    declared_by = declaration.get("declared_by")
+    reason = declaration.get("reason")
+    if not isinstance(declared_by, str) or not declared_by.strip():
+        raise ValueError("risk_declaration.declared_by must be a non-empty string")
+    if not isinstance(reason, str) or not reason.strip():
+        raise ValueError("risk_declaration.reason must be a non-empty string")
+    return {"declared_by": declared_by.strip(), "reason": reason.strip()}
+
+
+def _run_external_review_cycle(request_path: Path, config_path: Path) -> dict[str, object]:
+    from .platforms import adapter_from_config
+    from .review_service import ReviewContext, ReviewRisk
+    from .agent_runtime import run_review_cycle_with_adapter
+
+    try:
+        request = json.loads(request_path.read_text(encoding="utf-8"))
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, TypeError, json.JSONDecodeError) as exc:
+        raise ValueError("review-cycle request or config is not valid JSON") from exc
+    if not isinstance(request, Mapping) or not isinstance(config, Mapping):
+        raise ValueError("review-cycle request and config must be JSON objects")
+    try:
+        context = ReviewContext.from_dict(request["context"])
+        risk = ReviewRisk(request["risk"])
+    except KeyError as exc:
+        raise ValueError(f"review-cycle request is missing required field: {exc.args[0]}") from exc
+    risk_declaration = _require_risk_declaration(request)
+    adapter = adapter_from_config(config)
+    result = run_review_cycle_with_adapter(
+        context,
+        risk,
+        adapter,
+        max_rounds=request.get("max_rounds", 2),
+        max_workers=request.get("max_workers"),
+    )
+    payload = result.to_dict()
+    if risk_declaration is not None:
+        payload["risk_declaration"] = risk_declaration
+    usage_report = getattr(adapter, "usage_report", None)
+    if callable(usage_report) and not payload.get("agent_bindings"):
+        payload["agent_bindings"] = list(usage_report())
+    bindings = payload.get("agent_bindings") or []
+    payload["usage_summary"] = {
+        "calls": len(bindings),
+        "tokens_used_total": sum(
+            item["tokens_used"]
+            for item in bindings
+            if isinstance(item.get("tokens_used"), int)
+        ),
+    }
+    return payload
+
+
+def _load_json_file(path: Path, label: str) -> object:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, TypeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"{label} is not valid JSON: {path}") from exc
+
+
+def _run_review_prompt(args) -> str:
+    from .agent_runtime import AgentRequest, AgentRole, DisputePacket
+    from .platforms import render_agent_prompt
+    from .review_service import ArbiterResult, ReviewContext, ReviewerResult, ReviewRisk
+
+    request = _load_json_file(args.request, "review-prompt request")
+    if not isinstance(request, Mapping):
+        raise ValueError("review-prompt request must be a JSON object")
+    try:
+        context = ReviewContext.from_dict(request["context"])
+        risk = ReviewRisk(request["risk"])
+    except KeyError as exc:
+        raise ValueError(f"review-prompt request is missing required field: {exc.args[0]}") from exc
+    role = AgentRole(args.role)
+    dispute = (
+        None
+        if args.dispute is None
+        else DisputePacket.from_dict(_load_json_file(args.dispute, "dispute packet"))
+    )
+    reviewer_results: tuple[ReviewerResult, ...] = ()
+    if role is AgentRole.ARBITER and args.reviewer_results is None:
+        raise ValueError("arbiter prompts require --reviewer-results")
+    if args.reviewer_results is not None:
+        data = _load_json_file(args.reviewer_results, "reviewer results")
+        if not isinstance(data, list):
+            raise ValueError("reviewer results must be a JSON array")
+        reviewer_results = tuple(ReviewerResult.from_dict(item) for item in data)
+    arbiter_result = None
+    if role is AgentRole.META_REVIEWER:
+        if args.arbiter_result is None:
+            raise ValueError("meta_reviewer prompts require --arbiter-result")
+        arbiter_result = ArbiterResult(**_load_json_file(args.arbiter_result, "arbiter result"))
+    agent_request = AgentRequest(
+        role=role,
+        agent_id=args.agent_id or role.value,
+        round_number=args.round,
+        risk=risk,
+        context=context,
+        dispute_packet=dispute,
+        reviewer_results=reviewer_results,
+        arbiter_result=arbiter_result,
+    )
+    return render_agent_prompt(agent_request, language=args.language)
+
+
+def _dry_run_review_cycle(request_path: Path, config_path: Path) -> dict[str, object]:
+    """Render round-1 reviewer prompts without invoking any agent."""
+
+    from .agent_runtime import AgentRequest, AgentRole
+    from .platforms import render_agent_prompt
+    from .review_service import ReviewContext, ReviewRisk, required_reviewers
+
+    request = _load_json_file(request_path, "review-cycle request")
+    config = _load_json_file(config_path, "review-cycle config")
+    if not isinstance(request, Mapping) or not isinstance(config, Mapping):
+        raise ValueError("review-cycle request and config must be JSON objects")
+    try:
+        context = ReviewContext.from_dict(request["context"])
+        risk = ReviewRisk(request["risk"])
+    except KeyError as exc:
+        raise ValueError(f"review-cycle request is missing required field: {exc.args[0]}") from exc
+    required = required_reviewers(risk)
+    prompts: dict[str, str] = {}
+    for index in range(required):
+        agent_id = f"reviewer-{index + 1}"
+        agent_request = AgentRequest(
+            role=AgentRole.REVIEWER,
+            agent_id=agent_id,
+            round_number=1,
+            risk=risk,
+            context=context,
+        )
+        prompts[agent_id] = render_agent_prompt(agent_request)
+    return {
+        "dry_run": True,
+        "risk": risk.value,
+        "required_reviewers": required,
+        "reviewer_prompts": prompts,
+        "note": (
+            "arbiter and meta_reviewer prompts are generated after the reviewer results "
+            "arrive; render them with: python -m goalanchor review-prompt"
+        ),
+    }
+
+
+def _run_platforms_report(config_path: Path | None, *, probe: bool = False) -> dict[str, object]:
+    """Report built-in platform adapters and, with --config, profile readiness."""
+
+    import shutil as _shutil
+
+    from .agent_runtime import AgentRole
+    from .platforms import BUILTIN_PLATFORMS, PlatformDispatchConfig, _BUILTIN_ARGV, probe_platform
+
+    def _resolve(argv: tuple[str, ...]) -> str | None:
+        found = _shutil.which(argv[0])
+        return None if found is None else str(found)
+
+    builtins = []
+    for name in BUILTIN_PLATFORMS:
+        argv = _BUILTIN_ARGV[name]
+        resolved = _resolve(argv)
+        entry: dict[str, object] = {
+            "platform": name,
+            "argv": list(argv),
+            "prompt_mode": "stdin" if "{prompt}" not in argv else "argv",
+            "resolved": resolved,
+            "available": resolved is not None,
+        }
+        if probe:
+            if resolved is None:
+                entry["probe"] = "not-installed"
+            else:
+                entry.update(probe_platform(name))
+        builtins.append(entry)
+    report: dict[str, object] = {"builtin_platforms": builtins}
+    if config_path is not None:
+        config = _load_json_file(config_path, "platforms config")
+        if not isinstance(config, Mapping):
+            raise ValueError("platforms config must be a JSON object")
+        dispatch = PlatformDispatchConfig.from_dict(config)
+        report["profiles"] = [
+            {
+                "profile_id": profile.profile_id,
+                "display_name": profile.display_name,
+                "roles": [role.value for role in profile.roles],
+                "platform": profile.platform,
+                "bridge_command": list(profile.command) if profile.command else None,
+                "enabled": profile.enabled,
+            }
+            for profile in dispatch.profiles
+        ]
+        report["role_bindings"] = dict(dispatch.role_bindings)
+        reviewer_profiles = [
+            profile.profile_id
+            for profile in dispatch.profiles
+            if profile.enabled and AgentRole.REVIEWER in profile.roles
+        ]
+        report["reviewer_profile_count"] = len(reviewer_profiles)
+        report["max_supported_risk"] = (
+            "CRITICAL"
+            if len(reviewer_profiles) >= 3
+            else "HIGH"
+            if len(reviewer_profiles) >= 2
+            else "MEDIUM"
+            if len(reviewer_profiles) >= 1
+            else None
+        )
+    return report
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -465,7 +804,24 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "gate":
             result = _run_gate(args.phase, args.record)
             print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
+            if args.phase == "review-cycle":
+                return 1 if result["outcome"] in {"STOPPED", "HUMAN_DECISION_REQUIRED"} else 0
             return 0 if result["passed"] else 1
+        if args.command in ("review-cycle", "review-run"):
+            if getattr(args, "dry_run", False):
+                result = _dry_run_review_cycle(args.request, args.config)
+                print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
+                return 0
+            result = _run_external_review_cycle(args.request, args.config)
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
+            return 1 if result["outcome"] in {"STOPPED", "HUMAN_DECISION_REQUIRED"} else 0
+        if args.command == "platforms":
+            report = _run_platforms_report(args.config, probe=getattr(args, "probe", False))
+            print(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2))
+            return 0
+        if args.command == "review-prompt":
+            print(_run_review_prompt(args))
+            return 0
         kwargs = {
             "target": args.target,
             "scope": args.scope,

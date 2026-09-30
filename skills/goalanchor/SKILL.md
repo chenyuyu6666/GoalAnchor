@@ -95,6 +95,34 @@ Use a real delegated agent for narrow independent checks when available; never i
 delegation or treat its conclusion as proof. Inspect reproducible evidence and state the
 boundary if delegation is unavailable.
 
+When the host exposes named subagents, bind them by logical role rather than by a
+platform-specific tool name: independent `reviewer` profiles run in parallel, then an
+`arbiter` and an independent `meta_reviewer` inspect the same context and converge the
+result. Use the portable protocol in [references/agent-runtime.md](references/agent-runtime.md)
+when the host provides a bridge or Agent Dispatcher. A profile name such as `Euclid` is
+host metadata, not a GoalAnchor semantic dependency.
+
+For an audit that requires independent review, perform this dispatch sequence:
+
+1. Discover the host's enabled Agent profiles and their capabilities.
+2. Bind distinct profiles to `reviewer-1`, `reviewer-2` (and more when risk requires it),
+   `arbiter`, and `meta_reviewer`; do not silently reuse one profile for independent roles.
+3. Preferred path - keep the review visible: render each role prompt with
+   `python -m goalanchor review-prompt --request <request.json> --role <role>
+   --agent-id <id> --round 1` and spawn the host's OWN subagent mechanism with those
+   prompts, reviewers concurrently. Host-native sessions keep every subagent
+   conversation visible in the host UI; the JSON replies stay inspectable.
+4. Collect the JSON replies and validate the round deterministically with
+   `python -m goalanchor gate --phase review-cycle --record <cycle.json>`; dispute
+   rounds re-render the prompts with `--dispute <packet.json>` and re-spawn the same
+   roles, still bounded by `max_rounds`.
+5. Only when the host cannot spawn subagents but platform CLIs are reachable, fall back
+   to headless dispatch: `python -m goalanchor review-cycle --request <request.json>
+   --config <config.json>`, and verify the returned `agent_bindings` audit array
+   (agent_id → profile → platform → round).
+6. If no independent dispatcher is available at all, report `delegation_unavailable` and
+   do not claim that a main-agent pass was an independent review.
+
 ### Optional Premise Recheck
 
 During VERIFY, when the current path shows signs of fixation, prefer a context-separated
