@@ -1,102 +1,73 @@
 # GoalAnchor
 
-GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Engineering Convergence Guard）。
-它解决的是防漂移、防错误积累、防伪证据和防伪闭环，而不是如何产生更多分析。
-
-核心原则：
+**中文** | [English](README.en.md)
 
 > **Reduce decision uncertainty, not just accumulate information.**
 
-## 当前版本
+GoalAnchor 是面向复杂工程任务的**目标锚定与可信收敛框架**（Engineering Convergence Guard）。
+它拦截四类典型失败——目标漂移、错误积累、伪证据、伪闭环——而不是产生更多分析。
 
-当前稳定版本为 `v0.5.1`；日常开发从 `master` 创建短期工作分支，运行时版本由
-`goalanchor.__version__` 统一维护。
+| | |
+|---|---|
+| 当前版本 | [`v0.5.1`](CHANGELOG.md) |
+| Python 要求 | 3.9+（运行时**零第三方依赖**） |
+| 分发形态 | 标准 `SKILL.md` + Python 契约库 + CLI |
+| 宿主支持 | Codex、Claude Code、DSH、Zcode、Pi、Cursor、Gemini CLI、OpenCode 等 |
 
-- `v0.1.0`：初始 skills 与 Plan Audit 基线；
-- `v0.2.0`：加入 Plan Audit v2 目标与验证约束；
-- `v0.3.0`：收紧 Plan Audit v3 诊断边界；
-- `v0.3.1`：统一提交标题与版本管理规范；
-- `v0.3.2`：简化多人协作流程。
-- `v0.3.3`：按 GitHub Flow 重构协作管理。
-- `v0.3.4`：明确 Git 提交规则。
-- `v0.4.0`：多 Agent 审核协议、多平台 Agent 调度与治理收紧。
-- `v0.4.1`：SKILL.md 门控边界澄清（量化验收标准归属 VERIFY 入口）。
-- `v0.5.0`：子 Agent 模型一致性强制与 warnings 机器可读告警通道。
-- `v0.5.1`：告警措辞修正、flag 拼写防护扩展、配置加载期 argv 预检、probe 钉定（GA-V050-AUDIT 审核修复）。
+---
 
-版本说明见 [CHANGELOG.md](CHANGELOG.md)，分支、提交和发布流程见
-[CONTRIBUTING.md](CONTRIBUTING.md)。
+## 它解决什么问题
 
-完整工程问题定义位于 `D:/Project/GoalAnchor/Doc/00_总览与入口/GoalAnchor-核心工程问题定义.md`。
+复杂工程任务在收尾阶段最常见的失败，不是"分析不够多"，而是：
 
-## 当前仓库实现
+- **目标漂移** —— 局部 blocker 被当成最终目标，原任务被悄悄替换；
+- **错误积累** —— Observation、Hypothesis、Inference、Design Choice 之间无证据升级；
+- **伪证据** —— 结论强度超过证据强度（单测通过 ≠ 根因已修复）；
+- **伪闭环** —— Containment、Root Fix、Build Success、Product Closure 被互相冒充。
 
-本仓库包含 GoalAnchor 直接维护的 Agent Skills、契约库与配套脚本，不是独立的 Web 服务或业务应用。
+GoalAnchor 用**契约 + 确定性闸门 + 独立审核**把这些环节固定为可核验的状态，而不是依赖执行者的自觉。
 
-`goalanchor/` 是零第三方运行时依赖的 Python 契约库，按阶段提供：契约与生命周期状态模型、Q1–Q5/VERIFY/EXECUTE/PLAN_CHANGED 闸门、证据强度与实验校验、交付闭环与 provenance、Review/Graphify 结果适配、五 Gate 治理映射、决策与轻量授权、Verification 闭环，以及**有限多 Agent Review Service**——多 Reviewer 同上下文并行、主 Agent（Arbiter）汇总、争议包复审、独立 Meta Reviewer 审核、`max_rounds=2` 封顶后 `STOPPED` + DecisionReport 交用户决策。
+## 核心能力
 
-执行层（`agent_runtime.py` + `platforms.py`）提供多平台 Agent 调度：内置 `codex`/`claude`/`gemini`/`opencode` 适配（提示词全部经 stdin 传入，规避 Windows `.cmd` 转义与 argv 长度限制），同一轮 Reviewer 强制不同 profile 并发，平台输出解析兼容直接 JSON、信封包装与正文夹带 JSON；支持瞬时失败重试（`retries`）、dry-run 预览、`platforms --probe` 环境与认证自检、token 用量审计（`tokens_used`/`usage_summary`）；提示词支持 `"language": "zh"` 中文模板。**模型一致性强制**：子 Agent 必须与主 Agent 同模型——顶层 `"model"` 或 `review-cycle --model` 声明主模型并按平台 flag 注入（`codex -m`、`claude --model`、`gemini -m`、`opencode -m`），与主模型不同的 profile 在配置加载即拒绝（不启动任何 Agent），确需分歧须先经用户确认并记录 `model_divergence`；`review-cycle` 与 `--dry-run` 输出顶层 `warnings` 机器可读告警数组（`MODEL_NOT_PINNED`/`MODEL_DIVERGENCE_APPROVED`），供只读 stdout 的流水线审计。宿主原生子 Agent 拉起的会话在宿主 UI 可见（`review-prompt` 渲染 + `gate --phase review-cycle` 校验），无头平台调度为备用路径。
+### 1. 契约模型与确定性闸门
 
-CLI 入口：`install` / `check`（Skill 安装）、`gate --phase …`（确定性闸门）、`review-cycle`（别名 `review-run`，完整调度）、`review-prompt`（逐角色提示词渲染）、`platforms`（环境自检）。
+- 任务契约（Goal / Prompt / Constraints / Evidence / Candidate）与生命周期状态机；
+- `PLAN → VERIFY → EXECUTE` 三段门控：PLAN 阶段 Q1–Q5 静态检查（目标、逻辑、假设、最小路径、结构），VERIFY 阶段要求先固定可复现的验收阈值再行动；
+- 证据强度与实验校验、交付闭环与 provenance 记录、决策与轻量授权。
 
-当前版本为 `v0.5.1`（v0.4.x 路线已发布；v0.5.x 交付子 Agent 模型一致性强制与 warnings 机器可读告警通道，并按独立审核 GA-V050-AUDIT 修复告警措辞与防护边界）；持续开发任务与每次改动记录见 `D:/Project/GoalAnchor/Doc/04_任务记录/GoalAnchor-开发任务与变更记录.md`。
+### 2. 有限多 Agent 审核服务
 
-## 多 Agent 兼容
+- 多个 **Reviewer 共享同一不可变上下文**并行独立审核，主 Agent（Arbiter）汇总裁决；
+- 仲裁被反驳时生成争议包（DisputePacket）做同上下文复审，独立 **Meta Reviewer** 审核仲裁本身；
+- `max_rounds=2` 封顶：无法收敛即 `STOPPED`，并产出 DecisionReport 交用户决策。
+- 风险 → Reviewer 数量：`LOW=1 / MEDIUM=2 / HIGH=2 / CRITICAL=3`；CRITICAL 需签署风险声明。
 
-GoalAnchor 的规则入口使用标准 `SKILL.md`，可按目标安装到 Codex、Claude Code、Pi、DSH 和通用 Agent Skills 根目录，并为 Cursor、Gemini CLI、OpenCode 提供目录投影。安装与检查命令见 [AGENT-COMPATIBILITY.md](AGENT-COMPATIBILITY.md)，例如：
+### 3. 多平台执行与模型一致性
 
-```text
-python -m goalanchor install --target claude --scope project --project-root . --source skills/goalanchor --dry-run --json
-```
+- 内置 `codex` / `claude` / `gemini` / `opencode` 适配，提示词经 stdin 传入（规避 Windows `.cmd` 转义与 argv 长度限制）；
+- **模型一致性强制**：子 Agent 必须与主 Agent 同模型——顶层 `"model"` 或 `--model` 声明主模型，按平台 flag 注入（`codex -m`、`claude --model` 等）；不一致的 profile 在**配置加载期**拒绝，不启动任何 Agent；确需分歧须先经用户确认并记录 `model_divergence`；
+- argv 模板预检：带自有取值的模型 flag（`-m preset`、`--model=x`）在配置加载期拒绝；
+- 宿主原生子 Agent 会话在宿主 UI 可见；无头平台调度是备用路径。
 
-规则正文不依赖宿主专用工具或 API；宿主差异只由目录映射、可选界面元数据和执行层适配器处理。多 Agent 审核的调度协议、平台适配与配置格式见
-[skills/goalanchor/references/agent-runtime.md](skills/goalanchor/references/agent-runtime.md)，
-可运行示例见 [examples/multi-platform-review/](examples/multi-platform-review/)。
+### 4. 机器可读审计
 
-## v1 交付边界
+- 顶层 `warnings` 告警数组：`MODEL_NOT_PINNED`（主模型未声明、一致性不可强制）与 `MODEL_DIVERGENCE_APPROVED`（用户已确认的分歧），供只读 stdout 的 CI/流水线审计；
+- `agent_bindings` 记录每次调用的 agent / profile / platform / model / round，`usage_summary` 汇总模型与 token 用量；
+- `platforms --probe` 按与真实派发相同的优先级（profile > 平台 > 顶层）做环境探测。
 
-- 防漂移：局部 blocker 不得替代最终交付目标；
-- 防错误积累：Observation、Fact、Hypothesis、Constraint、Inference 和 Design Choice 不得无证据升级；
-- 防伪证据：结论强度不得超过证据强度；
-- 防伪闭环：Containment、Root Fix、Build Success、Artifact Verified 和 Product Closure 不得相互替代；
-- 不建设 Web 服务、数据库、常驻后台或通用项目管理平台。
+> 边界说明：紧贴短选项（如 `-mopus`）因无法与同前缀无关选项（如 `-max-tokens`）区分，**不在检测范围内**；不要把取值紧贴模型 flag。
 
-阶段计划、接口决策和验收规则位于（`Doc/` 目录自 2026-09-22 起按 `NN_名称` 分类规则组织，完整索引见 `D:/Project/GoalAnchor/Doc/README.md`）：
+## CLI 一览
 
-- `D:/Project/GoalAnchor/Doc/00_总览与入口/GoalAnchor-任务计划.md`
-- `D:/Project/GoalAnchor/Doc/00_总览与入口/GoalAnchor-核心工程问题定义.md`
-- `D:/Project/GoalAnchor/Doc/00_总览与入口/GoalAnchor-项目定位.md`
-- `D:/Project/GoalAnchor/Doc/00_总览与入口/GoalAnchor-术语表.md`
-- `D:/Project/GoalAnchor/Doc/01_设计与决策/ADR-0001-GoalAnchor-v1接口.md`
-- `D:/Project/GoalAnchor/Doc/00_总览与入口/GoalAnchor-v1用户场景.md`
-- `D:/Project/GoalAnchor/Doc/02_开发规格/GoalAnchor-阶段1-契约与状态模型.md`
-- `D:/Project/GoalAnchor/Doc/02_开发规格/GoalAnchor-阶段2-闸门.md`
-- `D:/Project/GoalAnchor/Doc/02_开发规格/GoalAnchor-阶段3-证据与实验.md`
-- `D:/Project/GoalAnchor/Doc/02_开发规格/GoalAnchor-阶段4-闭环与Provenance.md`
-- `D:/Project/GoalAnchor/Doc/02_开发规格/GoalAnchor-阶段5-工具集成.md`
-- `D:/Project/GoalAnchor/Doc/02_开发规格/GoalAnchor-阶段6-测试与回归.md`
-- `D:/Project/GoalAnchor/Doc/01_设计与决策/GoalAnchor-效果验证协议.md`
-- `D:/Project/GoalAnchor/Doc/01_设计与决策/GoalAnchor-P0多平台兼容矩阵.md`
-- `D:/Project/GoalAnchor/Doc/01_设计与决策/GoalAnchor-设计-基于性能对话案例.md`
+| 命令 | 用途 |
+|---|---|
+| `python -m goalanchor install` / `check` | 把 Skill 安装到各宿主目录 / 校验安装一致性 |
+| `python -m goalanchor gate --phase …` | 确定性闸门（不调用 LLM） |
+| `python -m goalanchor review-cycle` | 完整多 Agent 调度（别名 `review-run`） |
+| `python -m goalanchor review-prompt` | 逐角色渲染审核提示词 |
+| `python -m goalanchor platforms` | 平台环境自检（`--probe` 探测，`--config` 报告 profile） |
 
-## Skill 目录
-
-- `skills/goalanchor`：GoalAnchor 的规则入口，对外部计划、补丁和代理结论执行 `PLAN -> VERIFY -> EXECUTE` 审核。
-- `skills/graphify`：将代码和资料整理为可查询的知识图谱。
-- `skills/deeply`：检索财经、科技、商业和思想领域的一手观点。
-- `skills/.system/imagegen`：生成和编辑位图、抠图及背景处理。
-- `skills/.system/openai-docs`：查询和引用官方 OpenAI/Codex 文档。
-- `skills/.system/plugin-creator`：创建和校验 Codex 插件。
-- `skills/.system/skill-creator`：创建和校验 Codex Skill。
-- `skills/.system/skill-installer`：从官方或 GitHub 仓库安装 Skill。
-- `skills/.system/review-agent`：只读审查代码修改并返回分级问题。
-
-`.system` 下的目录是上游系统 Skill 的快照；本项目的定制 Skill 放在同级的非 `.system` 目录中。
-除非同步上游版本，否则不要直接修改 `.system` 中的 `SKILL.md` 正文；必要的脚本补丁须记录在 [UPSTREAM_SOURCES.md](UPSTREAM_SOURCES.md) 中。
-
-## 本地验证
-
-PowerShell：
+## 快速开始
 
 ```powershell
 python -m venv .venv
@@ -104,50 +75,62 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-文档驱动的完整验收任务：
+把 Skill 安装到当前项目（以 Claude 目录为例，先 `--dry-run` 预览）：
 
-```powershell
-.\.venv\Scripts\python.exe scripts/run_test_task.py --task docs/GoalAnchor-自动测试任务.md
+```text
+python -m goalanchor install --target claude --scope project --project-root . --source skills/goalanchor --dry-run
 ```
 
-测试任务定义、支持的检查类型和 JSON 报告格式见
-[GoalAnchor-自动测试任务.md](docs/GoalAnchor-自动测试任务.md)。
+运行一次多 Agent 审核：
 
-Phase 6 固定基准：
-
-```powershell
-.\.venv\Scripts\python.exe scripts/run_phase6_benchmark.py
-```
-
-多 Agent Review 使用统一 JSON-over-stdio 桥接协议：Reviewer 并行，Arbiter 与 Meta Reviewer
-按轮次收敛。配置格式见 `skills/goalanchor/references/agent-runtime.md`，入口为：
-
-```powershell
+```text
 python -m goalanchor review-cycle --request review-request.json --config agent-config.json
 ```
 
-基准说明和开发者最小示例见 `D:/Project/GoalAnchor/Doc/02_开发规格/GoalAnchor-Phase6-Benchmark与开发者示例.md`。
+可直接运行的离线示例（echo 平台，不消耗额度）：[`examples/multi-platform-review/`](examples/multi-platform-review/)。
 
-对话体验测试不是 Python 单元测试。请在实际 GoalAnchor 对话上下文中读取并执行
-[GoalAnchor-对话体验测试任务.md](docs/GoalAnchor-对话体验测试任务.md)，它会按固定案例检查目标保持、证据边界、决策链接、状态切换和不过度拦截，并输出 `DIALOGUE_TEST_REPORT`。
+## 仓库结构
 
-ImageGen 的显式 CLI 回退模式另需：
-
-```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements-image.txt
+```text
+goalanchor/   零第三方依赖的 Python 契约库与 CLI
+skills/       goalanchor / graphify / deeply 定制 Skill,.system/ 为上游快照
+scripts/      压测、基准、测试任务脚本
+tests/        全量单元测试
+examples/     可运行的离线示例
+docs/         仓库内文档资产(自动测试任务、对话体验测试)
 ```
 
-图片生成还需要 `OPENAI_API_KEY`；`--dry-run` 不需要 API 调用。OpenAI Docs 脚本需要 Node.js 18 或更高版本。
-Graphify 的运行时版本按 `skills/graphify/.graphify_version` 管理，Deeply 需要配置 `DEEPLY_TOKEN`。
+`.system/` 下为上游 Skill 快照，除非同步上游否则不直接修改，补丁记录在 [UPSTREAM_SOURCES.md](UPSTREAM_SOURCES.md)。
+
+## 文档中心
+
+完整的设计决策、开发规格、任务记录与知识图谱位于仓库旁的 `Doc/` 目录，入口为其 `README.md`。关键文档：
+
+- `Doc/00_总览与入口/`：任务计划、核心工程问题定义、项目定位、术语表；
+- `Doc/01_设计与决策/`：ADR-0001 接口决策、P0 兼容矩阵、效果验证协议；
+- `Doc/02_开发规格/`：六阶段规格与 v0.5.0 规格；
+- `Doc/03_验证与测试/`、`Doc/04_任务记录/`：验证证据与逐次变更记录。
+
+## 验证工具链
+
+```powershell
+# 全量回归
+.\.venv\Scripts\python.exe -m pytest                                 # 206 passed
+# 模型一致性压测(全离线)
+.\.venv\Scripts\python.exe scripts\stress_model_sync.py             # 739 项校验
+# 文档一致性校验
+pwsh Doc\03_验证与测试\validate-stage-0.ps1
+pwsh Doc\03_验证与测试\validate-multi-round.ps1 -Rounds 2
+```
+
+对话体验测试（非单元测试）：在真实 GoalAnchor 对话中执行 [docs/GoalAnchor-对话体验测试任务.md](docs/GoalAnchor-对话体验测试任务.md)。
 
 ## 知识图谱
 
-当前项目图谱保存在仓库外的
-`D:/Project/GoalAnchor/Doc/GoalAnchor-Knowledge-Graph/graphify-out/`，包括交互式 HTML、JSON 数据和分析报告，图谱根指向本仓库目录。
-该目录不属于本仓库 Git 根目录；如需版本化，应为文档目录建立独立仓库，或在本仓库保存指向它的版本清单。代码更新后在该目录运行 `graphify update .` 刷新。
+项目图谱位于 `Doc/GoalAnchor-Knowledge-Graph/graphify-out/`（交互 HTML / JSON / 分析报告）；
+代码更新后在仓库根运行 `graphify update .` 重建。
 
-## 开发与提交
+## 参与贡献
 
-使用 `feature/*`、`fix/*` 或 `chore/*` 短期分支开发。日常提交使用
-`type(scope): 中文说明`；只有发布聚合提交使用 `vX.Y.Z 中文变更说明`，并创建同名标签。
-完整规范和发布示例见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+短期分支 `feature/*`、`fix/*`、`chore/*`；日常提交 `type(scope): 说明`，仅发布聚合提交使用 `vX.Y.Z` + 同名标签。
+完整规范见 [CONTRIBUTING.md](CONTRIBUTING.md)，宿主适配见 [AGENT-COMPATIBILITY.md](AGENT-COMPATIBILITY.md)。

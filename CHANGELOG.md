@@ -3,6 +3,12 @@
 本文件按 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 组织，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [未发布]
+
+### Changed
+
+- README 表述优化并提供中英文双版本:重组为「问题 → 能力 → CLI → 快速开始 → 结构 → 文档 → 验证」层次,消解重复版本声明与超长段落,绝对路径收敛为 `Doc/` 索引;新增英文版 [`README.en.md`](README.en.md),两版顶部互加语言切换链接(中文版 [`README.md`](README.md) 仍为打包默认,`pyproject.toml` 不变)。
+
 ## [0.5.1] - 2026-09-22
 
 ### Fixed
