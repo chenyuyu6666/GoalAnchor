@@ -115,6 +115,44 @@ def _model(value: object, field_name: str) -> str | None:
     return value.strip()
 
 
+_MODEL_PLACEHOLDER = "{model}"
+
+
+def _placeholder_sites(items: Sequence[str], flag: str) -> list[int]:
+    """Indexes where ``{model}`` is the model value slot.
+
+    Only the model flag's value slot is a placeholder site: a standalone
+    element (``-m {model}``, or a positional ``{model}``), the attached form
+    (``--model={model}``), or the glued form (``-m{model}``). A ``{model}``
+    embedded in some other element (``--note "run as {model}"``) is literal
+    text and is passed through untouched.
+    """
+
+    sites: list[int] = []
+    for index, item in enumerate(items):
+        if (
+            item == _MODEL_PLACEHOLDER
+            or item == f"{flag}={_MODEL_PLACEHOLDER}"
+            or item == f"{flag}{_MODEL_PLACEHOLDER}"
+        ):
+            sites.append(index)
+    return sites
+
+
+def _carries_flag(item: str, flag: str) -> bool:
+    """Whether one argv element carries ``flag`` with its own literal value.
+
+    Recognizes the bare flag (``--model``) and the attached-value form
+    (``--model=opus``). The glued short form (``-mopus``) is deliberately not
+    detected: it cannot be told apart from an unrelated option that merely
+    begins with the same letters (``-max-tokens``), so rejecting it would
+    break legitimate configs while catching at most a spelling the docs tell
+    authors to avoid.
+    """
+
+    return item == flag or item.startswith(flag + "=")
+
+
 def _apply_model(
     argv: Sequence[str],
     model: str | None,
@@ -123,30 +161,54 @@ def _apply_model(
 ) -> tuple[str, ...]:
     """Pin the sub-agent model onto a platform argv template.
 
-    A ``{model}`` placeholder is replaced in place; otherwise the
-    ``<model_flag> <model>`` pair is inserted before the prompt-spec section
-    (the first ``{prompt}`` placeholder or flag-like element) so the prompt
-    stays last for both argv and stdin modes, and appended when the template
-    has no such marker.  An argv that already hardcodes the same flag is
-    rejected: injecting a second one would let the hardcoded value win in
-    most CLIs and silently unpin the sub-agent model.
+    The ``{model}`` placeholder is replaced in place, but only where it is the
+    model flag's value slot (see :func:`_placeholder_sites`); occurrences
+    inside other arguments are literal text. When no placeholder site exists,
+    the ``<model_flag> <model>`` pair is inserted before the prompt-spec
+    section (the first ``{prompt}`` placeholder or flag-like element) so the
+    prompt stays last for both argv and stdin modes, and appended when the
+    template has no such marker. An argv that carries the same flag with its
+    own literal value is rejected — including when a placeholder site is also
+    present, because the substituted value would then sit next to a second
+    model flag whose value wins in most CLIs. Injecting a duplicate would
+    silently unpin the sub-agent model.
     """
 
     items = tuple(argv)
+    sites = _placeholder_sites(items, model_flag)
     if model is None:
-        if "{model}" in items:
+        if sites:
             raise AgentRuntimeError(
                 "argv contains a {model} placeholder but no model is configured"
             )
         return items
-    if "{model}" in items:
-        return tuple(model if item == "{model}" else item for item in items)
-    if model_flag in items:
+    for index, item in enumerate(items):
+        if not _carries_flag(item, model_flag):
+            continue
+        # A flag whose value slot is the placeholder itself is the placeholder
+        # site, not a hardcoded override.
+        if (
+            item == model_flag
+            and index + 1 < len(items)
+            and items[index + 1] == _MODEL_PLACEHOLDER
+        ) or item == f"{model_flag}={_MODEL_PLACEHOLDER}":
+            continue
         raise AgentRuntimeError(
-            f"argv already contains {model_flag!r}; pin the model with a "
-            "'{model}' placeholder instead of a hardcoded flag so the "
+            f"argv already carries {model_flag!r} with its own value; pin the model "
+            "with a '{model}' placeholder instead of a hardcoded flag so the "
             "sub-agent model cannot be overridden silently"
         )
+    if sites:
+        for index in sites:
+            item = items[index]
+            if item == _MODEL_PLACEHOLDER:
+                replacement = model
+            elif item == f"{model_flag}={_MODEL_PLACEHOLDER}":
+                replacement = f"{model_flag}={model}"
+            else:
+                replacement = f"{model_flag}{model}"
+            items = items[:index] + (replacement,) + items[index + 1 :]
+        return items
     model_args = (model_flag, model)
     for index, item in enumerate(items):
         if index > 0 and (item == "{prompt}" or item.startswith("-")):
@@ -551,6 +613,12 @@ class ProfileBinding:
         if self.retries is not None:
             object.__setattr__(self, "retries", _retries(self.retries, "retries"))
         object.__setattr__(self, "model", _model(self.model, f"profiles.{self.profile_id}.model"))
+        if self.command is not None and self.model is not None:
+            raise AgentRuntimeError(
+                f"profile {self.profile_id} binds a stdio bridge command; the bridge "
+                "protocol carries no model field, so a declared 'model' could never be "
+                "honored. Remove it, or bind the profile to a platform instead."
+            )
         if not isinstance(self.env, Mapping) or any(
             not isinstance(key, str) or not isinstance(value, str)
             for key, value in self.env.items()
@@ -667,9 +735,11 @@ class PlatformDispatchConfig:
         object.__setattr__(self, "model_divergence", divergence)
         if self.model is not None and divergence is None:
             for profile in profile_list:
-                if profile.platform is None:
+                if profile.platform is None or not profile.enabled:
                     # Bridge-command profiles run inside a host that manages
-                    # its own model; the platform-CLI guarantee does not apply.
+                    # its own model; a disabled profile never dispatches
+                    # (binding() rejects it, AgentCatalog.select skips it), so
+                    # its declared model cannot conflict with anything.
                     continue
                 platform_model = normalized[profile.platform].model
                 effective = profile.model or platform_model
@@ -681,6 +751,29 @@ class PlatformDispatchConfig:
                         'the user-approved exception with "model_divergence": '
                         '{"confirmed_by": "...", "reason": "..."} before dispatch.'
                     )
+        # Validate every enabled platform-bound profile's argv template at
+        # load time, before any agent can be launched, instead of failing on
+        # the first dispatch (a parallel round may already have started
+        # sibling agents). Every enabled platform profile is a dispatch
+        # candidate, so all of their templates must be launchable; profiles
+        # kept around without being used should be marked enabled=false. The
+        # check mirrors dispatch per profile: it resolves the profile's
+        # effective model (profile > platform > top-level) and rejects an argv
+        # that carries the model flag injection would lose to, or a {model}
+        # placeholder with no model to fill it. argv-pinned profiles without a
+        # declared main model stay legal because no injection happens for
+        # them, and disabled profiles are skipped because they never dispatch.
+        for profile in profile_list:
+            if profile.platform is None or not profile.enabled:
+                # Bridge profiles manage their own model, and a disabled
+                # profile never dispatches (PlatformDispatchConfig.binding
+                # rejects it and AgentCatalog.select skips it), so its argv
+                # cannot break a run.
+                continue
+            spec = self.resolve_platform(profile)
+            effective = spec.model if spec.model is not None else self.model
+            model_flag = _BUILTIN_MODEL_FLAGS.get(spec.name) or spec.model_flag or "-m"
+            _apply_model(spec.argv, effective, model_flag=model_flag)
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, object]) -> "PlatformDispatchConfig":
@@ -890,8 +983,10 @@ class PlatformAgentAdapter:
     def declared_main_model(self) -> str | None:
         """The main-agent model declared for this dispatch, if any.
 
-        ``None`` means sub-agents are not pinned and may fall back to a
-        platform default model.
+        ``None`` means the main model was not declared (no top-level ``model``
+        and no ``--model``), so sub-agent consistency cannot be enforced —
+        platform/profile-level pins may still be in effect, but there is no
+        main model to compare them against.
         """
 
         return self._router.main_model

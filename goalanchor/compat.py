@@ -628,18 +628,20 @@ def _model_audit_warnings(
         model = declared()
         if model is None:
             print(
-                "goalanchor: warning: no sub-agent model pinned; pass --model <main-model> "
-                "or set the config's top-level 'model' so sub-agents cannot fall back to "
-                "a platform default model",
+                "goalanchor: warning: the main agent's model is not declared; sub-agent "
+                "model consistency cannot be enforced. Pass --model <main-model> or set "
+                "the config's top-level 'model'.",
                 file=sys.stderr,
             )
             warnings.append(
                 {
                     "code": "MODEL_NOT_PINNED",
                     "message": (
-                        "no sub-agent model is pinned; sub-agents may fall back to the "
-                        "platform default model. Pass --model <main-model> or set the "
-                        "config's top-level 'model'."
+                        "the main agent's model is not declared, so sub-agent model "
+                        "consistency cannot be enforced; sub-agents may run on "
+                        "platform/profile-declared models or on a platform default. "
+                        "Pass --model <main-model> or set the config's top-level "
+                        "'model'."
                     ),
                 }
             )
@@ -844,6 +846,15 @@ def _run_platforms_report(config_path: Path | None, *, probe: bool = False) -> d
         found = _shutil.which(argv[0])
         return None if found is None else str(found)
 
+    # Load the config before probing: an invalid config fails fast instead of
+    # after spending probe calls, and each probe can then use the model the
+    # dispatch would actually pin for that platform.
+    dispatch = None
+    if config_path is not None:
+        config = _load_json_file(config_path, "platforms config")
+        if not isinstance(config, Mapping):
+            raise ValueError("platforms config must be a JSON object")
+        dispatch = PlatformDispatchConfig.from_dict(config)
     builtins = []
     for name in BUILTIN_PLATFORMS:
         argv = _BUILTIN_ARGV[name]
@@ -860,14 +871,28 @@ def _run_platforms_report(config_path: Path | None, *, probe: bool = False) -> d
             if resolved is None:
                 entry["probe"] = "not-installed"
             else:
-                entry.update(probe_platform(name))
+                probe_model = None
+                if dispatch is not None:
+                    # Same precedence as dispatch (profile > platform >
+                    # top-level), resolved through the first enabled profile
+                    # bound to this platform; platforms without a bound
+                    # profile fall back to their own model, then the main one.
+                    for profile in dispatch.profiles:
+                        if profile.enabled and profile.platform == name:
+                            resolved = dispatch.resolve_platform(profile)
+                            probe_model = (
+                                resolved.model
+                                if resolved.model is not None
+                                else dispatch.model
+                            )
+                            break
+                    if probe_model is None:
+                        spec = dispatch.platforms.get(name)
+                        probe_model = (spec.model if spec is not None else None) or dispatch.model
+                entry.update(probe_platform(name, model=probe_model))
         builtins.append(entry)
     report: dict[str, object] = {"builtin_platforms": builtins}
-    if config_path is not None:
-        config = _load_json_file(config_path, "platforms config")
-        if not isinstance(config, Mapping):
-            raise ValueError("platforms config must be a JSON object")
-        dispatch = PlatformDispatchConfig.from_dict(config)
+    if dispatch is not None:
         report["profiles"] = [
             {
                 "profile_id": profile.profile_id,
