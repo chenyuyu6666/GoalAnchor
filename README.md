@@ -9,7 +9,7 @@ GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Eng
 
 ## 当前版本
 
-当前稳定版本为 `v0.3.2`，下一开发目标为 `v0.4.0`；日常开发从 `master` 创建
+当前稳定版本为 `v0.3.3`，下一开发目标为 `v0.4.0`；日常开发从 `master` 创建
 短期工作分支，运行时版本由 `goalanchor.__version__` 统一维护。
 
 - `v0.1.0`：初始 skills 与 Plan Audit 基线；
@@ -17,6 +17,7 @@ GoalAnchor 是面向复杂工程任务的目标锚定与可信收敛框架（Eng
 - `v0.3.0`：收紧 Plan Audit v3 诊断边界；
 - `v0.3.1`：统一提交标题与版本管理规范；
 - `v0.3.2`：简化多人协作流程。
+- `v0.3.3`：按 GitHub Flow 重构协作管理。
 
 版本说明见 [CHANGELOG.md](CHANGELOG.md)，分支、提交和发布流程见
 [CONTRIBUTING.md](CONTRIBUTING.md)。
