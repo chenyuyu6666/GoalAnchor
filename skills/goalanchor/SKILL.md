@@ -44,7 +44,10 @@ exactly and in this order; do not replace them with synonyms.
   substitution or unsupported scope. A bounded diagnostic first step is allowed, but
   it must not replace the objective or become the completion condition. If the task
   requires implementation or acceptance closure, the plan must state how each diagnostic
-  outcome returns to an implementation or acceptance path.
+  outcome returns to an implementation or acceptance path. A semantically stated
+  acceptance (for example, "acceptable smoothness") satisfies Q1 when objective,
+  blocker, and decision links are complete; demanding its quantified threshold at
+  PLAN is not a valid FAIL reason — the threshold is fixed at VERIFY entry.
 - `Q2 Logic`: complete causal problem -> action -> expected result or decision. A
   diagnostic result may support or refute a hypothesis; it does not prove a root cause
   unless the stated evidence can establish that claim. The plan need not pre-specify
@@ -71,7 +74,11 @@ not proof.
 ## VERIFY
 
 Enter only after PLAN PASS. Investigate only uncertainty that can change implementation,
-acceptance, or execution safety. Before each bounded investigation state:
+acceptance, or execution safety. The quantified acceptance threshold declared only
+semantically at PLAN is fixed here, in the first `EXIT_CRITERION`, before any
+verification action runs; starting an action without it is a VERIFY violation, and
+blocking the plan at PLAN for its absence is a Q1 misjudgment. Before each bounded
+investigation state:
 
 1. What is verified.
 2. Why it affects the decision.
