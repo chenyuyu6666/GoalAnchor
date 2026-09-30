@@ -3,11 +3,35 @@
 本文件按 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 组织，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
-## [未发布]
+## [0.6.0] - 2026-09-22
+
+本版本是一次工程质量与分发能力的优化批次（无破坏性 API 变更），由对发布候选的系统盘点驱动。
+
+### Added
+
+- **wheel 现携带可安装 Skill**：`goalanchor/_skill/`（SKILL.md 与 references/agents）作为 package data 打入发行包，`pip install goalanchor` 的用户在仓库外也能运行 `python -m goalanchor install`。新增 `scripts/sync_skill_bundle.py` 以 `skills/goalanchor` 为单一来源同步包内副本，CI 用 `--check` 检测漂移。
+- **PEP 561 `py.typed` 标记**：下游类型检查器可读取库的内联类型。
+- **Gitee Go 流水线**：`.workflow/gitee-go.yml`（仓库真实远端），与 GitHub Actions 对齐。
+- **质量门禁**：CI 新增 ruff（强制）与 mypy（可见基线）步骤及包副本同步检查。
 
 ### Changed
 
-- README 表述优化并提供中英文双版本:重组为「问题 → 能力 → CLI → 快速开始 → 结构 → 文档 → 验证」层次,消解重复版本声明与超长段落,绝对路径收敛为 `Doc/` 索引;新增英文版 [`README.en.md`](README.en.md),两版顶部互加语言切换链接(中文版 [`README.md`](README.md) 仍为打包默认,`pyproject.toml` 不变)。
+- **`platforms` 模块重构为子包**（1070 行单文件 → `platform_common` / `platform_prompt` / `platform_parse` / `platform_config`)，职责分离；`goalanchor.platforms` 门面重导出全部原公共符号，导入路径向后兼容。
+- **dispatch 不再重复解析 argv**：argv 模板在配置加载期解析一次并缓存（`_prepared_argv`)，消除「配置校验」与「派发」两层 `_apply_model` 口径漂移的根源。
+- README（中英文双版本）：优化表述与层次；仓库结构处明确 **`docs/`（仓库内、随包版本化）与 `Doc/`（仓库旁、设计/记录中心）** 的分工。
+- `validate-multi-round.ps1` 增加依赖自检：隔离目录缺失或 pytest/pyyaml 残缺时，先报出可执行的重建指令，而非在后续 pytest 处模糊失败。
+- `_enum` 辅助函数泛型化（TypeVar），返回具体枚举类型，提升类型精度。
+
+### Tests
+
+- ruff 自动整理全项目导入排序与未用符号；修复 1 处真实问题（`evaluate_fixtures.py` 使用未导入的 `Sequence`)。
+- `tests/test_platforms.py` 增加测试类索引注释（导航改进；物理拆分为多文件属高 churn 的可选项，未做）。
+- 全量 **206 passed**;`validate-multi-round.ps1` 基线 206;压测默认强度 **739 项校验零失败**。
+
+### Notes
+
+- mypy 以非阻断基线运行：代码早于类型化，存在一批已知的动态属性/边界 object 类型精度项（非运行时缺陷），收敛后改为强制门禁。
+- CI YAML（GitHub Actions / Gitee Go）语法需在对应平台首次启用时核验，本地不可执行。
 
 ## [0.5.1] - 2026-09-22
 

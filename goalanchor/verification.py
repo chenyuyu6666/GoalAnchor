@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from .core import ContractValidationError, GoalContract, LifecycleState, transition
 
@@ -78,7 +79,7 @@ class VerificationResult:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "VerificationResult":
+    def from_dict(cls, payload: Mapping[str, Any]) -> VerificationResult:
         return cls(**dict(payload))
 
 

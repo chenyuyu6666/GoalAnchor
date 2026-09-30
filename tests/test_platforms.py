@@ -1,4 +1,16 @@
-"""Tests for the built-in multi-platform Agent dispatch adapters."""
+"""Tests for the built-in multi-platform Agent dispatch adapters.
+
+Test-class index (in file order):
+
+- ``TestRenderAgentPrompt``     prompt rendering per role/language
+- ``TestExtractResultPayload``  platform output envelope parsing
+- ``TestDispatchConfigValidation``  config rejection rules
+- ``TestPlatformReviewCycle``   full review-cycle dispatch (largest class)
+- ``TestReviewPromptCli``       ``review-prompt`` CLI
+- ``TestLegacyCompatibility``  legacy stdio-bridge configs
+- ``TestCliReviewCycle``        ``review-cycle`` CLI end to end
+- ``TestModelConsistency``      model pinning/warnings behavior
+"""
 
 from __future__ import annotations
 
@@ -13,7 +25,6 @@ from goalanchor.agent_runtime import (
     AgentRequest,
     AgentRole,
     AgentRuntimeError,
-    AgentRuntimeCapabilities,
     DisputePacket,
     JsonStdioAgentAdapter,
     ReviewRisk,
@@ -28,7 +39,7 @@ from goalanchor.platforms import (
     extract_result_payload,
     render_agent_prompt,
 )
-from goalanchor.review_service import ArbiterResult, ReviewContext, ReviewerResult
+from goalanchor.review_service import ReviewContext, ReviewerResult
 
 FAKE_AGENT = r"""
 import json, re, sys
@@ -138,7 +149,7 @@ def context() -> ReviewContext:
 
 def _dispatch_config(tmp_path: Path, **overrides) -> dict:
     agent = _write_script(tmp_path, "agent.py", FAKE_AGENT)
-    meta = _write_script(tmp_path, "meta_bridge.py", FAKE_META_BRIDGE)
+    _write_script(tmp_path, "meta_bridge.py", FAKE_META_BRIDGE)
     config = {
         "platforms": {
             "fake-clean": {
@@ -1003,7 +1014,7 @@ class TestPlatformReviewCycle:
         assert "只依据下方材料独立判断" in prompt
         assert 'agent_id="reviewer-1"' in prompt
         assert context.fingerprint in prompt
-        assert f"# GoalAnchor reviewer review (round 1)" in prompt
+        assert "# GoalAnchor reviewer review (round 1)" in prompt
         with pytest.raises(AgentRuntimeError, match="language"):
             render_agent_prompt(request, language="fr")
 

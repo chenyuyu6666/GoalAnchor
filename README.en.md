@@ -10,7 +10,7 @@ It blocks four recurring failure modes — goal drift, error accumulation, fake 
 | | |
 |---|---|
 | Current version | [`v0.5.1`](CHANGELOG.md) |
-| Requires | Python 3.9+ (**zero third-party runtime dependencies**) |
+| Requires | Python 3.11+ (**zero third-party runtime dependencies**; CI runs 3.11/3.12/3.13) |
 | Distribution | A standard `SKILL.md`, a Python contract library, and a CLI |
 | Supported hosts | Codex, Claude Code, DSH, Zcode, Pi, Cursor, Gemini CLI, OpenCode, and more |
 
@@ -97,8 +97,13 @@ skills/       Custom Skills: goalanchor / graphify / deeply; .system/ holds upst
 scripts/      Stress, benchmark, and test-task scripts
 tests/        Full unit-test suite
 examples/     Runnable offline examples
-docs/         In-repo documentation assets (automated test task, dialogue experience test)
+docs/         In-repo documentation assets, versioned with the package
 ```
+
+The two documentation locations have distinct roles:
+
+- **`docs/` (in-repo, lowercase)**: version-controlled assets shipped with the code and referenced by scripts and CI;
+- **`Doc/` (sibling directory, capitalized)**: a separate center for design/specs/records (task plan, ADRs, per-change logs, knowledge graph); not shipped with the package; enter through its `README.md`.
 
 Everything under `.system/` is an upstream Skill snapshot: do not edit it directly except when syncing upstream; patches are logged in [UPSTREAM_SOURCES.md](UPSTREAM_SOURCES.md).
 

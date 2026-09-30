@@ -11,9 +11,27 @@ requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [{name = "陈煜宇", email = "chenyuyu6666@gmail.com"}]
 dependencies = []
+keywords = ["code-review", "agent", "verification", "quality-gate"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Quality Assurance",
+    "Typing :: Typed",
+]
 
 [project.scripts]
 goalanchor = "goalanchor.compat:main"
+
+[project.urls]
+"Source (Gitee)" = "https://gitee.com/chen-yuyu6666/goal-anchor"
+"Changelog" = "https://gitee.com/chen-yuyu6666/goal-anchor/blob/master/CHANGELOG.md"
 
 [tool.setuptools.dynamic]
 version = {attr = "goalanchor.__version__"}
@@ -21,6 +39,38 @@ version = {attr = "goalanchor.__version__"}
 [tool.setuptools.packages.find]
 include = ["goalanchor*"]
 
+[tool.setuptools.package-data]
+goalanchor = [
+    "py.typed",
+    "_skill/SKILL.md",
+    "_skill/agents/*.yaml",
+    "_skill/references/*.md",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# UP042 pushes a regex rewrite for ``re`` patterns that are already correct;
+# E501 is enforced but the few long URLs/regex literals stay readable whole.
+ignore = ["UP042"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # re-export modules
+"scripts/stress_model_sync.py" = [
+    "B023",  # closures are consumed synchronously within the same loop iteration
+]
+"scripts/compare_versions.py" = [
+    "E402",  # sys.path must be set before importing the package
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true

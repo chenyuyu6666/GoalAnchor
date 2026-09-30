@@ -12,10 +12,10 @@ from .review_service import (
     ArbiterResult,
     MetaReviewResult,
     ReviewContext,
+    ReviewerResult,
     ReviewOutcome,
     ReviewRisk,
     ReviewVerdict,
-    ReviewerResult,
     run_review_cycle,
 )
 from .verification import VerificationOutcome, VerificationResult, apply_verification_transition

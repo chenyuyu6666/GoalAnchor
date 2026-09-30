@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any
 
 from .core import ContractValidationError, LifecycleState
 from .integration import ReviewFinding
@@ -107,7 +108,7 @@ class ReviewContext:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "ReviewContext":
+    def from_dict(cls, payload: Mapping[str, Any]) -> ReviewContext:
         if not isinstance(payload, Mapping):
             raise ContractValidationError("payload must be a mapping")
         data = dict(payload)
@@ -166,7 +167,7 @@ class ReviewerResult:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "ReviewerResult":
+    def from_dict(cls, payload: Mapping[str, Any]) -> ReviewerResult:
         data = dict(payload)
         findings = tuple(
             ReviewFinding.from_dict(item) for item in data.pop("findings", ())
@@ -215,7 +216,7 @@ class ArbiterResult:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "ArbiterResult":
+    def from_dict(cls, payload: Mapping[str, Any]) -> ArbiterResult:
         return cls(**dict(payload))
 
 
@@ -264,7 +265,7 @@ class MetaReviewResult:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "MetaReviewResult":
+    def from_dict(cls, payload: Mapping[str, Any]) -> MetaReviewResult:
         data = dict(payload)
         findings = tuple(
             ReviewFinding.from_dict(item) for item in data.pop("findings", ())
@@ -304,7 +305,7 @@ class DisputePacket:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "DisputePacket":
+    def from_dict(cls, payload: Mapping[str, Any]) -> DisputePacket:
         data = dict(payload)
         findings = tuple(
             ReviewFinding.from_dict(item) for item in data.pop("reviewer_findings", ())

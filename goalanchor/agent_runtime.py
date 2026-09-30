@@ -8,15 +8,16 @@ DSH, Zcode, or any other host that can expose such a bridge command.
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field, replace
-from enum import Enum
 import json
 import math
 import os
 import subprocess
+from collections.abc import Callable, Mapping, Sequence
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field, replace
+from enum import Enum
 from threading import Lock
-from typing import Any, Callable, Mapping, Protocol, Sequence
+from typing import Any, Protocol
 
 from .core import ContractValidationError
 from .review_service import (
@@ -24,10 +25,9 @@ from .review_service import (
     DisputePacket,
     MetaReviewResult,
     ReviewContext,
-    ReviewRisk,
     ReviewerResult,
+    ReviewRisk,
     ReviewServiceResult,
-    required_reviewers,
     run_review_cycle,
 )
 
@@ -109,7 +109,7 @@ class AgentProfile:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "AgentProfile":
+    def from_dict(cls, payload: Mapping[str, Any]) -> AgentProfile:
         return cls(
             profile_id=payload["profile_id"],
             display_name=payload["display_name"],
@@ -329,7 +329,7 @@ class AgentCommand:
         object.__setattr__(self, "env", dict(self.env))
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "AgentCommand":
+    def from_dict(cls, payload: Mapping[str, Any]) -> AgentCommand:
         if not isinstance(payload, Mapping):
             raise AgentRuntimeError("Agent command configuration must be an object")
         return cls(
@@ -359,9 +359,11 @@ class JsonStdioAgentAdapter:
             else:
                 try:
                     key = _enum(role, AgentRole, "commands role")
-                except AgentRuntimeError:
+                except AgentRuntimeError as exc:
                     if not isinstance(role, str) or not role.strip():
-                        raise AgentRuntimeError("profile_id must be a non-empty string")
+                        raise AgentRuntimeError(
+                            "profile_id must be a non-empty string"
+                        ) from exc
                     key = role
             if not isinstance(command, AgentCommand):
                 raise AgentRuntimeError("commands must contain AgentCommand values")
@@ -389,7 +391,7 @@ class JsonStdioAgentAdapter:
         self._lock = Lock()
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "JsonStdioAgentAdapter":
+    def from_dict(cls, payload: Mapping[str, Any]) -> JsonStdioAgentAdapter:
         if not isinstance(payload, Mapping):
             raise AgentRuntimeError("Agent adapter configuration must be an object")
         raw_profiles = payload.get("profiles")
@@ -442,7 +444,11 @@ class JsonStdioAgentAdapter:
             return self._command_for(request.role)
         with self._lock:
             assigned = self._assignments.get(request.agent_id)
-            preferred = assigned or self._role_bindings.get(request.agent_id) or self._role_bindings.get(request.role.value)
+            preferred = (
+                assigned
+                or self._role_bindings.get(request.agent_id)
+                or self._role_bindings.get(request.role.value)
+            )
             excluded = ()
             if not self._allow_profile_reuse:
                 excluded = tuple(
@@ -530,7 +536,6 @@ def run_review_cycle_with_adapter(
     # runtime Protocol checks.
     if not hasattr(adapter, "invoke"):
         raise AgentRuntimeError("adapter must provide invoke(request)")
-    required = required_reviewers(risk)
     if max_workers is not None and (
         isinstance(max_workers, bool) or not isinstance(max_workers, int) or max_workers < 1
     ):

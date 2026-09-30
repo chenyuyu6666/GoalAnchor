@@ -15,7 +15,6 @@ from goalanchor.compat import (
     validate_skill_directory,
 )
 
-
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "skills" / "goalanchor"
 

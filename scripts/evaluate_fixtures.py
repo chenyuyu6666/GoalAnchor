@@ -5,9 +5,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from pathlib import Path
 import sys
-from typing import Any, Mapping
+from collections.abc import Mapping, Sequence
+from pathlib import Path
+from typing import Any
 
 
 def _sha256_fixtures(fixtures_dir: Path, fixture_paths: list[Path]) -> str:
@@ -125,7 +126,10 @@ def _chain(ProvenanceChain, ProvenanceNode, ProvenanceLink, ProvenanceKind, mani
         ProvenanceNode("source", ProvenanceKind.SOURCE, "src-tree", "1" * 64, manifest.source_revision),
         ProvenanceNode("object", ProvenanceKind.OBJECT, "app.o", "2" * 64, manifest.source_revision),
         ProvenanceNode("elf", ProvenanceKind.ELF, "app.elf", "3" * 64, manifest.source_revision),
-        ProvenanceNode("bin", ProvenanceKind.BIN_FW, manifest.artifact_id, manifest.artifact_sha256, manifest.source_revision),
+        ProvenanceNode(
+            "bin", ProvenanceKind.BIN_FW, manifest.artifact_id,
+            manifest.artifact_sha256, manifest.source_revision,
+        ),
         ProvenanceNode("flashed", ProvenanceKind.FLASHED_ARTIFACT, "flash-001", "5" * 64),
         ProvenanceNode("dut", ProvenanceKind.DEVICE_UNDER_TEST, "device-01"),
     )
@@ -194,9 +198,9 @@ def evaluate_case(case: Mapping[str, Any]) -> Any:
         check_artifact_manifest,
         check_closure,
         check_conclusion,
+        check_evidence,
         check_experiment,
         check_provenance,
-        check_evidence,
         evaluate_plan,
     )
 
@@ -207,25 +211,42 @@ def evaluate_case(case: Mapping[str, Any]) -> Any:
         work_items = tuple(
             _work_item(WorkItem, **item) for item in case_data.get("work_items", ({},))
         )
-        structure = StructureReview(**case_data.get("structure_review", {"responsibility_keys": ("snapshot",)}))
+        structure = StructureReview(
+            **case_data.get("structure_review", {"responsibility_keys": ("snapshot",)})
+        )
         return evaluate_plan(contract, work_items, structure)
     if phase == "evidence":
-        return check_evidence(_evidence(EvidenceRecord, EvidenceLevel, ConclusionLevel, EvidenceStatus, **case_data.get("evidence", {})))
+        return check_evidence(
+            _evidence(EvidenceRecord, EvidenceLevel, ConclusionLevel, EvidenceStatus,
+                      **case_data.get("evidence", {}))
+        )
     if phase == "conclusion":
-        evidence = _evidence(EvidenceRecord, EvidenceLevel, ConclusionLevel, EvidenceStatus, **case_data.get("evidence", {}))
+        evidence = _evidence(EvidenceRecord, EvidenceLevel, ConclusionLevel,
+                             EvidenceStatus, **case_data.get("evidence", {}))
         return check_conclusion(case_data.get("conclusion_level", "Causal"), (evidence,))
     if phase == "experiment":
-        return check_experiment(_experiment(ExperimentPlan, AttributionStatus, **case_data.get("experiment", {})))
+        return check_experiment(
+            _experiment(ExperimentPlan, AttributionStatus,
+                        **case_data.get("experiment", {}))
+        )
     if phase == "provenance":
         manifest = _manifest(ArtifactManifest, ArtifactKind)
-        chain = _chain(ProvenanceChain, ProvenanceNode, ProvenanceLink, ProvenanceKind, manifest, case_data.get("provenance_variant"))
+        chain = _chain(ProvenanceChain, ProvenanceNode, ProvenanceLink,
+                       ProvenanceKind, manifest, case_data.get("provenance_variant"))
         return check_provenance(chain, manifest)
     if phase == "closure":
         manifest = _manifest(ArtifactManifest, ArtifactKind)
-        chain = _chain(ProvenanceChain, ProvenanceNode, ProvenanceLink, ProvenanceKind, manifest)
-        return check_closure(_closure(ClosureRecord, ClosureLevel, manifest, chain, **case_data.get("closure", {})))
+        chain = _chain(ProvenanceChain, ProvenanceNode, ProvenanceLink,
+                       ProvenanceKind, manifest)
+        return check_closure(
+            _closure(ClosureRecord, ClosureLevel, manifest, chain,
+                     **case_data.get("closure", {}))
+        )
     if phase == "artifact":
-        return check_artifact_manifest(_manifest(ArtifactManifest, ArtifactKind, **case_data.get("artifact_manifest", {})))
+        return check_artifact_manifest(
+            _manifest(ArtifactManifest, ArtifactKind,
+                      **case_data.get("artifact_manifest", {}))
+        )
     raise ValueError(f"unsupported fixture phase: {phase}")
 
 

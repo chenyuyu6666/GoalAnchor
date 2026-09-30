@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from .core import ContractValidationError, LifecycleState
 from .gates import GateFinding, GateId, GateResult
@@ -169,7 +170,7 @@ class Authorization:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "Authorization":
+    def from_dict(cls, payload: Mapping[str, Any]) -> Authorization:
         return cls(**dict(payload))
 
 
@@ -226,7 +227,7 @@ class DecisionRecord:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "DecisionRecord":
+    def from_dict(cls, payload: Mapping[str, Any]) -> DecisionRecord:
         return cls(**dict(payload))
 
 

@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
 import subprocess
 import sys
 import time
-from typing import Any, Mapping, Sequence
-
+from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 TASK_START = "<!-- GOALANCHOR_TEST_TASK_START -->"
@@ -356,10 +356,10 @@ def run_task(
     task = _load_task(task_path.resolve())
     root = root.resolve()
     revision = _git_revision(root)
-    started_at = datetime.now(timezone.utc)
+    started_at = datetime.now(UTC)
     results = [_run_check(check, root, revision) for check in task["checks"]]
     passed = all(result["passed"] for result in results)
-    finished_at = datetime.now(timezone.utc)
+    finished_at = datetime.now(UTC)
     report = {
         "schema_version": 1,
         "task_id": task["task_id"],

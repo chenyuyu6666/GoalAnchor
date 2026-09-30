@@ -1,49 +1,22 @@
 """Public GoalAnchor contract and gate API."""
 
 from ._version import __version__
-
-from .compat import (
-    HOSTS,
-    SKILL_ID,
-    HostSpec,
-    check_install,
-    find_skill_source,
-    install_skill,
-    resolve_destination,
-    validate_skill_directory,
+from .agent_runtime import (
+    AgentAdapter,
+    AgentCatalog,
+    AgentCommand,
+    AgentDispatcher,
+    AgentProfile,
+    AgentRequest,
+    AgentRole,
+    AgentRuntimeCapabilities,
+    AgentRuntimeError,
+    CatalogAgentAdapter,
+    JsonStdioAgentAdapter,
+    run_review_cycle_with_adapter,
+    run_review_cycle_with_dispatcher,
 )
-from .gates import (
-    ExecutePreflight,
-    GateFinding,
-    GateId,
-    GateReport,
-    GateResult,
-    StructureReview,
-    VerifyRecord,
-    check_execute,
-    check_plan_change,
-    check_q1_goal,
-    check_q2_logic,
-    check_q3_path,
-    check_q4_minimum,
-    check_q5_structure,
-    check_verify,
-    evaluate_plan,
-)
-from .evidence import (
-    AttributionStatus,
-    ConclusionLevel,
-    DesignDecision,
-    EvidenceLevel,
-    EvidenceRecord,
-    EvidenceStatus,
-    ExperimentPlan,
-    check_conclusion,
-    check_design_necessity,
-    check_evidence,
-    check_experiment,
-    check_observation_window,
-)
+from .benchmark import run_phase6_benchmark
 from .closure import (
     ArtifactKind,
     ArtifactManifest,
@@ -60,93 +33,16 @@ from .closure import (
     highest_supported_level,
     verify_artifact_file,
 )
-from .integration import (
-    GraphConfidence,
-    GraphEvidenceRef,
-    ReviewFinding,
-    check_graphify_output,
-    check_graphify_refs,
-    check_review_finding,
-    check_review_output,
-    graphify_claims_as_observations,
-    normalize_graphify_output,
-    normalize_review_output,
+from .compat import (
+    HOSTS,
+    SKILL_ID,
+    HostSpec,
+    check_install,
+    find_skill_source,
+    install_skill,
+    resolve_destination,
+    validate_skill_directory,
 )
-from .regression import (
-    RegressionOutcome,
-    VersionComparison,
-    VersionRun,
-    compare_version_runs,
-)
-from .governance import (
-    GovernanceGate,
-    GovernanceMapping,
-    apply_suggested_transition,
-    governance_owners,
-    map_gate_report,
-    map_gate_result,
-    map_gate_results,
-)
-from .decision import (
-    ActionType,
-    Authorization,
-    AuthorizationKind,
-    AuthorizationScope,
-    DecisionActor,
-    DecisionRecord,
-    check_action_authorization,
-)
-from .verification import (
-    VerificationOutcome,
-    VerificationResult,
-    apply_verification_transition,
-)
-from .review_service import (
-    ArbiterResult,
-    DecisionReport,
-    DisputePacket,
-    MetaReviewResult,
-    ReviewContext,
-    ReviewOutcome,
-    ReviewRisk,
-    ReviewServiceResult,
-    ReviewVerdict,
-    ReviewerResult,
-    evaluate_review_cycle,
-    evaluate_review_round,
-    required_reviewers,
-    run_review_cycle,
-)
-from .agent_runtime import (
-    AgentAdapter,
-    AgentCatalog,
-    AgentCommand,
-    AgentDispatcher,
-    AgentProfile,
-    AgentRequest,
-    AgentRole,
-    AgentRuntimeError,
-    AgentRuntimeCapabilities,
-    CatalogAgentAdapter,
-    JsonStdioAgentAdapter,
-    run_review_cycle_with_dispatcher,
-    run_review_cycle_with_adapter,
-)
-from .benchmark import run_phase6_benchmark
-from .platforms import (
-    BUILTIN_PLATFORMS,
-    PlatformAgentAdapter,
-    PlatformAgentRouter,
-    PlatformDispatchConfig,
-    PlatformSpec,
-    ProfileBinding,
-    adapter_from_config,
-    build_platform_adapter,
-    extract_result_payload,
-    probe_platform,
-    render_agent_prompt,
-)
-
 from .core import (
     Claim,
     ClaimKind,
@@ -166,6 +62,108 @@ from .core import (
     transition,
     validate_contract,
     validate_work_item,
+)
+from .decision import (
+    ActionType,
+    Authorization,
+    AuthorizationKind,
+    AuthorizationScope,
+    DecisionActor,
+    DecisionRecord,
+    check_action_authorization,
+)
+from .evidence import (
+    AttributionStatus,
+    ConclusionLevel,
+    DesignDecision,
+    EvidenceLevel,
+    EvidenceRecord,
+    EvidenceStatus,
+    ExperimentPlan,
+    check_conclusion,
+    check_design_necessity,
+    check_evidence,
+    check_experiment,
+    check_observation_window,
+)
+from .gates import (
+    ExecutePreflight,
+    GateFinding,
+    GateId,
+    GateReport,
+    GateResult,
+    StructureReview,
+    VerifyRecord,
+    check_execute,
+    check_plan_change,
+    check_q1_goal,
+    check_q2_logic,
+    check_q3_path,
+    check_q4_minimum,
+    check_q5_structure,
+    check_verify,
+    evaluate_plan,
+)
+from .governance import (
+    GovernanceGate,
+    GovernanceMapping,
+    apply_suggested_transition,
+    governance_owners,
+    map_gate_report,
+    map_gate_result,
+    map_gate_results,
+)
+from .integration import (
+    GraphConfidence,
+    GraphEvidenceRef,
+    ReviewFinding,
+    check_graphify_output,
+    check_graphify_refs,
+    check_review_finding,
+    check_review_output,
+    graphify_claims_as_observations,
+    normalize_graphify_output,
+    normalize_review_output,
+)
+from .platforms import (
+    BUILTIN_PLATFORMS,
+    PlatformAgentAdapter,
+    PlatformAgentRouter,
+    PlatformDispatchConfig,
+    PlatformSpec,
+    ProfileBinding,
+    adapter_from_config,
+    build_platform_adapter,
+    extract_result_payload,
+    probe_platform,
+    render_agent_prompt,
+)
+from .regression import (
+    RegressionOutcome,
+    VersionComparison,
+    VersionRun,
+    compare_version_runs,
+)
+from .review_service import (
+    ArbiterResult,
+    DecisionReport,
+    DisputePacket,
+    MetaReviewResult,
+    ReviewContext,
+    ReviewerResult,
+    ReviewOutcome,
+    ReviewRisk,
+    ReviewServiceResult,
+    ReviewVerdict,
+    evaluate_review_cycle,
+    evaluate_review_round,
+    required_reviewers,
+    run_review_cycle,
+)
+from .verification import (
+    VerificationOutcome,
+    VerificationResult,
+    apply_verification_transition,
 )
 
 __all__ = [

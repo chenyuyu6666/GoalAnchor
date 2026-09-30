@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
-from pathlib import Path
 import sys
+from pathlib import Path
 
 import pytest
-
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER_PATH = ROOT / "scripts" / "run_test_task.py"
@@ -44,7 +43,8 @@ def test_runner_executes_fixture_cli_and_file_checks(tmp_path: Path) -> None:
   \"task_id\": \"runner-smoke\",
   \"description\": \"Runner smoke checks\",
   \"checks\": [
-     {\"id\": \"fixtures\", \"type\": \"fixtures\", \"fixture_dir\": \"tests/fixtures/regression\",\n      \"require_all_aligned\": true, \"timeout_seconds\": 60},
+     {\"id\": \"fixtures\", \"type\": \"fixtures\", \"fixture_dir\": \"tests/fixtures/regression\",\
+\n      \"require_all_aligned\": true, \"timeout_seconds\": 60},
     {\"id\": \"cli\", \"type\": \"cli\", \"args\": [\"--help\"], \"expected_exit\": 0},
     {\"id\": \"file\", \"type\": \"file\", \"paths\": [\"README.md\"]}
   ]
