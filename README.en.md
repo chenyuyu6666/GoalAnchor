@@ -89,6 +89,18 @@ python -m goalanchor review-cycle --request review-request.json --config agent-c
 
 A runnable offline example (an echo platform — no credits spent): [`examples/multi-platform-review/`](examples/multi-platform-review/).
 
+## PI-Desktop
+
+Build a desktop Skill/Extension plugin with its Python core:
+
+```text
+python -m goalanchor.pi_desktop build --destination build/pi-desktop --archive build/goalanchor.piplug
+```
+
+Install the package from PI-Desktop's Plugins page and review its permissions. Pi CLI directory installation is a separate path. The adapter uses a 0.18.0 minimum protocol baseline and detects public capabilities on later versions. Existing output paths are never overwritten. See the [plugin guide](goalanchor/_pi_desktop/README.md) and [specification](docs/PI-Desktop适配规格.md).
+
+Reviews use isolated completions on the session's current model. The adapter does not expose visible child sessions. Live tests cover installation and LOW review on 0.18.0, and review, tool gates, Stop and uninstall on 0.19.1; see the [verification record](docs/PI-Desktop验证记录.md). Fully quit and restart the host after same-version reinstalls to avoid stale dependency caches. Desktop development tests require Node.js 20+.
+
 ## Repository layout
 
 ```text
@@ -143,7 +155,7 @@ Development, Git commits, and maintenance updates **must follow** [docs/开发Gi
 - **Commits**: daily commits use `type(scope): description` (feat / fix / docs / test / refactor / chore); commits touching logic include scope, key decisions, verification results, and remaining risks in the body;
 - **Commit topology**: history keeps the fixed structure "work commits → merge commit → `vX.Y.Z` release aggregate commit → matching tag"; published commits, merge nodes, and tags are never moved, reused, or deleted;
 - **Versions**: the version number changes only in the release aggregate commit; after a release, sync CHANGELOG, README, and CONTRIBUTING references;
-- **Verification**: at minimum `pytest -q`, `ruff check .`, and `git diff --check` before every commit, plus scoped checks recorded with real commands and results in the body;
+- **Verification**: at minimum `pytest -q`, `ruff check goalanchor tests scripts`, and `git diff --check` before every commit, plus scoped checks recorded with real commands and results in the body;
 - **Rollback**: unreleased issues revert via reverse/fix commits; released versions get a new patch version — old tags never move;
 - **AI collaboration**: the boundaries for AI-driven development, commits, and pushes (remote writes require explicit authorization) and the delivery-report format are defined in the same specification.
 

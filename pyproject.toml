@@ -45,6 +45,11 @@ goalanchor = [
     "_skill/SKILL.md",
     "_skill/agents/*.yaml",
     "_skill/references/*.md",
+    "_pi_desktop/*.cjs",
+    "_pi_desktop/*.mjs",
+    "_pi_desktop/*.json",
+    "_pi_desktop/*.md",
+    "_pi_desktop/examples/*.json",
 ]
 
 [tool.pytest.ini_options]

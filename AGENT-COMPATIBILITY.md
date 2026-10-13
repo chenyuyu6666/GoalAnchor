@@ -136,6 +136,23 @@ Zcode 自己提供；只需把命名 Agent 映射到 `reviewer`、`arbiter` 和 
 Pi 支持 `.pi/skills`、`.agents/skills` 和 `~/.pi/agent/skills`。本仓库的 `pi` target 使用 Pi 原生目录；也可以使用 `agents` target 复用中立目录。当前机器未安装 Pi，因此本地记录只覆盖目录投影和文件哈希，未覆盖 Pi 运行时自动发现。
 Pi 的显式调用名为 `/skill:goalanchor`。
 
+### PI-Desktop（vastsa）
+
+PI-Desktop 与 Pi CLI 分开适配；桌面不会自动导入 `~/.pi`。使用
+`python -m goalanchor.pi_desktop build --destination <新目录> --archive <新包.piplug>`
+生成 Skill/Extension 插件，再通过宿主 Plugins 导入并审核权限。以 0.18.0 为最低基线，
+后续版本按公开 API 能力检测，不依赖固定安装路径、私有 IPC 或数据库。
+
+已验证 0.18.0 发行包的 manifest/Skill 描述投影及实际 ExtensionRunner 加载、命令、工具 Hook、
+Python 预检和会话重建清零。后续真实桌面验收覆盖 0.18.0 的安装/LOW 审核，以及
+0.19.1 的原生安装、LOW 审核、确认窗口、单次写入、拒绝变化参数、Stop 和卸载清理。
+仅在所列范围宣称实测；未知后续版本接受非关键新增字段，必需接口不兼容时明确拒绝。
+
+审核复用原有 Reviewer/Arbiter/Meta 及两轮策略，通过当前模型独立 completion 执行；
+0.18.0 不提供公开的可见子会话派发。门控由用户 `/goalanchor-guard on` 主动启用，
+经预检和宿主确认绑定单次精确工具调用。宿主 Hook 的 fail-open、模型额度与取消限制见
+[`goalanchor/_pi_desktop/README.md`](goalanchor/_pi_desktop/README.md)。
+
 ### ChatGPT / OpenAI Skills API
 
 ChatGPT 的工作区 Skill 和 OpenAI Skills API 属于上传/版本 API，不是本地目录自动发现。可以把安装器复制出的 Skill 目录压缩后上传，或通过对应 API 创建版本；本仓库不在本地 CLI 中伪造账号、上传和权限操作。

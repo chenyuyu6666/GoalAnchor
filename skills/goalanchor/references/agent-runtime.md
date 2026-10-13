@@ -31,6 +31,11 @@ No shell command string is evaluated. Commands are argv arrays, so a host
 bridge can be implemented in Python, Node, a native CLI wrapper, or another
 runtime without changing GoalAnchor.
 
+For vastsa/PI-Desktop, use the dedicated plugin rather than the Pi CLI directory
+projection. See [PI-Desktop integration](pi-desktop.md). It uses the desktop's
+public completion API and explicitly reports when visible child sessions are
+unavailable; Python still owns review policy and result validation.
+
 ## Visible host-native dispatch
 
 Subagent conversations are visible in a host UI only when the host spawns them

@@ -119,11 +119,13 @@ docs(process): 更新发布和回滚流程
 
 ```powershell
 python -m pytest -q
-ruff check .
+ruff check goalanchor tests scripts
 git diff --check
 ```
 
 按变更范围追加类型检查、构建、打包、端到端、压力测试或多平台验证，并在提交正文记录实际命令和结果。
+
+Ruff 检查范围与 CI 保持一致，仅覆盖自有 Python 代码；上游 Skill 快照不纳入该门禁，不以修改上游文件来消除快照诊断。
 
 ## 7. Pull Request 与合并
 

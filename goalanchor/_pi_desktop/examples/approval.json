@@ -1,0 +1,42 @@
+{
+  "contract": {
+    "task_objective": "创建一次性演示文件并检查内容",
+    "constraints": ["只写 .goalanchor-demo.txt", "不声明根因修复或产品交付"],
+    "acceptance_criteria": ["文件内容等于批准文本"],
+    "current_blocking_uncertainty": null,
+    "stage": "PLAN",
+    "deliverables": [".goalanchor-demo.txt"]
+  },
+  "work_items": [{
+    "item_id": "DEMO-1",
+    "issue": "验证桌面工具批准链路",
+    "input_evidence": ["用户选择的演示操作"],
+    "action": "写入演示文件并读回",
+    "expected_decision_impact": "决定一次性工具批准是否生效",
+    "exit_criterion": "一次写入成功且读回内容相同",
+    "expected_result": "文件内容等于批准文本",
+    "decision_link": "完成本演示验收",
+    "assumptions": [],
+    "assumptions_verified": false,
+    "unverified_patch_refs": []
+  }],
+  "structure_review": {},
+  "verify": {
+    "verification_object": "一次性演示写入",
+    "decision_significance": "验证门控能拒绝未批准操作且允许批准操作",
+    "exit_criterion": "固定文件写入一次，读回内容与批准文本相同",
+    "observable": true,
+    "finite": true
+  },
+  "execute": {
+    "plan_state": "VERIFY",
+    "verify_passed": true,
+    "constraints_acknowledged": true,
+    "change_scope": "仅新建 .goalanchor-demo.txt；若已存在先停止并更换目标",
+    "recovery_path": "由用户删除演示文件"
+  },
+  "operations": [{
+    "tool": "Write",
+    "input": {"path": ".goalanchor-demo.txt", "content": "GoalAnchor approved once.\n"}
+  }]
+}
