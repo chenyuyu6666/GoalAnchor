@@ -12,7 +12,7 @@ GoalAnchor 是面向复杂工程任务的**目标锚定与可信收敛框架**�
 | 当前版本 | [`v0.6.0`](CHANGELOG.md) |
 | Python 要求 | 3.11+（运行时**零第三方依赖**；CI 验证 3.11/3.12/3.13） |
 | 分发形态 | 标准 `SKILL.md` + Python 契约库 + CLI |
-| 宿主支持 | Codex、Claude Code、DSH、Zcode、Pi、Cursor、Gemini CLI、OpenCode 等 |
+| 宿主支持 | Codex、Claude Code、DSH、Zcode、Pi CLI、PI-Desktop、Cursor、Gemini CLI、OpenCode 等 |
 
 ---
 
@@ -89,6 +89,18 @@ python -m goalanchor review-cycle --request review-request.json --config agent-c
 
 可直接运行的离线示例（echo 平台，不消耗额度）：[`examples/multi-platform-review/`](examples/multi-platform-review/)。
 
+### PI-Desktop
+
+桌面版使用独立的 Skill/Extension 插件包，支持同模型独立审核、明确启用的工具门控和能力诊断。以 0.18.0 为最低接口基线，后续版本按公开 API 能力检测。构建可导入目录与包：
+
+```text
+python -m goalanchor.pi_desktop build --destination build/pi-desktop --archive build/goalanchor.piplug
+```
+
+在 PI-Desktop 的 Plugins 页安装该包并审核权限；不使用 `install --target pi` 代替桌面安装。首次生成后再构建应换一个新目录/文件，构建器不覆盖已有产物。完整说明见 [桌面插件指南](goalanchor/_pi_desktop/README.md) 与 [适配规格](docs/PI-Desktop适配规格.md)。
+
+独立审核通过宿主 completion 执行；没有可见子会话。已实测 0.18.0 的安装/LOW 审核与 0.19.1 的审核、门控、Stop 和卸载；范围和限制见 [验证记录](docs/PI-Desktop验证记录.md)。同版本重装后应完整退出并重启宿主，避免旧模块缓存。开发桌面测试需要 Node.js 20+。
+
 ## 仓库结构
 
 ```text
@@ -143,7 +155,7 @@ pwsh Doc\03_验证与测试\validate-multi-round.ps1 -Rounds 2
 - **提交**：日常提交 `type(scope): 说明`（feat / fix / docs / test / refactor / chore）；涉及逻辑的提交正文包含影响范围、关键决策、验证结果与剩余风险；
 - **提交拓扑**：历史保持「工作提交 → 合并提交 → `vX.Y.Z` 发布聚合提交 → 同名标签」的固定结构；已发布的提交、合并节点和标签不移动、不复用、不删除；
 - **版本**：版本号只在发布聚合提交更新；发布后同步 CHANGELOG、README、CONTRIBUTING 的版本引用；
-- **验证**：提交前至少通过 `pytest -q`、`ruff check .`、`git diff --check`，按变更范围追加专项验证并在正文记录实际命令与结果；
+- **验证**：提交前至少通过 `pytest -q`、`ruff check goalanchor tests scripts`、`git diff --check`，按变更范围追加专项验证并在正文记录实际命令与结果；
 - **回滚**：未发布问题用反向/修复提交恢复；已发布版本发新补丁版本，不移动旧标签；
 - **AI 协作**：AI 的开发、提交与推送操作边界同样在该规范中约定（远端写操作需明确授权），交付须按固定格式报告。
 

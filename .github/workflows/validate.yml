@@ -81,3 +81,9 @@ jobs:
         run: |
           node --check skills/.system/openai-docs/scripts/fetch-codex-manual.mjs
           node --check skills/.system/openai-docs/scripts/resolve-latest-model-info.cjs
+      - name: Set up Python for portable desktop bridge tests
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: PI-Desktop behavioral and portable bridge checks
+        run: node --test tests/js/test_pi_desktop.cjs

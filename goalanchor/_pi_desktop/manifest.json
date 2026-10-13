@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "local.goalanchor",
+  "name": "GoalAnchor",
+  "version": "0.6.0",
+  "description": "Goal-anchored review and explicit tool execution gates.",
+  "main": "main.cjs",
+  "engines": { "piDesktop": ">=0.18.0" },
+  "activationEvents": ["onStartup"],
+  "permissions": ["agent.prompt.inject", "agent.extension", "agent.tool.register", "agent.complete", "session.read"],
+  "contributes": {
+    "skills": [{"id":"goalanchor", "name":"GoalAnchor", "path":"skills/goalanchor/SKILL.md",
+      "description":"Audit a formed external plan, patch or agent conclusion using PLAN/VERIFY/EXECUTE, or use for user-authorized Autonomous Closure. Avoid ordinary tasks without either trigger."}],
+    "commands": [{"id":"goalanchor.capabilities", "title":"GoalAnchor: Compatibility report"}],
+    "agentExtensions": ["extension.mjs"],
+    "agentTools": [
+      {"name": "goalanchor_review", "description": "Run bounded independent same-model review.", "risk": "medium",
+        "schema": {"type":"object", "properties":{"request":{"type":"object"}}, "required":["request"]}},
+      {"name": "goalanchor_gate", "description": "Check a GoalAnchor record; never grants execution permission.", "risk": "low",
+        "schema": {"type":"object", "properties":{"phase":{"type":"string"}, "record":{"type":"object"}}, "required":["phase","record"]}}
+    ],
+    "settings": [
+      {"key":"python", "title":"Python executable (empty uses GOALANCHOR_PYTHON or PATH)", "type":"string", "default":""}
+    ]
+  }
+}
