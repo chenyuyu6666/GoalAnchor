@@ -79,6 +79,7 @@ v0.3.2 简化多人协作流程
 - `v0.5.0`：子 Agent 模型一致性强制与 warnings 机器可读告警通道。
 - `v0.5.1`：告警措辞修正、flag 拼写防护扩展、配置加载期 argv 预检、probe 钉定（GA-V050-AUDIT 审核修复）。
 - `v0.6.0`：platforms 拆子包、wheel 携带 Skill、ruff/mypy 门禁、Gitee Go 流水线、分发与工程优化。
+- `v0.7.0`：PI-Desktop Skill/Extension 插件、同模型独立审核、显式工具门控及真实桌面验收。
 - 新功能增加 `MINOR`，兼容性修复增加 `PATCH`，破坏性变更增加 `MAJOR`。
 - 运行时版本以 `goalanchor/__init__.py` 导出的 `__version__` 为单一来源。
 - 发布前更新 `CHANGELOG.md`，在 `master` 上使用一个发布聚合提交和同名 `vX.Y.Z` 标签，

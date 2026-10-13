@@ -9,7 +9,7 @@ It blocks four recurring failure modes — goal drift, error accumulation, fake 
 
 | | |
 |---|---|
-| Current version | [`v0.6.0`](CHANGELOG.md) |
+| Current version | [`v0.7.0`](CHANGELOG.md) |
 | Requires | Python 3.11+ (**zero third-party runtime dependencies**; CI runs 3.11/3.12/3.13) |
 | Distribution | A standard `SKILL.md`, a Python contract library, and a CLI |
 | Supported hosts | Codex, Claude Code, DSH, Zcode, Pi, Cursor, Gemini CLI, OpenCode, and more |
@@ -132,7 +132,7 @@ Design decisions, development specs, task records, and the knowledge graph live 
 
 ```powershell
 # Full regression
-.\.venv\Scripts\python.exe -m pytest                                 # 206 passed
+.\.venv\Scripts\python.exe -m pytest                                 # 218 passed
 # Model-consistency stress (fully offline)
 .\.venv\Scripts\python.exe scripts/stress_model_sync.py             # 739 checks
 # Documentation consistency

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "local.goalanchor",
   "name": "GoalAnchor",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Goal-anchored review and explicit tool execution gates.",
   "main": "main.cjs",
   "engines": { "piDesktop": ">=0.18.0" },

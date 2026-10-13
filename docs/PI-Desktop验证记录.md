@@ -1,6 +1,6 @@
 # PI-Desktop 适配验证记录
 
-日期：2026-10-13。开发分支：`feature/pi-desktop-compat`。基础版本：v0.6.0，新增适配属于未发布变更，未更新发布版本、合并或推送。
+日期：2026-10-13。开发分支：`feature/pi-desktop-compat`。验收基础版本：v0.6.0；以下测试在发布前完成，后续 v0.7.0 发布信息见末尾。
 
 ## 交付与兼容范围
 
@@ -95,4 +95,18 @@ Stop 首次尝试因使用了过窄的按钮名“停止”未触发，审核自
 
 最终交付包：`build/goalanchor-pi-desktop-tested-delivery.piplug`，SHA-256：`720cc0cfa7dce4a45e880ee3292057e5c52515b96b70fa773ba1fcc3b7b2e7bb`。运行时代码与最终安装实测版本相同，交付包额外同步了重启/卸载刷新和精确 Skill id 的说明。
 
-独立 Meta Reviewer 复核实际审核、写入、变化参数、读取、取消、卸载及重装证据，支持在上述范围报告 PASS。调试进程退出清理曾超时，随后只终止已核实本任务启动的 PI-Desktop 主 PID；已确认调试端口关闭，审核 Python 桥接残留为 0。插件仍安装并启用，门控默认关闭、批准为 0。没有提交、合并、发布或推送此次变更。
+独立 Meta Reviewer 复核实际审核、写入、变化参数、读取、取消、卸载及重装证据，支持在上述范围报告 PASS。调试进程退出清理曾超时，随后只终止已核实本任务启动的 PI-Desktop 主 PID；已确认调试端口关闭，审核 Python 桥接残留为 0。测试收尾时插件仍安装并启用，门控默认关闭、批准为 0；当时尚未执行 Git 提交与发布。
+
+## v0.7.0 发布
+
+用户随后明确授权提交 Git 并发布新版本。
+
+- 工作提交：`ee7308851c93ded4a42de8b3c58c697778f51fce`。
+- Gitee PR：[!1](https://gitee.com/chen-yuyu6666/goal-anchor/pulls/1)，审查/测试审核均完成；按页面提供的手动合并流程保留合并节点。
+- 合并提交：`c2ea9e3c0dad2a67eba6d7863b146ff13d3fc921`，具有原 master 与工作提交两个父节点。
+- 发布边界：独立版本聚合提交与 annotated tag `v0.7.0`。旧发布标签不移动。
+- 版本化源码验证：pytest 218 项、Node 13 项、Ruff、Skill 同步检查通过；版本/插件专项 13 项复验通过，发行包版本一致性独立复核 PASS。
+- 桌面插件：`GoalAnchor-v0.7.0-PI-Desktop.piplug`，SHA-256 `dbed9c6af161074b58fecd8187406483662a86c73fe2eca1d8248cbe2fd22b64`。
+- wheel：`goalanchor-0.7.0-py3-none-any.whl`，SHA-256 `a71c688b0e044794066da0b715ecb84d4a51049a6dc45395f7d63c2be485df2a`。
+
+普通 fetch 受到既有本地 Codex checkpoint 坏引用影响。发布使用干净克隆，从工作分支 bundle 导入已提交变更；不删除工具引用、不改写历史、不使用强制推送。Gitee API 凭据返回 401，PR 操作改用已验证的正常网页登录流程；不把网页的人工审查/测试审核表述为远端自动 CI job 已执行。

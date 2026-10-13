@@ -3,7 +3,7 @@
 本文件按 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 组织，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [0.7.0] - 2026-10-13
 
 ### Added
 
@@ -196,7 +196,9 @@
 使用 `vX.Y.Z 中文变更说明`，并与对应版本标签保持一致。历史提交不会被删除或回写，
 版本边界以标签和本文件为准。
 
-[未发布]: https://gitee.com/chen-yuyu6666/goal-anchor/compare/v0.5.1...master
+[未发布]: https://gitee.com/chen-yuyu6666/goal-anchor/compare/v0.7.0...master
+[0.7.0]: https://gitee.com/chen-yuyu6666/goal-anchor/tree/v0.7.0
+[0.6.0]: https://gitee.com/chen-yuyu6666/goal-anchor/tree/v0.6.0
 [0.5.1]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.5.1
 [0.5.0]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.5.0
 [0.4.1]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.4.1

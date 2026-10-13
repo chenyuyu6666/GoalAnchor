@@ -9,7 +9,7 @@ GoalAnchor 是面向复杂工程任务的**目标锚定与可信收敛框架**�
 
 | | |
 |---|---|
-| 当前版本 | [`v0.6.0`](CHANGELOG.md) |
+| 当前版本 | [`v0.7.0`](CHANGELOG.md) |
 | Python 要求 | 3.11+（运行时**零第三方依赖**；CI 验证 3.11/3.12/3.13） |
 | 分发形态 | 标准 `SKILL.md` + Python 契约库 + CLI |
 | 宿主支持 | Codex、Claude Code、DSH、Zcode、Pi CLI、PI-Desktop、Cursor、Gemini CLI、OpenCode 等 |
@@ -132,7 +132,7 @@ docs/         仓库内文档资产(随包版本化:自动测试任务、对话�
 
 ```powershell
 # 全量回归
-.\.venv\Scripts\python.exe -m pytest                                 # 206 passed
+.\.venv\Scripts\python.exe -m pytest                                 # 218 passed
 # 模型一致性压测(全离线)
 .\.venv\Scripts\python.exe scripts\stress_model_sync.py             # 739 项校验
 # 文档一致性校验
