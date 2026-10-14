@@ -6,10 +6,12 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, TypeVar
 
 from .core import ContractValidationError, LifecycleState
 from .gates import GateFinding, GateId, GateResult
+
+_EnumT = TypeVar("_EnumT", bound=Enum)
 
 
 class DecisionActor(str, Enum):
@@ -77,7 +79,7 @@ def _optional_text(value: Any, field_name: str) -> str | None:
     return _text(value, field_name)
 
 
-def _enum(value: Any, enum_type: type[Enum], field_name: str) -> Enum:
+def _enum(value: Any, enum_type: type[_EnumT], field_name: str) -> _EnumT:
     if isinstance(value, enum_type):
         return value
     try:

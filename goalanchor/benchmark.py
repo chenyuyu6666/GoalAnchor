@@ -10,6 +10,7 @@ from .gates import check_q1_goal, check_q3_path
 from .integration import ReviewFinding
 from .review_service import (
     ArbiterResult,
+    DisputePacket,
     MetaReviewResult,
     ReviewContext,
     ReviewerResult,
@@ -139,7 +140,12 @@ def run_phase6_benchmark() -> dict[str, Any]:
     )
     review_calls: list[tuple[str, int, bool]] = []
 
-    def reviewer_call(context, reviewer_id, round_number, dispute):
+    def reviewer_call(
+        context: ReviewContext,
+        reviewer_id: str,
+        round_number: int,
+        dispute: DisputePacket | None,
+    ) -> ReviewerResult:
         review_calls.append((reviewer_id, round_number, dispute is not None))
         verdict = (
             ReviewVerdict.FAIL
@@ -156,7 +162,12 @@ def run_phase6_benchmark() -> dict[str, Any]:
             context.fingerprint,
         )
 
-    def arbiter_call(context, results, round_number, dispute):
+    def arbiter_call(
+        context: ReviewContext,
+        results: tuple[ReviewerResult, ...],
+        round_number: int,
+        dispute: DisputePacket | None,
+    ) -> ArbiterResult:
         return ArbiterResult(
             "arbiter",
             round_number,
@@ -168,7 +179,12 @@ def run_phase6_benchmark() -> dict[str, Any]:
             round_number == 1,
         )
 
-    def meta_review_call(context, reviewer_results, arbiter, round_number):
+    def meta_review_call(
+        context: ReviewContext,
+        reviewer_results: tuple[ReviewerResult, ...],
+        arbiter: ArbiterResult,
+        round_number: int,
+    ) -> MetaReviewResult:
         verdict = ReviewVerdict.FAIL if round_number == 1 else ReviewVerdict.PASS
         findings = () if verdict is ReviewVerdict.PASS else (_review_finding("META1"),)
         return MetaReviewResult(

@@ -6,10 +6,12 @@ import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, TypeVar
 
-from .core import ContractValidationError
+from .core import ContractValidationError, LifecycleState
 from .gates import GateFinding, GateId, GateResult
+
+_EnumT = TypeVar("_EnumT", bound=Enum)
 
 
 def _text(value: Any, field_name: str) -> str:
@@ -118,7 +120,7 @@ _MAX_CONCLUSION_BY_EVIDENCE = {
 }
 
 
-def _enum(value: Any, enum_type: type[Enum], field_name: str) -> Enum:
+def _enum(value: Any, enum_type: type[_EnumT], field_name: str) -> _EnumT:
     if isinstance(value, enum_type):
         return value
     if not isinstance(value, str):
@@ -464,7 +466,7 @@ def _failed(
     message: str,
     *,
     field: str | None = None,
-    next_state=None,
+    next_state: LifecycleState | None = None,
 ) -> GateResult:
     return GateResult(
         gate_id=gate_id,

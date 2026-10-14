@@ -12,7 +12,7 @@ import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from enum import Enum
-from typing import Any
+from typing import Any, TypeVar
 
 
 class GoalAnchorError(ValueError):
@@ -25,6 +25,9 @@ class ContractValidationError(GoalAnchorError):
 
 class InvalidTransitionError(GoalAnchorError):
     """Raised when a lifecycle transition is not allowed."""
+
+
+_EnumT = TypeVar("_EnumT", bound=Enum)
 
 
 class LifecycleState(str, Enum):
@@ -105,7 +108,7 @@ def _required_string_tuple(value: Any, field_name: str) -> tuple[str, ...]:
     return result
 
 
-def _enum_value(value: Any, enum_type: type[Enum], field_name: str) -> Enum:
+def _enum_value(value: Any, enum_type: type[_EnumT], field_name: str) -> _EnumT:
     if isinstance(value, enum_type):
         return value
     if not isinstance(value, str):

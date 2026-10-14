@@ -13,9 +13,11 @@ import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from threading import Lock
+from typing import Any, Protocol, cast
 
 from ..agent_runtime import (
     AgentProfile,
+    AgentRequest,
     AgentRole,
     AgentRuntimeCapabilities,
     AgentRuntimeError,
@@ -26,10 +28,16 @@ from .platform_common import (
     _BUILTIN_ARGV,
     _BUILTIN_MODEL_FLAGS,
     BUILTIN_PLATFORMS,
+    _boolean,
+    _mapping,
     _model,
+    _optional_timeout,
     _retries,
     _roles,
+    _string_mapping,
+    _strings,
     _text,
+    _timeout,
 )
 from .platform_prompt import (
     _PROMPT_LANGUAGES,
@@ -39,7 +47,24 @@ from .platform_prompt import (
 )
 
 
-def _parse():
+class _PlatformFacade(Protocol):
+    def _materialize_argv(self, argv: Sequence[str], prompt: str) -> tuple[str, ...]: ...
+
+    def _run_subprocess(
+        self,
+        argv: Sequence[str],
+        *,
+        input_text: str | None,
+        timeout_seconds: float,
+        env: Mapping[str, str],
+    ) -> tuple[str, str]: ...
+
+    def extract_result_payload(self, stdout: str) -> Mapping[str, object]: ...
+
+    def _extract_tokens_used(self, stderr: str) -> int | None: ...
+
+
+def _parse() -> _PlatformFacade:
     """Parse functions via the package facade, resolved at call time.
 
     Lets tests that monkeypatch ``goalanchor.platforms._run_subprocess``
@@ -48,7 +73,7 @@ def _parse():
 
     import goalanchor.platforms as facade
 
-    return facade
+    return cast(_PlatformFacade, facade)
 
 
 @dataclass(frozen=True)
@@ -159,19 +184,26 @@ class ProfileBinding:
     def from_dict(cls, profile_id: str, payload: Mapping[str, object]) -> ProfileBinding:
         if not isinstance(payload, Mapping):
             raise AgentRuntimeError(f"profile {profile_id} configuration must be an object")
+        platform = payload.get("platform")
+        command = payload.get("command")
+        argv = payload.get("argv")
+        timeout_seconds = payload.get("timeout_seconds")
+        retries = payload.get("retries")
         return cls(
             profile_id=profile_id,
-            roles=tuple(payload.get("roles", ())),
-            display_name=payload.get("display_name") or profile_id,
-            platform=payload.get("platform"),
-            command=payload.get("command"),
-            argv=payload.get("argv"),
-            timeout_seconds=payload.get("timeout_seconds"),
-            env=payload.get("env", {}),
-            capabilities=tuple(payload.get("capabilities", ())),
-            enabled=payload.get("enabled", True),
-            retries=payload.get("retries"),
-            model=payload.get("model"),
+            roles=_roles(payload.get("roles", ()), "roles"),
+            display_name=_text(payload.get("display_name") or profile_id, "display_name"),
+            platform=None if platform is None else _text(platform, "platform"),
+            command=None if command is None else _argv(command, "command"),
+            argv=None if argv is None else _argv(argv, "argv"),
+            timeout_seconds=(
+                None if timeout_seconds is None else _optional_timeout(timeout_seconds, "timeout_seconds")
+            ),
+            env=_string_mapping(payload.get("env", {}), "env"),
+            capabilities=_strings(payload.get("capabilities", ()), "capabilities"),
+            enabled=_boolean(payload.get("enabled", True), "enabled"),
+            retries=None if retries is None else _retries(retries, "retries"),
+            model=_model(payload.get("model"), "model"),
         )
 
     def agent_profile(self) -> AgentProfile:
@@ -187,12 +219,23 @@ class ProfileBinding:
 class PlatformDispatchConfig:
     """Validated dispatch configuration: platforms, profiles, role bindings."""
 
+    profiles: tuple[ProfileBinding, ...]
+    platforms: dict[str, PlatformSpec]
+    default_platform: str | None
+    role_bindings: dict[str, str]
+    capabilities: AgentRuntimeCapabilities
+    allow_profile_reuse: bool
+    language: str
+    model: str | None
+    model_divergence: dict[str, str] | None
+    _prepared_argv: dict[str, tuple[str, ...]]
+
     def __init__(
         self,
         profiles: Sequence[ProfileBinding],
         platforms: Mapping[str, PlatformSpec],
         default_platform: str | None,
-        role_bindings: Mapping[str, str],
+        role_bindings: Mapping[object, object],
         capabilities: AgentRuntimeCapabilities | None = None,
         allow_profile_reuse: bool = False,
         language: str = "en",
@@ -309,14 +352,11 @@ class PlatformDispatchConfig:
     def from_dict(cls, payload: Mapping[str, object]) -> PlatformDispatchConfig:
         if not isinstance(payload, Mapping):
             raise AgentRuntimeError("dispatch configuration must be a JSON object")
-        raw_platforms = payload.get("platforms") or {}
-        if not isinstance(raw_platforms, Mapping):
-            raise AgentRuntimeError("platforms must be an object")
+        raw_platforms = _mapping(payload.get("platforms") or {}, "platforms")
         platforms: dict[str, PlatformSpec] = {}
         for name, spec in raw_platforms.items():
-            if not isinstance(spec, Mapping):
-                raise AgentRuntimeError(f"platforms.{name} must be an object")
-            argv = spec.get("argv")
+            platform_data = _mapping(spec, f"platforms.{name}")
+            argv = platform_data.get("argv")
             if argv is None:
                 if name in _BUILTIN_ARGV:
                     argv = _BUILTIN_ARGV[name]
@@ -326,43 +366,57 @@ class PlatformDispatchConfig:
                     )
             platforms[name] = PlatformSpec(
                 name=name,
-                argv=tuple(argv),
-                timeout_seconds=spec.get("timeout_seconds", 600.0),
-                env=spec.get("env", {}),
-                retries=spec.get("retries", 1),
-                model=spec.get("model"),
-                model_flag=spec.get("model_flag"),
+                argv=_argv(argv, f"platforms.{name}.argv"),
+                timeout_seconds=_timeout(
+                    platform_data.get("timeout_seconds", 600.0),
+                    f"platforms.{name}.timeout_seconds",
+                ),
+                env=_string_mapping(platform_data.get("env", {}), f"platforms.{name}.env"),
+                retries=_retries(platform_data.get("retries", 1), f"platforms.{name}.retries"),
+                model=_model(platform_data.get("model"), f"platforms.{name}.model"),
+                model_flag=_model(platform_data.get("model_flag"), f"platforms.{name}.model_flag"),
             )
         for name in BUILTIN_PLATFORMS:
             if name not in platforms:
                 platforms[name] = PlatformSpec(name=name, argv=_BUILTIN_ARGV[name])
-        default_platform = payload.get("platform")
+        default_platform = _model(payload.get("platform"), "platform")
         raw_profiles = payload.get("profiles")
         if not isinstance(raw_profiles, Mapping) or not raw_profiles:
             raise AgentRuntimeError("profiles must be a non-empty object")
+        profiles_data = _mapping(raw_profiles, "profiles")
         profiles = [
-            ProfileBinding.from_dict(profile_id, spec)
-            for profile_id, spec in raw_profiles.items()
+            ProfileBinding.from_dict(profile_id, _mapping(spec, f"profiles.{profile_id}"))
+            for profile_id, spec in profiles_data.items()
         ]
         for profile in profiles:
             if profile.platform is not None and profile.platform not in platforms:
                 raise AgentRuntimeError(
                     f"profile {profile.profile_id} uses unknown platform: {profile.platform}"
                 )
+        raw_role_bindings = payload.get("role_bindings", {}) or {}
+        role_bindings = _mapping(raw_role_bindings, "role_bindings")
+        raw_capabilities = payload.get("capabilities")
+        capabilities = (
+            AgentRuntimeCapabilities(**cast(Any, _mapping(raw_capabilities, "capabilities")))
+            if raw_capabilities is not None
+            else None
+        )
+        raw_model_divergence = payload.get("model_divergence")
+        model_divergence = (
+            None
+            if raw_model_divergence is None
+            else _mapping(raw_model_divergence, "model_divergence")
+        )
         return cls(
             profiles=profiles,
             platforms=platforms,
             default_platform=default_platform,
-            role_bindings=payload.get("role_bindings", {}),
-            capabilities=(
-                AgentRuntimeCapabilities(**payload["capabilities"])
-                if isinstance(payload.get("capabilities"), Mapping)
-                else None
-            ),
-            allow_profile_reuse=payload.get("allow_profile_reuse", False),
-            language=payload.get("language", "en"),
-            model=payload.get("model"),
-            model_divergence=payload.get("model_divergence"),
+            role_bindings=cast(Mapping[object, object], role_bindings),
+            capabilities=capabilities,
+            allow_profile_reuse=_boolean(payload.get("allow_profile_reuse", False), "allow_profile_reuse"),
+            language=cast(str, payload.get("language", "en")),
+            model=_model(payload.get("model"), "model"),
+            model_divergence=model_divergence,
         )
 
     def binding(self, profile_id: str) -> ProfileBinding:
@@ -425,7 +479,7 @@ class PlatformAgentRouter:
 
         return self._config.model
 
-    def dispatch(self, profile_id: str, request) -> Mapping[str, object]:
+    def dispatch(self, profile_id: str, request: AgentRequest) -> Mapping[str, object]:
         binding = self._config.binding(profile_id)
         model = None
         if binding.command is not None:
@@ -498,7 +552,7 @@ class PlatformAgentAdapter:
             allow_profile_reuse=config.allow_profile_reuse,
         )
 
-    def invoke(self, request) -> Mapping[str, object]:
+    def invoke(self, request: AgentRequest) -> Mapping[str, object]:
         return self._catalog.invoke(request)
 
     def capabilities(self) -> AgentRuntimeCapabilities:
@@ -525,7 +579,9 @@ def build_platform_adapter(config: PlatformDispatchConfig) -> PlatformAgentAdapt
     return PlatformAgentAdapter(config)
 
 
-def adapter_from_config(payload: Mapping[str, object]):
+def adapter_from_config(
+    payload: Mapping[str, object],
+) -> PlatformAgentAdapter | JsonStdioAgentAdapter:
     """Load either a platform dispatch config or a legacy stdio bridge config."""
 
     if not isinstance(payload, Mapping):

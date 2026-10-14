@@ -13,13 +13,13 @@ import os
 import re
 import shutil
 import subprocess
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 
 from ..agent_runtime import AgentRuntimeError
 from .platform_common import _ENVELOPE_KEYS, _MAX_ENVELOPE_DEPTH, _RESULT_KEYS
 
 
-def _json_candidates(text: str):
+def _json_candidates(text: str) -> Iterator[str]:
     start = None
     depth = 0
     in_string = False

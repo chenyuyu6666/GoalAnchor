@@ -7,8 +7,9 @@ error type so config problems surface consistently.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import TypeVar
+import math
+from collections.abc import Iterable, Mapping, Sequence
+from typing import TypeVar, cast
 
 from ..agent_runtime import AgentRole, AgentRuntimeError
 
@@ -72,6 +73,49 @@ def _text(value: object, field_name: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise AgentRuntimeError(f"{field_name} must be a non-empty string")
     return value.strip()
+
+
+def _mapping(value: object, field_name: str) -> Mapping[str, object]:
+    if not isinstance(value, Mapping) or any(not isinstance(key, str) for key in value):
+        raise AgentRuntimeError(f"{field_name} must be an object with string keys")
+    return cast(Mapping[str, object], value)
+
+
+def _string_mapping(value: object, field_name: str) -> Mapping[str, str]:
+    mapping = _mapping(value, field_name)
+    if any(not isinstance(item, str) for item in mapping.values()):
+        raise AgentRuntimeError(f"{field_name} must map strings to strings")
+    return cast(Mapping[str, str], mapping)
+
+
+def _strings(value: object, field_name: str) -> tuple[str, ...]:
+    if isinstance(value, bytes) or not isinstance(value, Iterable):
+        raise AgentRuntimeError(f"{field_name} must be an array of strings")
+    items = tuple(cast(Iterable[object], value))
+    if any(not isinstance(item, str) or not item.strip() for item in items):
+        raise AgentRuntimeError(f"{field_name} must contain non-empty strings")
+    return cast(tuple[str, ...], items)
+
+
+def _boolean(value: object, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise AgentRuntimeError(f"{field_name} must be a boolean")
+    return value
+
+
+def _timeout(value: object, field_name: str) -> float:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(float(value))
+        or value <= 0
+    ):
+        raise AgentRuntimeError(f"{field_name} must be a positive finite number")
+    return value
+
+
+def _optional_timeout(value: object, field_name: str) -> float | None:
+    return None if value is None else _timeout(value, field_name)
 
 
 def _roles(value: object, field_name: str) -> tuple[AgentRole, ...]:

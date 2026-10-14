@@ -16,6 +16,7 @@ import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
 SKILL_ID = "goalanchor"
 _SKILL_FILE = "SKILL.md"
@@ -611,7 +612,7 @@ def _require_risk_declaration(data: Mapping[str, object]) -> dict[str, object] |
 
 
 def _model_audit_warnings(
-    adapter, config: Mapping[str, object]
+    adapter: object, config: Mapping[str, object]
 ) -> tuple[list[dict[str, str]], str | None]:
     """Collect machine-readable model-consistency warnings for CLI output.
 
@@ -733,10 +734,16 @@ def _load_json_file(path: Path, label: str) -> object:
         raise ValueError(f"{label} is not valid JSON: {path}") from exc
 
 
-def _run_review_prompt(args) -> str:
-    from .agent_runtime import AgentRequest, AgentRole, DisputePacket
+def _run_review_prompt(args: argparse.Namespace) -> str:
+    from .agent_runtime import AgentRequest, AgentRole
     from .platforms import render_agent_prompt
-    from .review_service import ArbiterResult, ReviewContext, ReviewerResult, ReviewRisk
+    from .review_service import (
+        ArbiterResult,
+        DisputePacket,
+        ReviewContext,
+        ReviewerResult,
+        ReviewRisk,
+    )
 
     request = _load_json_file(args.request, "review-prompt request")
     if not isinstance(request, Mapping):
@@ -747,11 +754,12 @@ def _run_review_prompt(args) -> str:
     except KeyError as exc:
         raise ValueError(f"review-prompt request is missing required field: {exc.args[0]}") from exc
     role = AgentRole(args.role)
-    dispute = (
-        None
-        if args.dispute is None
-        else DisputePacket.from_dict(_load_json_file(args.dispute, "dispute packet"))
-    )
+    dispute = None
+    if args.dispute is not None:
+        dispute_data = _load_json_file(args.dispute, "dispute packet")
+        if not isinstance(dispute_data, Mapping):
+            raise ValueError("dispute packet must be a JSON object")
+        dispute = DisputePacket.from_dict(cast(Mapping[str, Any], dispute_data))
     reviewer_results: tuple[ReviewerResult, ...] = ()
     if role is AgentRole.ARBITER and args.reviewer_results is None:
         raise ValueError("arbiter prompts require --reviewer-results")
@@ -764,7 +772,10 @@ def _run_review_prompt(args) -> str:
     if role is AgentRole.META_REVIEWER:
         if args.arbiter_result is None:
             raise ValueError("meta_reviewer prompts require --arbiter-result")
-        arbiter_result = ArbiterResult(**_load_json_file(args.arbiter_result, "arbiter result"))
+        arbiter_data = _load_json_file(args.arbiter_result, "arbiter result")
+        if not isinstance(arbiter_data, Mapping):
+            raise ValueError("arbiter result must be a JSON object")
+        arbiter_result = ArbiterResult.from_dict(cast(Mapping[str, Any], arbiter_data))
     agent_request = AgentRequest(
         role=role,
         agent_id=args.agent_id or role.value,
@@ -839,12 +850,11 @@ def _run_platforms_report(config_path: Path | None, *, probe: bool = False) -> d
 
     from .agent_runtime import AgentRole
     from .platforms import (
-        _BUILTIN_ARGV,
-        _BUILTIN_MODEL_FLAGS,
         BUILTIN_PLATFORMS,
         PlatformDispatchConfig,
         probe_platform,
     )
+    from .platforms.platform_common import _BUILTIN_ARGV, _BUILTIN_MODEL_FLAGS
 
     def _resolve(argv: tuple[str, ...]) -> str | None:
         found = _shutil.which(argv[0])
@@ -862,17 +872,17 @@ def _run_platforms_report(config_path: Path | None, *, probe: bool = False) -> d
     builtins = []
     for name in BUILTIN_PLATFORMS:
         argv = _BUILTIN_ARGV[name]
-        resolved = _resolve(argv)
+        resolved_path = _resolve(argv)
         entry: dict[str, object] = {
             "platform": name,
             "argv": list(argv),
             "prompt_mode": "stdin" if "{prompt}" not in argv else "argv",
             "model_flag": _BUILTIN_MODEL_FLAGS.get(name, "-m"),
-            "resolved": resolved,
-            "available": resolved is not None,
+            "resolved": resolved_path,
+            "available": resolved_path is not None,
         }
         if probe:
-            if resolved is None:
+            if resolved_path is None:
                 entry["probe"] = "not-installed"
             else:
                 probe_model = None
@@ -883,10 +893,10 @@ def _run_platforms_report(config_path: Path | None, *, probe: bool = False) -> d
                     # profile fall back to their own model, then the main one.
                     for profile in dispatch.profiles:
                         if profile.enabled and profile.platform == name:
-                            resolved = dispatch.resolve_platform(profile)
+                            profile_spec = dispatch.resolve_platform(profile)
                             probe_model = (
-                                resolved.model
-                                if resolved.model is not None
+                                profile_spec.model
+                                if profile_spec.model is not None
                                 else dispatch.model
                             )
                             break

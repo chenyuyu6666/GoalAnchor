@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from threading import Lock
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeVar
 
 from .core import ContractValidationError
 from .review_service import (
@@ -31,12 +31,19 @@ from .review_service import (
     run_review_cycle,
 )
 
+_ResultT = TypeVar("_ResultT")
+_EnumT = TypeVar("_EnumT", bound=Enum)
+
 
 class AgentRuntimeError(ContractValidationError):
     """A bridge could not satisfy the portable Agent protocol."""
 
 
-def _parse_result(agent_id: str, parse: Callable[[Mapping[str, Any]], Any], payload: Any) -> Any:
+def _parse_result(
+    agent_id: str,
+    parse: Callable[[Mapping[str, Any]], _ResultT],
+    payload: Any,
+) -> _ResultT:
     """Parse one adapter payload, mapping schema mismatches to a clean error."""
 
     try:
@@ -119,7 +126,7 @@ class AgentProfile:
         )
 
 
-def _enum(value: Any, enum_type: type[Enum], field_name: str) -> Enum:
+def _enum(value: Any, enum_type: type[_EnumT], field_name: str) -> _EnumT:
     if isinstance(value, enum_type):
         return value
     try:
@@ -284,7 +291,7 @@ class CatalogAgentAdapter:
         with self._lock:
             assigned = self._assignments.get(request.agent_id)
             preferred = assigned or self._bindings.get(request.agent_id) or self._bindings.get(request.role.value)
-            excluded = ()
+            excluded: tuple[str, ...] = ()
             if not self._allow_profile_reuse:
                 excluded = tuple(
                     profile_id
@@ -449,7 +456,7 @@ class JsonStdioAgentAdapter:
                 or self._role_bindings.get(request.agent_id)
                 or self._role_bindings.get(request.role.value)
             )
-            excluded = ()
+            excluded: tuple[str, ...] = ()
             if not self._allow_profile_reuse:
                 excluded = tuple(
                     profile_id
