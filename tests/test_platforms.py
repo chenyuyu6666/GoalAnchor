@@ -887,6 +887,9 @@ class TestPlatformReviewCycle:
         from goalanchor import compat
 
         monkeypatch.setattr(
+            "shutil.which", lambda name: f"/fake/{name}" if name == "codex" else None
+        )
+        monkeypatch.setattr(
             platforms_module,
             "_run_subprocess",
             lambda argv, **kwargs: ('{"probe": "ok"}', ""),

@@ -310,7 +310,7 @@ else:
         "agrees_with_arbiter": True,
         "isolated": True,
     }
-print(json.dumps(result, ensure_ascii=False))
+print(json.dumps(result, ensure_ascii=True))
 """.strip(),
         encoding="utf-8",
     )
