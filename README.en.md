@@ -2,166 +2,128 @@
 
 [中文](README.md) | **English**
 
-> **Reduce decision uncertainty, not just accumulate information.**
+> Move complex engineering work from a plan to verifiable execution and delivery.
 
-GoalAnchor is a **goal-anchoring and trustworthy-convergence framework** for complex engineering tasks (an Engineering Convergence Guard).
-It blocks four recurring failure modes — goal drift, error accumulation, fake evidence, and fake closure — rather than producing yet more analysis.
+GoalAnchor is a goal and evidence checking toolkit for AI Agents. Use it with implementation plans, code changes, experiments, and multi-Agent reviews. It organizes critical work as **PLAN → VERIFY → EXECUTE** and helps catch goal drift, unverified assumptions, weak evidence, and premature claims of completion.
 
-| | |
-|---|---|
-| Current version | [`v0.7.0`](CHANGELOG.md) |
-| Repositories | [GitHub (canonical)](https://github.com/chenyuyu6666/goal-anchor) · [Gitee (one-way mirror)](https://gitee.com/chen-yuyu6666/goal-anchor) |
-| Requires | Python 3.11+ (**zero third-party runtime dependencies**; CI runs 3.11/3.12/3.13) |
-| Distribution | A standard `SKILL.md`, a Python contract library, and a CLI |
-| Supported hosts | Codex, Claude Code, DSH, Zcode, Pi, PI-Desktop, Cursor, Gemini CLI, OpenCode, and more |
+GoalAnchor provides a Skill, a Python library, and a command-line interface. It checks whether plans and records follow defined rules; it does not replace real tests, verification of external facts, or engineering judgment.
 
----
+## What it does
 
-## What problem it solves
+- **Goal and execution gates**: Check the goal, logic, assumptions, minimal path, and structure before acting; set observable acceptance conditions before execution.
+- **Evidence and delivery closure**: Record evidence sources, experiment conditions, conclusion strength, and delivery state so that “tests passed” is not mistaken for “the problem is fixed.”
+- **Multi-Agent review**: Reviewers work in parallel, an Arbiter aggregates their results, and a Meta Reviewer checks the arbitration. Results include machine-readable role, model, and round details.
+- **Skill and CLI**: Install the GoalAnchor Skill into supported Agent hosts; use the CLI for deterministic checks, platform configuration, and reviews.
+- **PI-Desktop plugin**: Provides a desktop plugin, Python rules bridge, model review, and opt-in tool gating. See the [plugin guide](goalanchor/_pi_desktop/README.md) for host details.
 
-The most common failures when complex engineering tasks wrap up are not "not enough analysis" but:
+## Requirements
 
-- **Goal drift** — a local blocker is treated as the end goal and the original task is silently replaced;
-- **Error accumulation** — undocumented upgrades between Observations, Hypotheses, Inferences, and Design Choices;
-- **Fake evidence** — conclusion strength exceeds evidence strength (tests pass ≠ the root cause is fixed);
-- **Fake closure** — Containment, Root Fix, Build Success, and Product Closure are passed off as one another.
+- **Python 3.11 or later**, on Windows, macOS, or Linux.
+- The GoalAnchor Python runtime has no third-party Python dependencies.
+- For built-in CLI Agent dispatch, install and sign in to the corresponding Agent CLI separately. GoalAnchor does not install those Agents or manage their credentials.
+- The PI-Desktop plugin requires Python to be available to the host process. Desktop development tests also require Node.js 20 or later.
 
-GoalAnchor turns these checkpoints into verifiable state using **contracts, deterministic gates, and independent review**, instead of relying on the executor's diligence.
+## Installation
 
-## Core capabilities
+### Install the CLI from GitHub
 
-### 1. Contract model and deterministic gates
+Create a virtual environment from the repository root:
 
-- Task contracts (Goal / Prompt / Constraints / Evidence / Candidate) and a lifecycle state machine;
-- `PLAN → VERIFY → EXECUTE` gates: PLAN runs static checks Q1–Q5 (goal, logic, assumptions, minimal path, structure); VERIFY requires a reproducible acceptance threshold to be fixed before acting;
-- Evidence strength and experiment validation, delivery closure with provenance, decisions and lightweight authorization.
+~~~sh
+git clone https://github.com/chenyuyu6666/GoalAnchor.git
+cd GoalAnchor
+python -m venv .venv
+~~~
 
-### 2. Bounded multi-Agent review service
+Windows PowerShell:
 
-- Multiple **Reviewers share one immutable context** and review independently in parallel; the main Agent (the Arbiter) aggregates the verdict;
-- If the arbiter is challenged, a DisputePacket drives a same-context re-review, and an independent **Meta Reviewer** audits the arbitration itself;
-- Capped at `max_rounds=2`: if convergence fails, the result is `STOPPED` with a DecisionReport for the user.
-- Risk → reviewer count: `LOW=1 / MEDIUM=2 / HIGH=2 / CRITICAL=3`; CRITICAL requires a signed risk declaration.
+~~~powershell
+.\.venv\Scripts\Activate.ps1
+~~~
 
-### 3. Multi-platform execution with model consistency
+macOS / Linux:
 
-- Built-in adapters for `codex` / `claude` / `gemini` / `opencode`; prompts go through stdin (avoiding Windows `.cmd` escaping and argv-length limits);
-- **Enforced model consistency**: sub-agents must run on the main agent's model — declare it via the top-level `"model"` key or `--model`, and it is injected with each platform's flag (`codex -m`, `claude --model`, etc.); profiles that differ are rejected at **config-load time**, before any agent launches; a genuine divergence needs prior user approval recorded as `model_divergence`;
-- argv template preflight: a model flag carrying its own literal value (`-m preset`, `--model=x`) is rejected at config load;
-- Host-native sub-agent sessions stay visible in the host UI; headless platform dispatch is the fallback path.
+~~~sh
+source .venv/bin/activate
+~~~
 
-### 4. Machine-readable auditing
+After activating the virtual environment, install the project:
 
-- A top-level `warnings` array: `MODEL_NOT_PINNED` (main model undeclared; consistency cannot be enforced) and `MODEL_DIVERGENCE_APPROVED` (a user-approved divergence), so stdout-only CI/pipelines can audit the run;
-- `agent_bindings` records the agent / profile / platform / model / round of every call; `usage_summary` aggregates models and token usage;
-- `platforms --probe` checks the environment using the same precedence as a real dispatch (profile > platform > top-level).
+~~~sh
+python -m pip install .
+~~~
 
-> Boundary: a glued short option (e.g. `-mopus`) cannot be distinguished from an unrelated option with the same prefix (e.g. `-max-tokens`), so it is **not detected**; never glue the value to the model flag.
+### Install the GoalAnchor Skill
 
-## CLI reference
+This example installs the Skill for the current Codex user:
 
-| Command | Purpose |
-|---|---|
-| `python -m goalanchor install` / `check` | Install the Skill into host directories / verify install integrity |
-| `python -m goalanchor gate --phase …` | Deterministic gates (no LLM calls) |
-| `python -m goalanchor review-cycle` | Full multi-Agent dispatch (alias `review-run`) |
-| `python -m goalanchor review-prompt` | Render per-role review prompts |
-| `python -m goalanchor platforms` | Environment self-check (`--probe` to probe, `--config` to report profiles) |
+~~~sh
+goalanchor install --target codex --scope user
+~~~
+
+To install it into a project:
+
+~~~sh
+goalanchor install --target claude --scope project --project-root .
+~~~
+
+After installation, start or refresh a session in the host and ask the Agent to use GoalAnchor to check a formed plan, change, or conclusion. See the platform table below for installation targets.
 
 ## Quick start
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-.\.venv\Scripts\python.exe -m pytest -q
-```
+List commands and check which built-in Agent CLIs are available. This reports the environment without launching an Agent:
 
-Install the Skill into the current project (Claude layout shown; preview with `--dry-run` first):
+~~~sh
+goalanchor --help
+goalanchor platforms --json
+~~~
 
-```text
-python -m goalanchor install --target claude --scope project --project-root . --source skills/goalanchor --dry-run
-```
+Run the included offline review example. It uses a local echo Agent and makes no external model calls:
 
-Run a multi-Agent review:
+~~~sh
+goalanchor review-cycle --request examples/multi-platform-review/request.json --config examples/multi-platform-review/config.json
+~~~
 
-```text
-python -m goalanchor review-cycle --request review-request.json --config agent-config.json
-```
+After installing the Skill in a supported Agent host, start a task with a prompt such as:
 
-A runnable offline example (an echo platform — no credits spent): [`examples/multi-platform-review/`](examples/multi-platform-review/).
+> Use GoalAnchor to review this implementation plan. First state TASK_OBJECTIVE, CURRENT_BLOCKING_UNCERTAINTY, and PROPOSED_STEP_AND_DECISION_LINK, then evaluate Q1 Goal, Q2 Logic, Q3 Path, Q4 Minimum, and Q5 Structure in PLAN. If it passes, enter VERIFY and set the acceptance criterion before proceeding through PLAN → VERIFY → EXECUTE. Report unverified facts as uncertain.
 
-## PI-Desktop
+To probe real platforms, run <code>goalanchor platforms --probe --json</code>. This invokes installed Agent CLIs and may consume model usage.
 
-Build a desktop Skill/Extension plugin with its Python core:
+## Supported platforms
 
-```text
+The table distinguishes Skill file locations, built-in Agent dispatchers, and the standalone desktop plugin. **A Skill installation target only describes where files are placed; it does not imply a built-in Agent dispatcher for that host.**
+
+| Platform / host | Skill target | Agent dispatch or plugin |
+|---|---|---|
+| Codex CLI | <code>codex</code> | Built-in CLI dispatcher; install and sign in to the Codex CLI separately |
+| Claude Code | <code>claude</code> | Built-in CLI dispatcher; install and sign in to the Claude CLI separately |
+| Gemini CLI | <code>gemini</code> | Built-in CLI dispatcher; install and sign in to the Gemini CLI separately |
+| OpenCode | <code>opencode</code> | Built-in CLI dispatcher; install and sign in to the OpenCode CLI separately |
+| Cursor | <code>cursor</code> | Skill installation is available; Agent execution needs a custom command or JSON-over-stdio bridge |
+| Pi CLI | <code>pi</code> | Skill installation is available; this is Pi CLI, not PI-Desktop |
+| DeepSeek Harness (DSH) | <code>dsh</code> | Skill installation is available; Agent execution needs a custom command or bridge |
+| Agent Skills-compatible directory | <code>agents</code> | Installs the Skill into a shared directory; Agent dispatch is provided by the host or custom configuration |
+| Zcode | <code>zcode</code> with <code>--destination</code> | Requires an explicit Skill directory; Agent dispatch requires custom integration |
+| Other hosts | <code>custom</code> with <code>--destination</code> | Configure a custom CLI command or JSON-over-stdio Agent |
+| PI-Desktop | Build a <code>.piplug</code> plugin | Standalone Extension and Python bridge; do not install it with <code>--target pi</code> |
+
+The built-in dispatchers are Codex, Claude, Gemini, and OpenCode. Other Agents can use a configured command or the JSON-over-stdio bridge. PI-Desktop is a separate plugin that detects capabilities through the host’s public interfaces. See the [compatibility specification](docs/PI-Desktop适配规格.md) and [verification record](docs/PI-Desktop验证记录.md) for the tested baseline and limits.
+
+Build the PI-Desktop plugin:
+
+~~~sh
 python -m goalanchor.pi_desktop build --destination build/pi-desktop --archive build/goalanchor.piplug
-```
+~~~
 
-Install the package from PI-Desktop's Plugins page and review its permissions. Pi CLI directory installation is a separate path. The adapter uses a 0.18.0 minimum protocol baseline and detects public capabilities on later versions. Existing output paths are never overwritten. See the [plugin guide](goalanchor/_pi_desktop/README.md) and [specification](docs/PI-Desktop适配规格.md).
+For installation and permissions, see the [PI-Desktop plugin guide](goalanchor/_pi_desktop/README.md).
 
-Reviews use isolated completions on the session's current model. The adapter does not expose visible child sessions. Live tests cover installation and LOW review on 0.18.0, and review, tool gates, Stop and uninstall on 0.19.1; see the [verification record](docs/PI-Desktop验证记录.md). Fully quit and restart the host after same-version reinstalls to avoid stale dependency caches. Desktop development tests require Node.js 20+.
+## More information
 
-## Repository layout
+- [Offline multi-Agent review example](examples/multi-platform-review/README.md)
+- [Changelog](CHANGELOG.md) · [GitHub Releases](https://github.com/chenyuyu6666/GoalAnchor/releases)
+- [GitHub canonical repository](https://github.com/chenyuyu6666/GoalAnchor) · [Gitee mirror](https://gitee.com/chen-yuyu6666/goal-anchor)
+- [Contributing](CONTRIBUTING.md)
+- [License](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md) · [Upstream source records](UPSTREAM_SOURCES.md)
 
-```text
-goalanchor/   Python contract library and CLI with zero third-party dependencies
-skills/       Custom Skills: goalanchor / graphify / deeply; .system/ holds upstream snapshots
-scripts/      Stress, benchmark, and test-task scripts
-tests/        Full unit-test suite
-examples/     Runnable offline examples
-docs/         In-repo documentation assets, versioned with the package
-```
-
-The two documentation locations have distinct roles:
-
-- **`docs/` (in-repo, lowercase)**: version-controlled assets shipped with the code and referenced by scripts and CI;
-- **`Doc/` (sibling directory, capitalized)**: a separate center for design/specs/records (task plan, ADRs, per-change logs, knowledge graph); not shipped with the package; enter through its `README.md`.
-
-Everything under `.system/` is an upstream Skill snapshot: do not edit it directly except when syncing upstream; patches are logged in [UPSTREAM_SOURCES.md](UPSTREAM_SOURCES.md).
-
-## Documentation center
-
-Design decisions, development specs, task records, and the knowledge graph live in the sibling `Doc/` directory, entered through its `README.md`. Key locations:
-
-- `Doc/00_总览与入口/`: task plan, core engineering-problem definition, project positioning, glossary;
-- `Doc/01_设计与决策/`: the ADR-0001 interface decision, the P0 compatibility matrix, the effect-validation protocol;
-- `Doc/02_开发规格/`: the six phase specs and the v0.5.0 spec;
-- `Doc/03_验证与测试/`, `Doc/04_任务记录/`: verification evidence and per-change records.
-
-## Verification toolchain
-
-```powershell
-# Full regression
-.\.venv\Scripts\python.exe -m pytest                                 # 218 passed
-# Model-consistency stress (fully offline)
-.\.venv\Scripts\python.exe scripts/stress_model_sync.py             # 739 checks
-# Documentation consistency
-pwsh Doc\03_验证与测试\validate-stage-0.ps1
-pwsh Doc\03_验证与测试\validate-multi-round.ps1 -Rounds 2
-```
-
-The dialogue experience test is not a unit test: run [docs/GoalAnchor-对话体验测试任务.md](docs/GoalAnchor-对话体验测试任务.md) inside a real GoalAnchor conversation.
-
-## Knowledge graph
-
-The project graph lives at `Doc/GoalAnchor-Knowledge-Graph/graphify-out/` (interactive HTML / JSON / analysis report);
-rebuild it from the repo root with `graphify update .` after code changes.
-
-## Contributing
-
-Development, Git commits, and maintenance updates **must follow** [docs/开发Git提交与维护更新规范.md](docs/开发Git提交与维护更新规范.md) (the development/commit/maintenance specification). Key points:
-
-- **Branches**: create short-lived branches (`feature/`, `fix/`, `refactor/`, `docs/`, `test/`, `chore/`, `hotfix/`) from the latest `master`; never develop on the stable branch directly;
-- **Commits**: daily commits use `type(scope): description` (feat / fix / docs / test / refactor / chore); commits touching logic include scope, key decisions, verification results, and remaining risks in the body;
-- **Commit topology**: history keeps the fixed structure "work commits → merge commit → `vX.Y.Z` release aggregate commit → matching tag"; published commits, merge nodes, and tags are never moved, reused, or deleted;
-- **Versions**: the version number changes only in the release aggregate commit; after a release, sync CHANGELOG, README, and CONTRIBUTING references;
-- **Verification**: at minimum `pytest -q`, `ruff check goalanchor tests scripts`, and `git diff --check` before every commit, plus scoped checks recorded with real commands and results in the body;
-- **Rollback**: unreleased issues revert via reverse/fix commits; released versions get a new patch version — old tags never move;
-- **AI collaboration**: the boundaries for AI-driven development, commits, and pushes (remote writes require explicit authorization) and the delivery-report format are defined in the same specification.
-
-Repository-level details live in [CONTRIBUTING.md](CONTRIBUTING.md), [CHANGELOG.md](CHANGELOG.md), and `pyproject.toml`; when they conflict with the specification, fix the source of truth first. Host adaptation: [AGENT-COMPATIBILITY.md](AGENT-COMPATIBILITY.md).
-
-## License and third-party materials
-
-GoalAnchor-authored code, documentation, and the `skills/deeply` and `skills/goalanchor` skills are released under the root [MIT License](LICENSE). `skills/graphify/` and the Codex system-skill snapshots under `skills/.system/` retain their upstream licenses. See [third-party notices](THIRD_PARTY_NOTICES.md) and [source records](UPSTREAM_SOURCES.md) for their licenses, notices, source references, and local changes. The root MIT license does not cover those third-party materials.
+Third-party Skills and snapshots retain their own licenses; the repository license does not automatically cover third-party materials.

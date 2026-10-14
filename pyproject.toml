@@ -30,9 +30,9 @@ classifiers = [
 goalanchor = "goalanchor.compat:main"
 
 [project.urls]
-"Source" = "https://github.com/chenyuyu6666/goal-anchor"
+"Source" = "https://github.com/chenyuyu6666/GoalAnchor"
 "Gitee mirror" = "https://gitee.com/chen-yuyu6666/goal-anchor"
-"Changelog" = "https://github.com/chenyuyu6666/goal-anchor/blob/master/CHANGELOG.md"
+"Changelog" = "https://github.com/chenyuyu6666/GoalAnchor/blob/master/CHANGELOG.md"
 
 [tool.setuptools.dynamic]
 version = {attr = "goalanchor.__version__"}

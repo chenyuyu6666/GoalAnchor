@@ -2,166 +2,128 @@
 
 **中文** | [English](README.en.md)
 
-> **Reduce decision uncertainty, not just accumulate information.**
+> 让复杂工程任务从“计划”走到可核验的执行与交付。
 
-GoalAnchor 是面向复杂工程任务的**目标锚定与可信收敛框架**（Engineering Convergence Guard）。
-它拦截四类典型失败——目标漂移、错误积累、伪证据、伪闭环——而不是产生更多分析。
+GoalAnchor 是供 AI Agent 使用的目标与证据校验工具，适用于实施计划、代码改动、实验结论和多 Agent 审核。它把关键步骤组织为 **PLAN → VERIFY → EXECUTE**，帮助发现目标漂移、未经验证的假设、证据不足和过早宣称完成等问题。
 
-| | |
-|---|---|
-| 当前版本 | [`v0.7.0`](CHANGELOG.md) |
-| 仓库 | [GitHub（主仓库）](https://github.com/chenyuyu6666/goal-anchor) · [Gitee（单向镜像）](https://gitee.com/chen-yuyu6666/goal-anchor) |
-| Python 要求 | 3.11+（运行时**零第三方依赖**；CI 验证 3.11/3.12/3.13） |
-| 分发形态 | 标准 `SKILL.md` + Python 契约库 + CLI |
-| 宿主支持 | Codex、Claude Code、DSH、Zcode、Pi CLI、PI-Desktop、Cursor、Gemini CLI、OpenCode 等 |
+GoalAnchor 提供 Skill、Python 库和命令行工具。它帮助检查计划与记录是否符合规则，但不能替代真实测试、外部事实核验或工程判断。
 
----
+## 主要功能
 
-## 它解决什么问题
+- **目标与执行门控**：行动前检查目标、逻辑、假设、最小路径和方案结构；执行前固定可观察的验收条件。
+- **证据与交付闭环**：记录证据来源、实验条件、结论强度和交付状态，避免把“测试通过”误当成“问题已解决”。
+- **多 Agent 审核**：Reviewer 并行审查，Arbiter 汇总，Meta Reviewer 复核；结果包含可读取的角色、模型和轮次记录。
+- **Skill 与 CLI**：把 GoalAnchor Skill 安装到支持的 Agent 宿主；用 CLI 执行确定性检查、查看平台配置或运行审核。
+- **PI-Desktop 插件**：提供桌面插件、Python 规则桥接、模型审核和可主动开启的工具门控。宿主适配细节见[插件指南](goalanchor/_pi_desktop/README.md)。
 
-复杂工程任务在收尾阶段最常见的失败，不是"分析不够多"，而是：
+## 运行环境
 
-- **目标漂移** —— 局部 blocker 被当成最终目标，原任务被悄悄替换；
-- **错误积累** —— Observation、Hypothesis、Inference、Design Choice 之间无证据升级；
-- **伪证据** —— 结论强度超过证据强度（单测通过 ≠ 根因已修复）；
-- **伪闭环** —— Containment、Root Fix、Build Success、Product Closure 被互相冒充。
+- **Python 3.11 或更新版本**，支持 Windows、macOS 和 Linux。
+- GoalAnchor 的 Python 运行时不依赖第三方 Python 包。
+- 使用内置 CLI Agent 调度时，需要自行安装并完成对应 Agent CLI 的登录。GoalAnchor 不会替你安装这些 Agent 或管理它们的凭据。
+- PI-Desktop 插件需要宿主进程能找到 Python。桌面开发测试另外需要 Node.js 20 或更新版本。
 
-GoalAnchor 用**契约 + 确定性闸门 + 独立审核**把这些环节固定为可核验的状态，而不是依赖执行者的自觉。
+## 安装
 
-## 核心能力
+### 从 GitHub 安装 CLI
 
-### 1. 契约模型与确定性闸门
+在仓库根目录创建虚拟环境：
 
-- 任务契约（Goal / Prompt / Constraints / Evidence / Candidate）与生命周期状态机；
-- `PLAN → VERIFY → EXECUTE` 三段门控：PLAN 阶段 Q1–Q5 静态检查（目标、逻辑、假设、最小路径、结构），VERIFY 阶段要求先固定可复现的验收阈值再行动；
-- 证据强度与实验校验、交付闭环与 provenance 记录、决策与轻量授权。
-
-### 2. 有限多 Agent 审核服务
-
-- 多个 **Reviewer 共享同一不可变上下文**并行独立审核，主 Agent（Arbiter）汇总裁决；
-- 仲裁被反驳时生成争议包（DisputePacket）做同上下文复审，独立 **Meta Reviewer** 审核仲裁本身；
-- `max_rounds=2` 封顶：无法收敛即 `STOPPED`，并产出 DecisionReport 交用户决策。
-- 风险 → Reviewer 数量：`LOW=1 / MEDIUM=2 / HIGH=2 / CRITICAL=3`；CRITICAL 需签署风险声明。
-
-### 3. 多平台执行与模型一致性
-
-- 内置 `codex` / `claude` / `gemini` / `opencode` 适配，提示词经 stdin 传入（规避 Windows `.cmd` 转义与 argv 长度限制）；
-- **模型一致性强制**：子 Agent 必须与主 Agent 同模型——顶层 `"model"` 或 `--model` 声明主模型，按平台 flag 注入（`codex -m`、`claude --model` 等）；不一致的 profile 在**配置加载期**拒绝，不启动任何 Agent；确需分歧须先经用户确认并记录 `model_divergence`；
-- argv 模板预检：带自有取值的模型 flag（`-m preset`、`--model=x`）在配置加载期拒绝；
-- 宿主原生子 Agent 会话在宿主 UI 可见；无头平台调度是备用路径。
-
-### 4. 机器可读审计
-
-- 顶层 `warnings` 告警数组：`MODEL_NOT_PINNED`（主模型未声明、一致性不可强制）与 `MODEL_DIVERGENCE_APPROVED`（用户已确认的分歧），供只读 stdout 的 CI/流水线审计；
-- `agent_bindings` 记录每次调用的 agent / profile / platform / model / round，`usage_summary` 汇总模型与 token 用量；
-- `platforms --probe` 按与真实派发相同的优先级（profile > 平台 > 顶层）做环境探测。
-
-> 边界说明：紧贴短选项（如 `-mopus`）因无法与同前缀无关选项（如 `-max-tokens`）区分，**不在检测范围内**；不要把取值紧贴模型 flag。
-
-## CLI 一览
-
-| 命令 | 用途 |
-|---|---|
-| `python -m goalanchor install` / `check` | 把 Skill 安装到各宿主目录 / 校验安装一致性 |
-| `python -m goalanchor gate --phase …` | 确定性闸门（不调用 LLM） |
-| `python -m goalanchor review-cycle` | 完整多 Agent 调度（别名 `review-run`） |
-| `python -m goalanchor review-prompt` | 逐角色渲染审核提示词 |
-| `python -m goalanchor platforms` | 平台环境自检（`--probe` 探测，`--config` 报告 profile） |
-
-## 快速开始
-
-```powershell
+~~~sh
+git clone https://github.com/chenyuyu6666/GoalAnchor.git
+cd GoalAnchor
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-.\.venv\Scripts\python.exe -m pytest -q
-```
+~~~
 
-把 Skill 安装到当前项目（以 Claude 目录为例，先 `--dry-run` 预览）：
+Windows PowerShell：
 
-```text
-python -m goalanchor install --target claude --scope project --project-root . --source skills/goalanchor --dry-run
-```
+~~~powershell
+.\.venv\Scripts\Activate.ps1
+~~~
 
-运行一次多 Agent 审核：
+macOS / Linux：
 
-```text
-python -m goalanchor review-cycle --request review-request.json --config agent-config.json
-```
+~~~sh
+source .venv/bin/activate
+~~~
 
-可直接运行的离线示例（echo 平台，不消耗额度）：[`examples/multi-platform-review/`](examples/multi-platform-review/)。
+激活虚拟环境后安装：
 
-### PI-Desktop
+~~~sh
+python -m pip install .
+~~~
 
-桌面版使用独立的 Skill/Extension 插件包，支持同模型独立审核、明确启用的工具门控和能力诊断。以 0.18.0 为最低接口基线，后续版本按公开 API 能力检测。构建可导入目录与包：
+### 安装 GoalAnchor Skill
 
-```text
+下面以 Codex 用户目录为例：
+
+~~~sh
+goalanchor install --target codex --scope user
+~~~
+
+安装到项目目录：
+
+~~~sh
+goalanchor install --target claude --scope project --project-root .
+~~~
+
+安装完成后，在宿主中新建或刷新会话，然后让 Agent 使用 GoalAnchor 检查已形成的计划、改动或结论。安装目标见下方平台表。
+
+## 快速使用
+
+查看命令和本机可用的内置 Agent CLI。此命令只报告环境，不会启动 Agent：
+
+~~~sh
+goalanchor --help
+goalanchor platforms --json
+~~~
+
+运行仓库自带的离线审核示例。它使用本地 echo Agent，不调用外部模型：
+
+~~~sh
+goalanchor review-cycle --request examples/multi-platform-review/request.json --config examples/multi-platform-review/config.json
+~~~
+
+在支持的 Agent 宿主中安装 Skill 后，可以这样开始一次任务：
+
+> 请使用 GoalAnchor 审核这份实施方案。先明确 TASK_OBJECTIVE、CURRENT_BLOCKING_UNCERTAINTY 和 PROPOSED_STEP_AND_DECISION_LINK，再按 PLAN 阶段顺序检查 Q1 Goal、Q2 Logic、Q3 Path、Q4 Minimum、Q5 Structure。若通过，进入 VERIFY 并先固定验收条件，然后按 PLAN → VERIFY → EXECUTE 推进；报告未验证的事实。
+
+真实平台探测命令是 <code>goalanchor platforms --probe --json</code>。它会调用已安装的 Agent CLI，可能产生模型用量。
+
+## 支持的平台
+
+下表区分 Skill 文件安装位置、内置 Agent 调度器和独立桌面插件。**Skill 安装目标只表示文件放置方式，不代表该宿主内置了 Agent 调度适配。**
+
+| 平台 / 宿主 | Skill 安装目标 | Agent 调度或插件方式 |
+|---|---|---|
+| Codex CLI | <code>codex</code> | 内置 CLI 调度器；需单独安装并登录 Codex CLI |
+| Claude Code | <code>claude</code> | 内置 CLI 调度器；需单独安装并登录 Claude CLI |
+| Gemini CLI | <code>gemini</code> | 内置 CLI 调度器；需单独安装并登录 Gemini CLI |
+| OpenCode | <code>opencode</code> | 内置 CLI 调度器；需单独安装并登录 OpenCode CLI |
+| Cursor | <code>cursor</code> | 可安装 Skill；Agent 执行需自定义命令或 JSON-over-stdio 桥接 |
+| Pi CLI | <code>pi</code> | 可安装 Skill；这是 Pi CLI，不是 PI-Desktop |
+| DeepSeek Harness (DSH) | <code>dsh</code> | 可安装 Skill；Agent 执行需自定义命令或桥接 |
+| Agent Skills 通用目录 | <code>agents</code> | 将 Skill 放入共享目录；Agent 调度由宿主或自定义配置提供 |
+| Zcode | <code>zcode</code>，需搭配 <code>--destination</code> | 需指定 Skill 目录；Agent 调度需自定义接入 |
+| 其他宿主 | <code>custom</code>，需搭配 <code>--destination</code> | 可配置自定义 CLI 命令或 JSON-over-stdio Agent |
+| PI-Desktop | 单独构建 <code>.piplug</code> 插件 | 独立 Extension 和 Python 桥接；不使用 <code>--target pi</code> 安装 |
+
+内置调度器目前是 Codex、Claude、Gemini 和 OpenCode。自定义命令和 JSON-over-stdio 桥接可用于其他 Agent。PI-Desktop 使用独立插件，并按宿主公开接口检测能力；具体验证基线和边界见[适配规格](docs/PI-Desktop适配规格.md)与[验证记录](docs/PI-Desktop验证记录.md)。
+
+构建 PI-Desktop 插件：
+
+~~~sh
 python -m goalanchor.pi_desktop build --destination build/pi-desktop --archive build/goalanchor.piplug
-```
+~~~
 
-在 PI-Desktop 的 Plugins 页安装该包并审核权限；不使用 `install --target pi` 代替桌面安装。首次生成后再构建应换一个新目录/文件，构建器不覆盖已有产物。完整说明见 [桌面插件指南](goalanchor/_pi_desktop/README.md) 与 [适配规格](docs/PI-Desktop适配规格.md)。
+详细安装和权限说明见[PI-Desktop 插件指南](goalanchor/_pi_desktop/README.md)。
 
-独立审核通过宿主 completion 执行；没有可见子会话。已实测 0.18.0 的安装/LOW 审核与 0.19.1 的审核、门控、Stop 和卸载；范围和限制见 [验证记录](docs/PI-Desktop验证记录.md)。同版本重装后应完整退出并重启宿主，避免旧模块缓存。开发桌面测试需要 Node.js 20+。
+## 更多资料
 
-## 仓库结构
+- [离线多 Agent 审核示例](examples/multi-platform-review/README.md)
+- [变更记录](CHANGELOG.md) · [GitHub Releases](https://github.com/chenyuyu6666/GoalAnchor/releases)
+- [GitHub 主仓库](https://github.com/chenyuyu6666/GoalAnchor) · [Gitee 镜像](https://gitee.com/chen-yuyu6666/goal-anchor)
+- [贡献指南](CONTRIBUTING.md)
+- [许可证](LICENSE) · [第三方声明](THIRD_PARTY_NOTICES.md) · [上游来源记录](UPSTREAM_SOURCES.md)
 
-```text
-goalanchor/   零第三方依赖的 Python 契约库与 CLI
-skills/       goalanchor / graphify / deeply 定制 Skill,.system/ 为上游快照
-scripts/      压测、基准、测试任务脚本
-tests/        全量单元测试
-examples/     可运行的离线示例
-docs/         仓库内文档资产(随包版本化:自动测试任务、对话体验测试)
-```
-
-注意两个文档位置的分工，避免混淆：
-
-- **`docs/`（仓库内，小写）**：参与 Git 版本控制、随代码一起发布的文档资产，供脚本与 CI 引用；
-- **`Doc/`（仓库旁，大写）**：独立于本仓库的设计/规格/记录中心（任务计划、ADR、逐次变更记录、知识图谱），不随包发布，入口见其 `README.md`。
-
-`.system/` 下为上游 Skill 快照，除非同步上游否则不直接修改，补丁记录在 [UPSTREAM_SOURCES.md](UPSTREAM_SOURCES.md)。
-
-## 文档中心
-
-完整的设计决策、开发规格、任务记录与知识图谱位于仓库旁的 `Doc/` 目录，入口为其 `README.md`。关键文档：
-
-- `Doc/00_总览与入口/`：任务计划、核心工程问题定义、项目定位、术语表；
-- `Doc/01_设计与决策/`：ADR-0001 接口决策、P0 兼容矩阵、效果验证协议；
-- `Doc/02_开发规格/`：六阶段规格与 v0.5.0 规格；
-- `Doc/03_验证与测试/`、`Doc/04_任务记录/`：验证证据与逐次变更记录。
-
-## 验证工具链
-
-```powershell
-# 全量回归
-.\.venv\Scripts\python.exe -m pytest                                 # 218 passed
-# 模型一致性压测(全离线)
-.\.venv\Scripts\python.exe scripts\stress_model_sync.py             # 739 项校验
-# 文档一致性校验
-pwsh Doc\03_验证与测试\validate-stage-0.ps1
-pwsh Doc\03_验证与测试\validate-multi-round.ps1 -Rounds 2
-```
-
-对话体验测试（非单元测试）：在真实 GoalAnchor 对话中执行 [docs/GoalAnchor-对话体验测试任务.md](docs/GoalAnchor-对话体验测试任务.md)。
-
-## 知识图谱
-
-项目图谱位于 `Doc/GoalAnchor-Knowledge-Graph/graphify-out/`（交互 HTML / JSON / 分析报告）；
-代码更新后在仓库根运行 `graphify update .` 重建。
-
-## 参与贡献
-
-开发、Git 提交与维护更新**必须遵循** [docs/开发Git提交与维护更新规范.md](docs/开发Git提交与维护更新规范.md)，要点：
-
-- **分支**：从最新 `master` 创建短期分支（`feature/`、`fix/`、`refactor/`、`docs/`、`test/`、`chore/`、`hotfix/`），不直接在稳定分支开发；
-- **提交**：日常提交 `type(scope): 说明`（feat / fix / docs / test / refactor / chore）；涉及逻辑的提交正文包含影响范围、关键决策、验证结果与剩余风险；
-- **提交拓扑**：历史保持「工作提交 → 合并提交 → `vX.Y.Z` 发布聚合提交 → 同名标签」的固定结构；已发布的提交、合并节点和标签不移动、不复用、不删除；
-- **版本**：版本号只在发布聚合提交更新；发布后同步 CHANGELOG、README、CONTRIBUTING 的版本引用；
-- **验证**：提交前至少通过 `pytest -q`、`ruff check goalanchor tests scripts`、`git diff --check`，按变更范围追加专项验证并在正文记录实际命令与结果；
-- **回滚**：未发布问题用反向/修复提交恢复；已发布版本发新补丁版本，不移动旧标签；
-- **AI 协作**：AI 的开发、提交与推送操作边界同样在该规范中约定（远端写操作需明确授权），交付须按固定格式报告。
-
-仓库级细则以 [CONTRIBUTING.md](CONTRIBUTING.md)、[CHANGELOG.md](CHANGELOG.md) 与 `pyproject.toml` 为准，与上述规范冲突时先修正规范来源；宿主适配见 [AGENT-COMPATIBILITY.md](AGENT-COMPATIBILITY.md)。
-
-## 许可证与第三方内容
-
-GoalAnchor 自有代码、文档及 `skills/deeply`、`skills/goalanchor` 按根目录 [MIT 许可证](LICENSE) 发布。`skills/graphify/` 是 Apache-2.0 上游快照，`skills/.system/` 中的 Codex 系统 Skill 也保留各自许可。上游来源、NOTICE 和本地改动见 [第三方声明](THIRD_PARTY_NOTICES.md) 与 [来源记录](UPSTREAM_SOURCES.md)；根目录 MIT 许可证不覆盖这些第三方内容。
+第三方 Skill 和快照保留各自许可；项目根目录的许可证不自动覆盖第三方内容。
