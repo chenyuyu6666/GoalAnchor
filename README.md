@@ -10,6 +10,7 @@ GoalAnchor 是面向复杂工程任务的**目标锚定与可信收敛框架**�
 | | |
 |---|---|
 | 当前版本 | [`v0.7.0`](CHANGELOG.md) |
+| 仓库 | [GitHub（主仓库）](https://github.com/chenyuyu6666/goal-anchor) · [Gitee（单向镜像）](https://gitee.com/chen-yuyu6666/goal-anchor) |
 | Python 要求 | 3.11+（运行时**零第三方依赖**；CI 验证 3.11/3.12/3.13） |
 | 分发形态 | 标准 `SKILL.md` + Python 契约库 + CLI |
 | 宿主支持 | Codex、Claude Code、DSH、Zcode、Pi CLI、PI-Desktop、Cursor、Gemini CLI、OpenCode 等 |
@@ -160,3 +161,7 @@ pwsh Doc\03_验证与测试\validate-multi-round.ps1 -Rounds 2
 - **AI 协作**：AI 的开发、提交与推送操作边界同样在该规范中约定（远端写操作需明确授权），交付须按固定格式报告。
 
 仓库级细则以 [CONTRIBUTING.md](CONTRIBUTING.md)、[CHANGELOG.md](CHANGELOG.md) 与 `pyproject.toml` 为准，与上述规范冲突时先修正规范来源；宿主适配见 [AGENT-COMPATIBILITY.md](AGENT-COMPATIBILITY.md)。
+
+## 许可证与第三方内容
+
+GoalAnchor 自有代码、文档及 `skills/deeply`、`skills/goalanchor` 按根目录 [MIT 许可证](LICENSE) 发布。`skills/graphify/` 是 Apache-2.0 上游快照，`skills/.system/` 中的 Codex 系统 Skill 也保留各自许可。上游来源、NOTICE 和本地改动见 [第三方声明](THIRD_PARTY_NOTICES.md) 与 [来源记录](UPSTREAM_SOURCES.md)；根目录 MIT 许可证不覆盖这些第三方内容。

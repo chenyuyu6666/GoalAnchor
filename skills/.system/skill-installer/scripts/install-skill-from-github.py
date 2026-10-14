@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# GoalAnchor modification (Apache-2.0): bounds Git subprocesses and normalizes failures; see UPSTREAM_SOURCES.md.
 """Install a skill from a GitHub repo path into $CODEX_HOME/skills."""
 
 from __future__ import annotations

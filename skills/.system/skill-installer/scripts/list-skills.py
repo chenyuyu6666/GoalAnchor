@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# GoalAnchor modification (Apache-2.0): bounds GitHub requests and normalizes network/JSON failures; see UPSTREAM_SOURCES.md.
 """List skills from a GitHub repo path."""
 
 from __future__ import annotations

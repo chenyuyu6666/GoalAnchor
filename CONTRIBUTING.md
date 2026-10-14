@@ -13,11 +13,17 @@
   创建分支，也不移动已发布标签。
 - 不直接在 `master` 上开发；合并前必须通过本地测试和 CI。
 
+## 规范仓库与镜像
+
+- GitHub `chenyuyu6666/goal-anchor` 是唯一规范仓库，`master` 上的 PR、Issue 和发布均在 GitHub 管理。
+- Gitee `chen-yuyu6666/goal-anchor` 是 GitHub → Gitee 的单向镜像。不要向 Gitee 镜像提交变更；如自动镜像不可用，由维护者在 GitHub 合并后同步 `master` 和 `v*` 版本标签。
+- 本地 `origin` 指向 GitHub；如需从 Gitee 下载，可添加只读远端 `gitee`。不要使用 `git push --mirror`，以免推送备份分支或历史标签。
+
 常用操作：
 
 ```powershell
 git switch master
-git pull --ff-only origin master
+git pull --ff-only origin master  # origin is the canonical GitHub repository
 git switch -c feature/evidence-gate
 git push -u origin feature/evidence-gate
 ```

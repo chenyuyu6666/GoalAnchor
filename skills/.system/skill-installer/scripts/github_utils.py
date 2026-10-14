@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# GoalAnchor modification (Apache-2.0): adds bounded GitHub requests and readable network/JSON errors; see UPSTREAM_SOURCES.md.
 """Shared GitHub helpers for skill install scripts."""
 
 from __future__ import annotations

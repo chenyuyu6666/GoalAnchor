@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# GoalAnchor modification (Apache-2.0): uses explicit UTF-8 file I/O for Windows; see UPSTREAM_SOURCES.md.
 """
 Quick validation script for skills - minimal version
 """

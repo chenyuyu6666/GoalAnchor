@@ -10,9 +10,10 @@ It blocks four recurring failure modes — goal drift, error accumulation, fake 
 | | |
 |---|---|
 | Current version | [`v0.7.0`](CHANGELOG.md) |
+| Repositories | [GitHub (canonical)](https://github.com/chenyuyu6666/goal-anchor) · [Gitee (one-way mirror)](https://gitee.com/chen-yuyu6666/goal-anchor) |
 | Requires | Python 3.11+ (**zero third-party runtime dependencies**; CI runs 3.11/3.12/3.13) |
 | Distribution | A standard `SKILL.md`, a Python contract library, and a CLI |
-| Supported hosts | Codex, Claude Code, DSH, Zcode, Pi, Cursor, Gemini CLI, OpenCode, and more |
+| Supported hosts | Codex, Claude Code, DSH, Zcode, Pi, PI-Desktop, Cursor, Gemini CLI, OpenCode, and more |
 
 ---
 
@@ -160,3 +161,7 @@ Development, Git commits, and maintenance updates **must follow** [docs/开发Gi
 - **AI collaboration**: the boundaries for AI-driven development, commits, and pushes (remote writes require explicit authorization) and the delivery-report format are defined in the same specification.
 
 Repository-level details live in [CONTRIBUTING.md](CONTRIBUTING.md), [CHANGELOG.md](CHANGELOG.md), and `pyproject.toml`; when they conflict with the specification, fix the source of truth first. Host adaptation: [AGENT-COMPATIBILITY.md](AGENT-COMPATIBILITY.md).
+
+## License and third-party materials
+
+GoalAnchor-authored code, documentation, and the `skills/deeply` and `skills/goalanchor` skills are released under the root [MIT License](LICENSE). `skills/graphify/` and the Codex system-skill snapshots under `skills/.system/` retain their upstream licenses. See [third-party notices](THIRD_PARTY_NOTICES.md) and [source records](UPSTREAM_SOURCES.md) for their licenses, notices, source references, and local changes. The root MIT license does not cover those third-party materials.

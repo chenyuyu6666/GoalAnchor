@@ -196,17 +196,17 @@
 使用 `vX.Y.Z 中文变更说明`，并与对应版本标签保持一致。历史提交不会被删除或回写，
 版本边界以标签和本文件为准。
 
-[未发布]: https://gitee.com/chen-yuyu6666/goal-anchor/compare/v0.7.0...master
-[0.7.0]: https://gitee.com/chen-yuyu6666/goal-anchor/tree/v0.7.0
-[0.6.0]: https://gitee.com/chen-yuyu6666/goal-anchor/tree/v0.6.0
-[0.5.1]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.5.1
-[0.5.0]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.5.0
-[0.4.1]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.4.1
-[0.4.0]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.4.0
-[0.3.4]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.3.4
-[0.3.3]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.3.3
-[0.3.2]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.3.2
-[0.3.1]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.3.1
-[0.3.0]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.3.0
-[0.2.0]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.2.0
-[0.1.0]: https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.1.0
+[未发布]: https://github.com/chenyuyu6666/goal-anchor/compare/v0.7.0...master
+[0.7.0]: https://github.com/chenyuyu6666/goal-anchor/tree/v0.7.0
+[0.6.0]: https://github.com/chenyuyu6666/goal-anchor/tree/v0.6.0
+[0.5.1]: https://github.com/chenyuyu6666/goal-anchor/releases/tag/v0.5.1
+[0.5.0]: https://github.com/chenyuyu6666/goal-anchor/releases/tag/v0.5.0
+[0.4.1]: https://github.com/chenyuyu6666/goal-anchor/releases/tag/v0.4.1
+[0.4.0]: https://github.com/chenyuyu6666/goal-anchor/releases/tag/v0.4.0
+[0.3.4]: https://github.com/chenyuyu6666/goal-anchor/releases/tag/v0.3.4
+[0.3.3]: https://github.com/chenyuyu6666/goal-anchor/releases/tag/v0.3.3
+[0.3.2]: https://github.com/chenyuyu6666/goal-anchor/releases/tag/v0.3.2
+[0.3.1]: https://github.com/chenyuyu6666/goal-anchor/releases/tag/v0.3.1
+[0.3.0]: https://github.com/chenyuyu6666/goal-anchor/releases/tag/v0.3.0
+[0.2.0]: https://github.com/chenyuyu6666/goal-anchor/releases/tag/v0.2.0
+[0.1.0]: https://github.com/chenyuyu6666/goal-anchor/releases/tag/v0.1.0
