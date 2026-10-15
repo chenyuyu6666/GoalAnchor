@@ -3,6 +3,32 @@
 本文件按 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 组织，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [未发布]
+
+### Added
+
+- 显式 `resume_transport`：一次新用户许可、原授权/backend/key 冻结、可信幂等测试证据和两段 CAS；原 UNKNOWN 仍需独立 reconcile。`reuse_observation` 绑定完全相同的 criterion、当前对象摘要与原观察来源链，旧授权不复活；presentation 更新仅限 title。
+- host binding 冻结可信 embedding 的版本/model/mode/Hook 事实，变化后失效，不自证原生 Hook。`review_packets` 与 session/digest/DELIVERED 回执强制绑定；synthetic 回执不证明模型阅读。五 host 的 TextHostAdapter 共用可信文本 fixture，不等于五原生宿主验证。
+- 旧授权缺少可信来源 proof 时明确返回 `LEGACY_UNVERIFIED`，无通用旧记录迁移。
+
+- v0.8 严格运行时本地候选：内容绑定基线、可信签名事件、证据快照、逐项异议处置、结构化问题、持久化一次性授权、受限 scope、回执及验收观察；既有辅助 API 保留。
+- `python -m goalanchor workflow` 提供 synthetic `demo`、`capabilities`、离线 DELETE journal 的零写入 `status` / `audit`，以及允许 WAL 的显式写入 `recover`；恢复不重发操作。
+- Codex App Server 控制器绑定精确 callback；0.162.1 已取得真实模型命令、问答 fixture、拒绝/取消与固定命令批准闭环证据。批准闭环使用 synthetic review 和 explicit test approval，未证明人类 UI 或独立多模型审核。
+- [严格运行时使用与兼容说明](docs/workflow-v0.8.md)：可信密钥/数据库边界、cwd 非沙箱、UNKNOWN 处理和宿主证据分层。
+
+- v0.8.0 首批：`ReviewContext.evidence_digests` 可选绑定全部证据引用的 SHA-256；校验格式和覆盖范围、冻结输入、规范化顺序，并随上下文序列化传递。无摘要的旧调用保留原指纹及 JSON 形态。
+
+### Fixed
+
+- 审核周期从实际 Reviewer/Arbiter 结论检测分歧，避免自报“无分歧”吞掉异议；沿既有最多两轮路径处理，一致失败无需额外复审。
+- PASS 关闭前校验结果验收集合与当前 GoalContract 一致，拒绝用替换、缺失或新增的标准关闭原目标；保留阶段检查顺序及既有 WARN/FAIL、空证据策略。
+
+### Notes
+
+- 严格运行时是本地 v0.8.0 候选，未远程发布；全工具强制未覆盖，Claude / DSH / Zcode 为 ADVISORY / UNAVAILABLE。没有完整 58 项 PASS 结论。scope 的 cwd/声明路径检查不构成 shell 沙箱，控制侧须保护密钥、账本与 executor。
+
+- 本批不是 v0.8.0 发布；首批之后增加的严格运行时按独立指南说明，不据此宣称全部规格通过。摘要由调用方提供，不证明真实性；无摘要时仍为仅引用绑定。
+
 ## [0.7.0] - 2026-10-13
 
 ### Added

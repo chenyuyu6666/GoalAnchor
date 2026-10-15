@@ -77,6 +77,7 @@ class ReviewContext:
     constraints: tuple[str, ...]
     evidence_refs: tuple[str, ...]
     candidate: str
+    evidence_digests: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "goal", _text(self.goal, "goal"))
@@ -84,21 +85,39 @@ class ReviewContext:
         object.__setattr__(self, "constraints", _strings(self.constraints, "constraints"))
         object.__setattr__(self, "evidence_refs", _strings(self.evidence_refs, "evidence_refs"))
         object.__setattr__(self, "candidate", _text(self.candidate, "candidate"))
+        if isinstance(self.evidence_digests, (str, bytes)) or not isinstance(self.evidence_digests, Sequence):
+            raise ContractValidationError("evidence_digests must be an array of ref/SHA-256 pairs")
+        digests: dict[str, str] = {}
+        for pair in self.evidence_digests:
+            if isinstance(pair, (str, bytes)) or not isinstance(pair, Sequence) or len(pair) != 2:
+                raise ContractValidationError("evidence_digests entries must be ref/SHA-256 pairs")
+            ref = _text(pair[0], "evidence_digests ref")
+            digest = _text(pair[1], "evidence_digests SHA-256").lower()
+            if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest):
+                raise ContractValidationError("evidence_digests require 64 hexadecimal SHA-256 characters")
+            if ref in digests:
+                raise ContractValidationError("evidence_digests must not repeat a ref")
+            digests[ref] = digest
+        if digests and set(digests) != set(self.evidence_refs):
+            raise ContractValidationError("evidence_digests must cover exactly the evidence_refs")
+        object.__setattr__(self, "evidence_digests", tuple(sorted(digests.items())))
 
     @property
     def fingerprint(self) -> str:
-        payload = {
+        payload: dict[str, Any] = {
             "goal": self.goal,
             "prompt": self.prompt,
             "constraints": list(self.constraints),
             "evidence_refs": list(self.evidence_refs),
             "candidate": self.candidate,
         }
+        if self.evidence_digests:
+            payload["evidence_digests"] = [list(pair) for pair in self.evidence_digests]
         encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "goal": self.goal,
             "prompt": self.prompt,
             "constraints": list(self.constraints),
@@ -106,6 +125,9 @@ class ReviewContext:
             "candidate": self.candidate,
             "fingerprint": self.fingerprint,
         }
+        if self.evidence_digests:
+            payload["evidence_digests"] = [list(pair) for pair in self.evidence_digests]
+        return payload
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> ReviewContext:
@@ -522,6 +544,7 @@ def evaluate_review_cycle(
     )
     dispute = (
         arbiter_result.disagrees_with_reviewers
+        or any(item.verdict is not arbiter_result.verdict for item in values)
         or not meta_review_result.agrees_with_arbiter
         or verdict_mismatch
     )

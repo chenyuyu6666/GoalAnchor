@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import hashlib
+from dataclasses import replace
+from pathlib import Path
+
 import pytest
 
 from goalanchor import (
@@ -279,6 +283,120 @@ def test_converged_arbiter_and_meta_review_can_pass() -> None:
         round_number=1,
     )
     assert result.outcome is ReviewOutcome.PASS
+
+
+@pytest.mark.parametrize(
+    "reviewer_verdict,arbiter_verdict",
+    [
+        (ReviewVerdict.FAIL, ReviewVerdict.PASS),
+        (ReviewVerdict.WARN, ReviewVerdict.PASS),
+        (ReviewVerdict.PASS, ReviewVerdict.WARN),
+        (ReviewVerdict.PASS, ReviewVerdict.FAIL),
+    ],
+)
+@pytest.mark.parametrize(
+    "round_number,max_rounds,expected",
+    [(1, 2, ReviewOutcome.REVIEW_REQUIRED), (2, 2, ReviewOutcome.STOPPED), (1, 1, ReviewOutcome.STOPPED)],
+)
+def test_cycle_detects_hidden_verdict_disagreement(
+    reviewer_verdict, arbiter_verdict, round_number, max_rounds, expected
+):
+    ctx = context()
+    results = (
+        contextual_reviewer(ctx, "A", ReviewVerdict.PASS, round_number),
+        contextual_reviewer(ctx, "B", reviewer_verdict, round_number),
+    )
+    arbiter = ArbiterResult(
+        "arbiter", round_number, arbiter_verdict, "裁决", "自报无分歧", ("A", "B"), ctx.fingerprint, False
+    )
+    meta = MetaReviewResult(
+        "meta", round_number, "arbiter", arbiter_verdict, "认可主裁决",
+        () if arbiter_verdict is ReviewVerdict.PASS else (finding("M"),), ctx.fingerprint, True,
+    )
+    result = evaluate_review_cycle(
+        ctx, ReviewRisk.HIGH, results, arbiter, meta, round_number=round_number, max_rounds=max_rounds
+    )
+    assert result.outcome is expected
+    if expected is ReviewOutcome.REVIEW_REQUIRED:
+        assert result.dispute_packet is not None
+        assert result.dispute_packet.reviewer_findings == tuple(f for item in results for f in item.findings)
+    else:
+        assert result.next_state is LifecycleState.STOPPED
+        assert result.decision_report is not None
+
+
+@pytest.mark.parametrize(
+    "verdict,expected",
+    [(ReviewVerdict.WARN, ReviewOutcome.WARN), (ReviewVerdict.FAIL, ReviewOutcome.HUMAN_DECISION_REQUIRED)],
+)
+def test_cycle_preserves_unanimous_non_pass(verdict, expected):
+    ctx = context()
+    results = tuple(contextual_reviewer(ctx, name, verdict) for name in ("A", "B"))
+    arbiter = ArbiterResult("arbiter", 1, verdict, "一致结论", "相同意见", ("A", "B"), ctx.fingerprint, False)
+    meta = MetaReviewResult("meta", 1, "arbiter", verdict, "一致", (finding("M"),), ctx.fingerprint, True)
+    result = evaluate_review_cycle(ctx, ReviewRisk.HIGH, results, arbiter, meta, round_number=1)
+    assert result.outcome is expected
+    assert result.dispute_packet is None
+
+
+def test_evidence_content_change_invalidates_old_review(tmp_path: Path) -> None:
+    evidence = tmp_path / "evidence.txt"
+    evidence.write_bytes(b"first snapshot")
+    old = replace(context(), evidence_digests=(("E-1", hashlib.sha256(evidence.read_bytes()).hexdigest()),))
+    evidence.write_bytes(b"changed snapshot")
+    current = replace(old, evidence_digests=(("E-1", hashlib.sha256(evidence.read_bytes()).hexdigest()),))
+    assert old.evidence_refs == current.evidence_refs
+    assert old.fingerprint != current.fingerprint
+    results = tuple(contextual_reviewer(old, name, ReviewVerdict.PASS) for name in ("A", "B"))
+    arbiter = ArbiterResult("arbiter", 1, ReviewVerdict.PASS, "通过", "旧证据", ("A", "B"), old.fingerprint, False)
+    with pytest.raises(ContractValidationError, match="same ReviewContext"):
+        evaluate_review_cycle(current, ReviewRisk.HIGH, results, arbiter, None, round_number=1)
+
+
+def test_evidence_digests_are_frozen_canonical_and_round_trip() -> None:
+    digests = [["E-2", "B" * 64], ["E-1", "A" * 64]]
+    ctx = replace(context(), evidence_refs=("E-1", "E-2"), evidence_digests=digests)
+    original_fingerprint = ctx.fingerprint
+    digests[0][1] = "c" * 64
+    digests.append(["extra", "d" * 64])
+    assert ctx.evidence_digests == (("E-1", "a" * 64), ("E-2", "b" * 64))
+    assert ctx.fingerprint == original_fingerprint
+    reverse = replace(ctx, evidence_digests=tuple(reversed(ctx.evidence_digests)))
+    assert reverse.fingerprint == ctx.fingerprint
+    payload = ctx.to_dict()
+    assert payload["evidence_digests"] == [["E-1", "a" * 64], ["E-2", "b" * 64]]
+    assert ReviewContext.from_dict(payload) == ctx
+    payload["evidence_digests"][0][1] = "f" * 64
+    with pytest.raises(ContractValidationError, match="fingerprint"):
+        ReviewContext.from_dict(payload)
+
+
+def test_legacy_context_fingerprint_and_wire_format_are_preserved() -> None:
+    ctx = ReviewContext("goal", "prompt", (), ("E-1",), "candidate")
+    assert ctx.fingerprint == "e7719e03623e6f3daec18cc12881405a295dd9a1287e65e28e2ba8a7b40865b8"
+    assert "evidence_digests" not in ctx.to_dict()
+    assert replace(ctx, evidence_digests=()).to_dict() == ctx.to_dict()
+    assert ReviewContext.from_dict(ctx.to_dict()) == ctx
+
+
+@pytest.mark.parametrize(
+    "digests",
+    [
+        None, "invalid", {"E-1": "a" * 64}, ["E-1"], [["E-1"]], [["E-1", "a" * 64, "extra"]],
+        [["E-1", None]], [[1, "a" * 64]], [["E-1", "a" * 63]], [["E-1", "z" * 64]],
+        [["E-1", "a" * 64], ["E-1", "b" * 64]], [["unknown", "a" * 64]],
+    ],
+)
+def test_invalid_evidence_digests_are_rejected(digests) -> None:
+    with pytest.raises(ContractValidationError, match="evidence_digests"):
+        replace(context(), evidence_digests=digests)
+
+
+def test_nonempty_digests_require_complete_reference_coverage() -> None:
+    with pytest.raises(ContractValidationError, match="evidence_digests"):
+        replace(context(), evidence_refs=("E-1", "E-2"), evidence_digests=(("E-1", "a" * 64),))
+    duplicated_refs = replace(context(), evidence_refs=("E-1", "E-1"), evidence_digests=(("E-1", "a" * 64),))
+    assert duplicated_refs.evidence_digests == (("E-1", "a" * 64),)
 
 
 def test_high_risk_requires_meta_verdict_to_match_arbiter() -> None:
