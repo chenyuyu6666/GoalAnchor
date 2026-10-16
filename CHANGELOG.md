@@ -5,6 +5,8 @@
 
 ## [未发布]
 
+## [0.8.0] - 2026-10-16
+
 ### Added
 
 - 显式 `resume_transport`：一次新用户许可、原授权/backend/key 冻结、可信幂等测试证据和两段 CAS；原 UNKNOWN 仍需独立 reconcile。`reuse_observation` 绑定完全相同的 criterion、当前对象摘要与原观察来源链，旧授权不复活；presentation 更新仅限 title。
@@ -25,9 +27,9 @@
 
 ### Notes
 
-- 严格运行时是 v0.8.0 候选；源码已合入公开 GitHub master，但尚未作为正式 v0.8.0 版本发布（无 v0.8.0 tag/GitHub Release）。核心场景映射 58/58 PASS，对应宿主状态为 55 NOT_RUN、2 个共享 TextHostAdapter fixture PASS、1 个本地 controller fixture PASS，58 项原生宿主状态均 NOT_RUN。这些 fixture/受控回调不证明人类 UI 或全工具原生强制；全工具强制未覆盖，Claude / DSH / Zcode 为 ADVISORY / UNAVAILABLE。scope 的 cwd/声明路径检查不构成 shell 沙箱，控制侧须保护密钥、账本与 executor。
+- 严格运行时随 v0.8.0 正式发布。核心场景映射 58/58 PASS；宿主状态为 55 NOT_RUN、2 个共享 TextHostAdapter fixture PASS、1 个本地 controller fixture PASS，58 项原生宿主状态均 NOT_RUN。fixture 和受控回调不证明人类 UI 或全工具原生强制；Claude / DSH / Zcode 为 ADVISORY / UNAVAILABLE。scope 的 cwd/声明路径检查不构成 shell 沙箱，控制侧须保护密钥、账本与 executor。
 
-- 本批不是 v0.8.0 发布；首批之后增加的严格运行时按独立指南说明，不据此宣称全部规格通过。摘要由调用方提供，不证明真实性；无摘要时仍为仅引用绑定。
+- 本版本包括首批可信基础及后续严格运行时；实现细节和接入限制见独立指南，不据此宣称全部规格通过。摘要由调用方提供，不证明真实性；无摘要时仍为仅引用绑定。
 
 ## [0.7.0] - 2026-10-13
 
@@ -222,7 +224,8 @@
 使用 `vX.Y.Z 中文变更说明`，并与对应版本标签保持一致。历史提交不会被删除或回写，
 版本边界以标签和本文件为准。
 
-[未发布]: https://github.com/chenyuyu6666/GoalAnchor/compare/v0.7.0...master
+[未发布]: https://github.com/chenyuyu6666/GoalAnchor/compare/v0.8.0...master
+[0.8.0]: https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.8.0
 [0.7.0]: https://github.com/chenyuyu6666/GoalAnchor/tree/v0.7.0
 [0.6.0]: https://github.com/chenyuyu6666/GoalAnchor/tree/v0.6.0
 [0.5.1]: https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.5.1

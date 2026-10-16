@@ -16,26 +16,26 @@ GoalAnchor provides a Skill, a Python library, and a command-line interface. It 
 - **Skill and CLI**: Install the GoalAnchor Skill into supported Agent hosts; use the CLI for deterministic checks, platform configuration, and reviews.
 - **PI-Desktop plugin**: Provides a desktop plugin, Python rules bridge, model review, and opt-in tool gating. See the [plugin guide](goalanchor/_pi_desktop/README.md) for host details.
 
-## In development: first v0.8.0 trust fixes
+## v0.8.0 first-batch trust foundations
 
-The unreleased working tree detects Reviewer/Arbiter verdict disagreements, binds PASS closure to the current acceptance set, and supports optional `ReviewContext.evidence_digests` pairs `(reference, sha256_hex)`.
+v0.8.0 detects Reviewer/Arbiter verdict disagreements, binds PASS closure to the current acceptance set, and supports optional `ReviewContext.evidence_digests` pairs `(reference, sha256_hex)`.
 
 Nonempty digests must cover all distinct evidence references exactly once. Inputs are frozen, SHA-256 values are normalized to lowercase, and pairs are sorted by reference. Digests participate in the fingerprint and survive `to_dict` / `from_dict`; changed content digests invalidate old review results.
 
-Without digests, the legacy fingerprint and JSON shape remain unchanged and bind references only. Callers must collect trustworthy evidence and recheck it before execution; the core does not read files or establish digest authenticity. These first-batch digest changes now coexist with the later strict runtime. The runtime version changes only at release.
+Without digests, the legacy fingerprint and JSON shape remain unchanged and bind references only. Callers must collect trustworthy evidence and recheck it before execution; the core does not read files or establish digest authenticity. The first-batch digest changes ship with the strict runtime in v0.8.0; the runtime version is `0.8.0`.
 
-## In development: v0.8 strict runtime local candidate
+## v0.8.0 strict workflow
 
 `Workflow` adds trusted controller events, a SQLite one-use authorization ledger, structured questions, execution receipts, and criterion observations. Legacy APIs remain auxiliary checks. Strict enforcement requires a trusted controller that protects keys and the database and supplies a controlled executor; the model cannot sign approvals. Scope checks cwd and declared resource paths; cwd is not a sandbox. `UNKNOWN` means the outcome is uncertain, and default recovery never automatically redispatches.
 
-The local v0.8.0 candidate also supports an explicitly authorized idempotent recovery transport: original authorization/backend/key, tested evidence, and two CAS stages remain bound; the original UNKNOWN still needs separate reconciliation. Criterion reuse requires a current signed object digest and the original observation provenance, without reviving old grants. Presentation-only changes are limited to title. Missing legacy proof yields LEGACY_UNVERIFIED; there is no general migration. Host bindings freeze embedding-supplied version/model/mode/Hook facts and invalidate old context on change, without proving native Hooks. Review delivery receipts require matching session/digest/DELIVERED; synthetic receipts do not establish model reading. Five-host TextHostAdapter coverage uses shared trusted text fixtures, not five native host validations.
+The strict runtime also supports an explicitly authorized idempotent recovery transport: original authorization/backend/key, tested evidence, and two CAS stages remain bound; the original UNKNOWN still needs separate reconciliation. Criterion reuse requires a current signed object digest and the original observation provenance, without reviving old grants. Presentation-only changes are limited to title. Missing legacy proof yields LEGACY_UNVERIFIED; there is no general migration. Host bindings freeze embedding-supplied version/model/mode/Hook facts and invalidate old context on change, without proving native Hooks. Review delivery receipts require matching session/digest/DELIVERED; synthetic receipts do not establish model reading. Five-host TextHostAdapter coverage uses shared trusted text fixtures, not five native host validations.
 
 ```powershell
 python -m goalanchor workflow capabilities
 python -m goalanchor workflow demo --directory .\workflow-demo-v08
 ```
 
-This is unreleased. The demo uses synthetic reviews and test approvals. Codex 0.162.1 has real-model command callback, question fixture, rejection, cancellation, and exact fixed-command approval closure evidence. The approval closure uses synthetic review and explicit test approval, without establishing human UI approval or independent multi-model review. Enforcement of every host tool is not covered; Claude / DSH / Zcode remain ADVISORY / UNAVAILABLE. The 58 core scenarios have local executable coverage; this does not establish full native-host acceptance. See the [runtime guide](docs/workflow-v0.8.md) for offline inspection, WAL recovery, and evidence boundaries.
+The demo remains a local example using synthetic reviews and test approvals. Codex 0.162.1 has real-model command callback, question fixture, rejection, cancellation, and exact fixed-command approval closure evidence. The approval closure uses synthetic review and explicit test approval, without establishing human UI approval or independent multi-model review. Enforcement of every host tool is not covered; Claude / DSH / Zcode remain ADVISORY / UNAVAILABLE. The 58 core scenarios have local executable coverage, while all 58 native-host statuses are NOT_RUN; this does not establish full native-host acceptance. See the [runtime guide](docs/workflow-v0.8.md) for offline inspection, WAL recovery, and evidence boundaries.
 
 ## Requirements
 
