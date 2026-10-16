@@ -25,7 +25,7 @@
 
 ### Notes
 
-- 严格运行时是本地 v0.8.0 候选，未远程发布；全工具强制未覆盖，Claude / DSH / Zcode 为 ADVISORY / UNAVAILABLE。没有完整 58 项 PASS 结论。scope 的 cwd/声明路径检查不构成 shell 沙箱，控制侧须保护密钥、账本与 executor。
+- 严格运行时是 v0.8.0 候选；源码已合入公开 GitHub master，但尚未作为正式 v0.8.0 版本发布（无 v0.8.0 tag/GitHub Release）。核心场景映射 58/58 PASS，对应宿主状态为 55 NOT_RUN、2 个共享 TextHostAdapter fixture PASS、1 个本地 controller fixture PASS，58 项原生宿主状态均 NOT_RUN。这些 fixture/受控回调不证明人类 UI 或全工具原生强制；全工具强制未覆盖，Claude / DSH / Zcode 为 ADVISORY / UNAVAILABLE。scope 的 cwd/声明路径检查不构成 shell 沙箱，控制侧须保护密钥、账本与 executor。
 
 - 本批不是 v0.8.0 发布；首批之后增加的严格运行时按独立指南说明，不据此宣称全部规格通过。摘要由调用方提供，不证明真实性；无摘要时仍为仅引用绑定。
 
