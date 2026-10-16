@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -177,6 +178,19 @@ def _dispatch_config(tmp_path: Path, **overrides) -> dict:
 
 
 class TestRenderAgentPrompt:
+    def test_content_digests_survive_host_prompt_serialization(self, context: ReviewContext):
+        bound = replace(context, evidence_digests=(("E-1", "a" * 64),))
+        request = AgentRequest(
+            role=AgentRole.REVIEWER, agent_id="reviewer-1", round_number=1, risk=ReviewRisk.HIGH, context=bound,
+        )
+        # The same serialization is consumed by the host bridge and included in rendered prompts.
+        restored = ReviewContext.from_dict(json.loads(json.dumps(request.to_dict()["context"])))
+        assert restored.fingerprint == bound.fingerprint
+        prompt = render_agent_prompt(request)
+        assert '"evidence_digests"' in prompt
+        assert "a" * 64 in prompt
+        assert bound.fingerprint in prompt
+
     def test_reviewer_prompt_contains_shared_context(self, context: ReviewContext):
         request = AgentRequest(
             role=AgentRole.REVIEWER,

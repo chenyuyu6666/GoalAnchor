@@ -89,3 +89,23 @@ def test_non_pass_results_require_evidence_boundaries() -> None:
             evidence_refs=("E-5",),
             reason="存在风险",
         )
+
+
+@pytest.mark.parametrize("criteria", [("标准 A",), ("替代标准",), ("标准 A", "标准 B", "额外标准")])
+def test_pass_cannot_close_a_different_acceptance_baseline(criteria) -> None:
+    contract = make_contract(LifecycleState.EXECUTE)
+    result = VerificationResult(
+        outcome=VerificationOutcome.PASS, acceptance_criteria=criteria, completed_criteria=criteria,
+        evidence_refs=("E-current",), reason="结果自身通过不代表原目标通过",
+    )
+    with pytest.raises(ContractValidationError, match="acceptance_criteria"):
+        apply_verification_transition(contract, result)
+    assert contract.stage is LifecycleState.EXECUTE
+
+
+def test_matching_baseline_allows_reordering_and_keeps_empty_pass_evidence() -> None:
+    result = VerificationResult(
+        outcome=VerificationOutcome.PASS, acceptance_criteria=("标准 B", "标准 A", "标准 A"),
+        completed_criteria=("标准 A", "标准 B"), evidence_refs=(), reason="保留集合语义与既有空证据策略",
+    )
+    assert apply_verification_transition(make_contract(LifecycleState.EXECUTE), result).stage is LifecycleState.CLOSED

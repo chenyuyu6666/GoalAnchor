@@ -16,6 +16,38 @@ GoalAnchor 提供 Skill、Python 库和命令行工具。它帮助检查计划�
 - **Skill 与 CLI**：把 GoalAnchor Skill 安装到支持的 Agent 宿主；用 CLI 执行确定性检查、查看平台配置或运行审核。
 - **PI-Desktop 插件**：提供桌面插件、Python 规则桥接、模型审核和可主动开启的工具门控。宿主适配细节见[插件指南](goalanchor/_pi_desktop/README.md)。
 
+## 开发中：v0.8.0 首批可信基础
+
+未发布工作树新增确定性审核分歧检查、PASS 验收集合绑定和可选内容摘要。`ReviewContext` 可使用 `evidence_digests` 绑定调用方采集的证据：
+
+```python
+from hashlib import sha256
+from goalanchor import ReviewContext
+
+context = ReviewContext(
+    goal="审核候选修复", prompt="检查目标与证据", constraints=(),
+    evidence_refs=("E-report",), candidate="候选方案",
+    evidence_digests=(("E-report", sha256(b"frozen report").hexdigest()),),
+)
+```
+
+非空摘要必须完整覆盖证据引用，每个引用只出现一次；摘要为 64 位十六进制 SHA-256。输入会冻结为 tuple、摘要转小写并按引用排序，支持 `to_dict` / `from_dict` 往返；内容摘要变化会使旧审核指纹失效。
+
+未提供摘要时，旧指纹和 JSON 格式保持兼容，也仍然只有引用绑定。核心不自动读文件或核实摘要真实性，调用方负责可信采集和执行前重核。首批摘要能力现与后续严格运行时并存；运行时版本将在正式发布阶段更新。
+
+## 开发中：v0.8 严格运行时本地候选
+
+新增 `Workflow`、可信控制侧签名事件、SQLite 一次性授权账本、结构化问题、执行回执与验收观察。旧 API 仍可作为辅助检查使用；严格门控要求可信控制侧保管密钥与数据库并接入受控 executor，模型不能签署批准。scope 检查 cwd 与声明路径，cwd 本身不是沙箱。`UNKNOWN` 表示结果不确定，默认恢复不自动重发。
+
+本地 v0.8.0 候选还提供显式幂等恢复 transport（新用户许可、原授权/backend/key 和测试证据绑定、两段 CAS），原 UNKNOWN 仍须独立 reconcile；支持带当前对象摘要与原观察签名链的 criterion 复用，旧授权不会复活。展示更新仅限 title；旧授权缺 proof 时为 LEGACY_UNVERIFIED，无通用迁移。host binding 绑定控制侧提供的版本、模型、模式和 Hook 事实，变化后失效；它不证明原生 Hook。审核投递回执强制 session/digest/DELIVERED，synthetic 标记不证明模型阅读。五 host 的 TextHostAdapter 测试共享可信文本 fixture，不代表五个原生宿主实测。
+
+```powershell
+python -m goalanchor workflow capabilities
+python -m goalanchor workflow demo --directory .\workflow-demo-v08
+```
+
+这是未发布候选。demo 使用 synthetic 审核及测试批准。Codex 0.162.1 已验证真实模型命令 callback、问答 fixture、拒绝、取消及精确固定命令批准闭环；批准闭环使用 synthetic review 和 explicit test approval，不代表人类 UI 或真实多模型审核。全工具强制尚未覆盖，Claude / DSH / Zcode 为 ADVISORY / UNAVAILABLE 边界；58 项核心场景的本地映射通过不等于各原生宿主全面验收。CLI 离线检查、WAL 恢复限制与证据分层见[严格运行时指南](docs/workflow-v0.8.md)。
+
 ## 运行环境
 
 - **Python 3.11 或更新版本**，支持 Windows、macOS 和 Linux。

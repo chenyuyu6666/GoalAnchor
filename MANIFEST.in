@@ -1,0 +1,8 @@
+include README.en.md
+include requirements*.txt
+recursive-include docs *.md
+recursive-include examples *.py *.json
+recursive-include scripts *.py
+recursive-include skills *.md *.yaml *.py *.json *.mjs *.cjs *.svg *.png *.jpg LICENSE* NOTICE
+recursive-include tests *.py *.json *.md *.cjs *.mjs
+global-exclude *.pyc

@@ -1,0 +1,1251 @@
+{
+  "draft": false,
+  "spec": "D:\\Project\\GoalAnchor\\Doc\\02_开发规格\\GoalAnchor-可信基础与跨平台交互协议规格-v0.1.md",
+  "status_rule": "Core PASS means mapped executable tests exercise exact scenario at the declared controlled layer. PARTIAL remains NOT_RUN for full scenario even when nearby mapped tests pass. Native status is independent.",
+  "cases": [
+    {
+      "id": "T-01",
+      "scenario": "同一记录 ID，提交不同内容",
+      "expected": "冲突拒绝，原记录不变",
+      "candidate_test_nodes": [
+        "tests/test_workflow_store.py::test_commit_atomic_cas_events_and_reopen"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_store.py::test_commit_atomic_cas_events_and_reopen"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-02",
+      "scenario": "决定引用不存在或其他目标的审核",
+      "expected": "拒绝使用，零 dispatch",
+      "candidate_test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t02_review_source_must_exist_and_match_goal"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t02_review_source_must_exist_and_match_goal"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-03",
+      "scenario": "未支持主版本/必需限制字段",
+      "expected": "明确不兼容，不能忽略后 ALLOW",
+      "candidate_test_nodes": [
+        "tests/test_host_contract.py::test_wire_version_and_unknown_semantics_fail_closed"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_host_contract.py::test_wire_version_and_unknown_semantics_fail_closed"
+      ],
+      "layer": "CORE_UNIT_OR_SUBPROCESS_SIMULATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-04",
+      "scenario": "路径未改，证据文件一个字节改变",
+      "expected": "依赖审核失效，旧批准不放行",
+      "candidate_test_nodes": [
+        "tests/test_review_service.py::test_evidence_content_change_invalidates_old_review"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_review_service.py::test_evidence_content_change_invalidates_old_review"
+      ],
+      "layer": "CORE_UNIT_OR_SUBPROCESS_SIMULATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-05",
+      "scenario": "快照摘要匹配但内容无法访问",
+      "expected": "标记不可核验，不能计为当前充分证据",
+      "candidate_test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t05_digest_without_frozen_content_is_rejected"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t05_digest_without_frozen_content_is_rejected"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-06",
+      "scenario": "普通 Agent 请求修改验收项",
+      "expected": "不改变有效基线，保留请求",
+      "candidate_test_nodes": [
+        "tests/test_contract_remaining.py::test_t06_agent_baseline_change_request_is_retained_without_mutating_baseline"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_contract_remaining.py::test_t06_agent_baseline_change_request_is_retained_without_mutating_baseline"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-07",
+      "scenario": "有权用户合法变更一个验收项",
+      "expected": "新版本生效，相关旧结果失效，无关项按依据复用",
+      "candidate_test_nodes": [
+        "tests/test_observation_reuse.py::test_unchanged_criterion_can_reuse_with_current_signed_no_impact_proof",
+        "tests/test_observation_reuse.py::test_changed_dependency_or_missing_proof_cannot_reuse",
+        "tests/test_observation_reuse.py::test_reuse_validation_cannot_replace_closure_original_generation_guard",
+        "tests/test_observation_reuse.py::test_t07_changed_c1_cannot_reuse_but_unchanged_c2_can_reuse_same_new_baseline"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "In one signed revised baseline C1 changes and cannot reuse its old observation, while unchanged C2 reuses only with current signed no-impact proof. Missing current C1 blocks closure. Includes closure generation-guard race regression.",
+      "test_nodes": [
+        "tests/test_observation_reuse.py::test_unchanged_criterion_can_reuse_with_current_signed_no_impact_proof",
+        "tests/test_observation_reuse.py::test_changed_dependency_or_missing_proof_cannot_reuse",
+        "tests/test_observation_reuse.py::test_reuse_validation_cannot_replace_closure_original_generation_guard",
+        "tests/test_observation_reuse.py::test_t07_changed_c1_cannot_reuse_but_unchanged_c2_can_reuse_same_new_baseline"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-08",
+      "scenario": "提交号相同，相关工作区 Diff 改变",
+      "expected": "新审核包，不能复用旧指纹",
+      "candidate_test_nodes": [
+        "tests/test_contract_remaining.py::test_t08_same_commit_changed_workspace_diff_changes_frozen_context"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_contract_remaining.py::test_t08_same_commit_changed_workspace_diff_changes_frozen_context"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-09",
+      "scenario": "两 Reviewer 会话相同或隔离证明缺失",
+      "expected": "不标记独立审核已验证",
+      "candidate_test_nodes": [
+        "tests/test_workflow_acceptance.py::test_review_requires_verified_role_isolation"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_acceptance.py::test_review_requires_verified_role_isolation"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-10",
+      "scenario": "重要发现仍 UNRESOLVED，Arbiter 自报无分歧",
+      "expected": "不得 PASS",
+      "candidate_test_nodes": [
+        "tests/test_workflow_acceptance.py::test_equal_pass_verdicts_cannot_hide_finding"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_acceptance.py::test_equal_pass_verdicts_cannot_hide_finding"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-11",
+      "scenario": "以多数票驳回发现，无反证",
+      "expected": "处置无效，继续阻断",
+      "candidate_test_nodes": [
+        "tests/test_contract_remaining.py::test_t11_majority_refutation_without_counterevidence_stays_blocked"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_contract_remaining.py::test_t11_majority_refutation_without_counterevidence_stays_blocked"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-12",
+      "scenario": "有直接反证，Meta 核对原发现/证据",
+      "expected": "可记录待核查的 REFUTED 处置；重要结论的首轮实质反驳仍须按 D-03 完成独立第二轮，条件满足后才解除，保留异议历史",
+      "candidate_test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t12_t55_t56_refutation_requires_independent_second_round"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t12_t55_t56_refutation_requires_independent_second_round"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-13",
+      "scenario": "Meta 只能看到主摘要，原始证据不可读",
+      "expected": "缺证据，不得当作充分复核",
+      "candidate_test_nodes": [
+        "tests/test_review_delivery.py::test_signed_report_without_delivery_attestation_cannot_pass",
+        "tests/test_review_delivery.py::test_packets_contain_raw_material_and_same_reviewer_input",
+        "tests/test_review_delivery.py::test_invalid_delivery_attestation_never_passes",
+        "tests/test_review_delivery.py::test_delivery_hash_cannot_survive_raw_report_mutation",
+        "tests/test_review_delivery.py::test_dispute_packets_retain_original_findings_and_main_opinion",
+        "tests/test_review_delivery.py::test_pure_builder_freezes_complete_independent_packets",
+        "tests/test_review_delivery.py::test_pure_receipt_check_requires_exact_signed_controller_material"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Complete raw context/reviewer/arbiter/prior-dispute packets are bound to trusted controller delivery receipts; summary-only, missing recipient or wrong session is rejected. This proves protocol delivery attestation, not model comprehension or independent native transport delivery.",
+      "test_nodes": [
+        "tests/test_review_delivery.py::test_signed_report_without_delivery_attestation_cannot_pass",
+        "tests/test_review_delivery.py::test_packets_contain_raw_material_and_same_reviewer_input",
+        "tests/test_review_delivery.py::test_invalid_delivery_attestation_never_passes",
+        "tests/test_review_delivery.py::test_delivery_hash_cannot_survive_raw_report_mutation",
+        "tests/test_review_delivery.py::test_dispute_packets_retain_original_findings_and_main_opinion",
+        "tests/test_review_delivery.py::test_pure_builder_freezes_complete_independent_packets",
+        "tests/test_review_delivery.py::test_pure_receipt_check_requires_exact_signed_controller_material"
+      ],
+      "layer": "TRUSTED_CONTROLLER_DELIVERY_ATTESTATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "SYNTHETIC_SIGNED_TRANSPORT_RECEIPTS"
+    },
+    {
+      "id": "T-14",
+      "scenario": "复审中候选方案变化仍提交旧指纹",
+      "expected": "上下文不匹配拒绝，相关结果失效",
+      "candidate_test_nodes": [
+        "tests/test_contract_remaining.py::test_t08_same_commit_changed_workspace_diff_changes_frozen_context"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_contract_remaining.py::test_t08_same_commit_changed_workspace_diff_changes_frozen_context"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-15",
+      "scenario": "第二轮仍实质分歧，自动换 run ID 重试",
+      "expected": "STOPPED；无第三轮自动 dispatch，保留争议报告",
+      "candidate_test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t15_new_review_identity_cannot_restart_stopped_dispute"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t15_new_review_identity_cannot_restart_stopped_dispute"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-16",
+      "scenario": "相同范围/版本已有有效回答",
+      "expected": "不重复展示问题，复用依据可追溯",
+      "candidate_test_nodes": [
+        "tests/test_workflow.py::test_decline_is_reused_not_reasked_for_same_operation"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow.py::test_decline_is_reused_not_reasked_for_same_operation"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-17",
+      "scenario": "文本相同但目标或授权范围不同",
+      "expected": "不错误合并，保持各自依赖",
+      "candidate_test_nodes": [
+        "tests/test_contract_remaining.py::test_t17_same_text_different_goal_or_authorization_scope_never_deduplicates"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_contract_remaining.py::test_t17_same_text_different_goal_or_authorization_scope_never_deduplicates"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-18",
+      "scenario": "UI 预选、超时、取消或无回答方",
+      "expected": "零新授权；只阻断依赖工作",
+      "candidate_test_nodes": [
+        "tests/test_contract_remaining.py::test_t18_no_answer_or_empty_selection_never_authorizes",
+        "tests/test_workflow_acceptance.py::test_terminal_question_never_issues_authorization"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_contract_remaining.py::test_t18_no_answer_or_empty_selection_never_authorizes",
+        "tests/test_workflow_acceptance.py::test_terminal_question_never_issues_authorization"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-19",
+      "scenario": "问题被新计划取代后旧回答到达",
+      "expected": "仅归档，不批准新操作",
+      "candidate_test_nodes": [
+        "tests/test_workflow.py::test_changed_baseline_rejects_old_answer_and_execution"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow.py::test_changed_baseline_rejects_old_answer_and_execution"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-20",
+      "scenario": "用户明确拒绝，Agent 改写同一问题",
+      "expected": "不自动重问或执行；拒绝保持有效",
+      "candidate_test_nodes": [
+        "tests/test_contract_remaining.py::test_t20_reworded_authorization_reuses_existing_refusal"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_contract_remaining.py::test_t20_reworded_authorization_reuses_existing_refusal"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-21",
+      "scenario": "一个待决问题，另有独立已授权工作",
+      "expected": "待决依赖暂停，独立工作可继续",
+      "candidate_test_nodes": [
+        "tests/test_contract_remaining.py::test_t21_pending_question_blocks_dependent_dispatch_but_independent_authorized_work_runs"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_contract_remaining.py::test_t21_pending_question_blocks_dependent_dispatch_but_independent_authorized_work_runs"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-22",
+      "scenario": "同一可信回答事件重复两次",
+      "expected": "一个决定/授权，无重复副作用",
+      "candidate_test_nodes": [
+        "tests/test_workflow_acceptance.py::test_repeated_answer_creates_one_grant"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_acceptance.py::test_repeated_answer_creates_one_grant"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-23",
+      "scenario": "模型生成含 actor=USER 的授权 JSON",
+      "expected": "来源未验证，拒绝放行",
+      "candidate_test_nodes": [
+        "tests/test_workflow.py::test_forged_answer_cannot_issue_grant"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow.py::test_forged_answer_cannot_issue_grant"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-24",
+      "scenario": "有效一次批准，两个不同 attempt 同时竞争",
+      "expected": "一个取得执行权；受控 executor 最多一次独立 dispatch",
+      "candidate_test_nodes": [
+        "tests/test_contract_remaining.py::test_t24_t25_two_workflow_processes_one_authorization_one_dispatch"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_contract_remaining.py::test_t24_t25_two_workflow_processes_one_authorization_one_dispatch"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-25",
+      "scenario": "两进程竞争同一授权及共享权威记录",
+      "expected": "与 T-24 一致；仅单进程锁实现不得通过此用例",
+      "candidate_test_nodes": [
+        "tests/test_contract_remaining.py::test_t24_t25_two_workflow_processes_one_authorization_one_dispatch"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_contract_remaining.py::test_t24_t25_two_workflow_processes_one_authorization_one_dispatch"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-26",
+      "scenario": "批准后参数/cwd/账户/资源版本改变",
+      "expected": "前置条件或范围不匹配，零 dispatch",
+      "candidate_test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t26_approved_operation_mutation_never_dispatches"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t26_approved_operation_mutation_never_dispatches"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-27",
+      "scenario": "授权到期或撤销先于取得 dispatch 权",
+      "expected": "拒绝执行，记录权威顺序",
+      "candidate_test_nodes": [
+        "tests/test_workflow_store.py::test_consume_checks_revocation_expiry_and_dependencies"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_store.py::test_consume_checks_revocation_expiry_and_dependencies"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-28",
+      "scenario": "已消费 attempt 的事件重送",
+      "expected": "返回原状态，不重新 dispatch，也不自动进入恢复传输",
+      "candidate_test_nodes": [
+        "tests/test_workflow.py::test_strict_chain_executes_once_and_closes_only_with_observation"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow.py::test_strict_chain_executes_once_and_closes_only_with_observation"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-29",
+      "scenario": "原子预约/消费持久写入失败",
+      "expected": "不启动外部操作，不伪造消费成功",
+      "candidate_test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t29_durable_write_failure_prevents_dispatch"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t29_durable_write_failure_prevents_dispatch"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-30",
+      "scenario": "用户接受风险但操作违反硬约束",
+      "expected": "DENY，不因接受风险而通过",
+      "candidate_test_nodes": [
+        "tests/test_contract_remaining.py::test_t30_actual_accepted_risk_never_overrides_hard_tool_policy"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_contract_remaining.py::test_t30_actual_accepted_risk_never_overrides_hard_tool_policy"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-31",
+      "scenario": "范围授权内连续合法操作，随后越界",
+      "expected": "合法操作不重复询问；越界操作不放行",
+      "candidate_test_nodes": [
+        "tests/test_workflow_acceptance.py::test_scope_reuses_permission_but_revocation_blocks_dispatch",
+        "tests/test_workflow_acceptance.py::test_scope_narrower_than_policy_cannot_authorize_outer_workspace"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_acceptance.py::test_scope_reuses_permission_but_revocation_blocks_dispatch",
+        "tests/test_workflow_acceptance.py::test_scope_narrower_than_policy_cannot_authorize_outer_workspace"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-32",
+      "scenario": "dispatch 权已记录，发送前崩溃",
+      "expected": "恢复不盲发；无法证明未发时 UNKNOWN",
+      "candidate_test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t32_t33_crash_recovery_is_unknown_and_never_resends"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t32_t33_crash_recovery_is_unknown_and_never_resends"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-33",
+      "scenario": "外部成功后、成功回执落盘前崩溃",
+      "expected": "UNKNOWN；核对原请求后可确认成功，无重复独立操作",
+      "candidate_test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t32_t33_crash_recovery_is_unknown_and_never_resends",
+        "tests/test_workflow_acceptance.py::test_unknown_reconciliation_requires_correlated_evidence_and_never_resends"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t32_t33_crash_recovery_is_unknown_and_never_resends",
+        "tests/test_workflow_acceptance.py::test_unknown_reconciliation_requires_correlated_evidence_and_never_resends"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-34",
+      "scenario": "外部查询失败或记录无法唯一关联",
+      "expected": "保持 UNKNOWN，不能推断未执行",
+      "candidate_test_nodes": [
+        "tests/test_workflow_acceptance.py::test_unknown_reconciliation_requires_correlated_evidence_and_never_resends"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_acceptance.py::test_unknown_reconciliation_requires_correlated_evidence_and_never_resends"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-35",
+      "scenario": "executor 明确失败但存在部分副作用",
+      "expected": "FAILED 并记录残留，不自动当作回滚成功",
+      "candidate_test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t35_partial_effect_is_failed_and_preserved"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t35_partial_effect_is_failed_and_preserved"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-36",
+      "scenario": "测试外部系统支持幂等，同键同参数经独立恢复入口恢复",
+      "expected": "在有效窗口及许可内最多一次逻辑效果，保留不同传输身份及同一执行权关联；不把重复事件当作恢复许可",
+      "candidate_test_nodes": [
+        "tests/test_idempotent_recovery.py::test_t36_recovery_preserves_key_and_logical_effect_until_trusted_reconciliation",
+        "tests/test_idempotent_recovery.py::test_t36_concurrent_fresh_resume_events_only_one_recovery_transport",
+        "tests/test_idempotent_recovery.py::test_t36_shared_sqlite_processes_elect_one_recovery_transport"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_idempotent_recovery.py::test_t36_recovery_preserves_key_and_logical_effect_until_trusted_reconciliation",
+        "tests/test_idempotent_recovery.py::test_t36_concurrent_fresh_resume_events_only_one_recovery_transport",
+        "tests/test_idempotent_recovery.py::test_t36_shared_sqlite_processes_elect_one_recovery_transport"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "TESTED_LOCAL_FAKE_BACKEND_ONLY"
+    },
+    {
+      "id": "T-37",
+      "scenario": "幂等键过期或外部能力不明",
+      "expected": "不自动重发，等待核对/人工恢复",
+      "candidate_test_nodes": [
+        "tests/test_idempotent_recovery.py::test_t37_unproved_or_expired_recovery_is_explicitly_refused",
+        "tests/test_idempotent_recovery.py::test_t37_timeout_after_recovery_never_automatically_resends",
+        "tests/test_idempotent_recovery.py::test_t37_resume_requires_original_permission_still_valid",
+        "tests/test_idempotent_recovery.py::test_t37_two_tested_backends_cannot_exchange_original_key",
+        "tests/test_idempotent_recovery.py::test_t37_recovery_persistent_write_failure_never_dispatches",
+        "tests/test_idempotent_recovery.py::test_t37_consumed_recovery_crash_is_unknown_without_retransmit",
+        "tests/test_idempotent_recovery.py::test_t37_consume_boundary_changes_prevent_recovery_dispatch",
+        "tests/test_idempotent_recovery.py::test_t37_forged_idempotency_proof_is_rejected",
+        "tests/test_idempotent_recovery.py::test_t37_tested_contract_requires_exact_boolean_and_integer_types",
+        "tests/test_idempotent_recovery.py::test_t37_original_resource_and_parent_scope_remain_required"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_idempotent_recovery.py::test_t37_unproved_or_expired_recovery_is_explicitly_refused",
+        "tests/test_idempotent_recovery.py::test_t37_timeout_after_recovery_never_automatically_resends",
+        "tests/test_idempotent_recovery.py::test_t37_resume_requires_original_permission_still_valid",
+        "tests/test_idempotent_recovery.py::test_t37_two_tested_backends_cannot_exchange_original_key",
+        "tests/test_idempotent_recovery.py::test_t37_recovery_persistent_write_failure_never_dispatches",
+        "tests/test_idempotent_recovery.py::test_t37_consumed_recovery_crash_is_unknown_without_retransmit",
+        "tests/test_idempotent_recovery.py::test_t37_consume_boundary_changes_prevent_recovery_dispatch",
+        "tests/test_idempotent_recovery.py::test_t37_forged_idempotency_proof_is_rejected",
+        "tests/test_idempotent_recovery.py::test_t37_tested_contract_requires_exact_boolean_and_integer_types",
+        "tests/test_idempotent_recovery.py::test_t37_original_resource_and_parent_scope_remain_required"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "TESTED_LOCAL_FAKE_BACKEND_ONLY"
+    },
+    {
+      "id": "T-38",
+      "scenario": "取消与完成并发，晚到结果属于旧运行",
+      "expected": "保留真实结果，不推进新运行、不复活授权",
+      "candidate_test_nodes": [
+        "tests/test_contract_remaining.py::test_t38_cancel_then_new_run_does_not_inherit_late_old_success"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_contract_remaining.py::test_t38_cancel_then_new_run_does_not_inherit_late_old_success"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-39",
+      "scenario": "治理 PASS、进程退出 0，但一个必需验收未运行",
+      "expected": "目标未完成，不得 CLOSED",
+      "candidate_test_nodes": [
+        "tests/test_workflow.py::test_strict_chain_executes_once_and_closes_only_with_observation"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow.py::test_strict_chain_executes_once_and_closes_only_with_observation"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-40",
+      "scenario": "测试通过，但证据对应旧产物/旧基线",
+      "expected": "不计当前 PASS，要求相关重验",
+      "candidate_test_nodes": [
+        "tests/test_workflow_acceptance.py::test_observation_cannot_substitute_object_or_version"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_acceptance.py::test_observation_cannot_substitute_object_or_version"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-41",
+      "scenario": "一个相关 attempt UNKNOWN，其他验收通过",
+      "expected": "不得 CLOSED；明确阻塞原因",
+      "candidate_test_nodes": [
+        "tests/test_workflow_races.py::test_unknown_created_during_closure_check_prevents_closed_commit"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_races.py::test_unknown_created_during_closure_check_prevents_closed_commit"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-42",
+      "scenario": "风险接受试图替代缺失验收证据",
+      "expected": "不计为验收通过",
+      "candidate_test_nodes": [
+        "tests/test_contract_remaining.py::test_t42_accepted_risk_does_not_replace_missing_acceptance_observation"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_contract_remaining.py::test_t42_accepted_risk_does_not_replace_missing_acceptance_observation"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-43",
+      "scenario": "当前基线逐项有效 PASS、链完整且无相关阻断",
+      "expected": "可以 CLOSED，并可导出完整依据",
+      "candidate_test_nodes": [
+        "tests/test_contract_remaining.py::test_t43_closed_chain_has_exportable_original_signed_events"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_contract_remaining.py::test_t43_closed_chain_has_exportable_original_signed_events"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-44",
+      "scenario": "仅无关展示变化，直接依赖内容未变且有无影响依据",
+      "expected": "复用相关有效结果，不整库重审",
+      "candidate_test_nodes": [
+        "tests/test_host_lifecycle.py::test_t44_signed_presentation_only_update_preserves_review_and_grant",
+        "tests/test_host_lifecycle.py::test_t44_no_impact_claim_cannot_hide_changed_direct_dependency",
+        "tests/test_host_lifecycle.py::test_t44_forged_presentation_event_is_rejected_without_mutation",
+        "tests/test_host_lifecycle.py::test_t44_unsupported_presentation_keys_cannot_change_dependencies",
+        "tests/test_host_lifecycle.py::test_t44_presentation_event_replay_is_idempotent",
+        "tests/test_host_lifecycle.py::test_t44_dependency_change_between_proof_check_and_commit_rejects_reuse"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_host_lifecycle.py::test_t44_signed_presentation_only_update_preserves_review_and_grant",
+        "tests/test_host_lifecycle.py::test_t44_no_impact_claim_cannot_hide_changed_direct_dependency",
+        "tests/test_host_lifecycle.py::test_t44_forged_presentation_event_is_rejected_without_mutation",
+        "tests/test_host_lifecycle.py::test_t44_unsupported_presentation_keys_cannot_change_dependencies",
+        "tests/test_host_lifecycle.py::test_t44_presentation_event_replay_is_idempotent",
+        "tests/test_host_lifecycle.py::test_t44_dependency_change_between_proof_check_and_commit_rejects_reuse"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-45",
+      "scenario": "导入旧记录，缺少来源和消费证明",
+      "expected": "标记 LEGACY_UNVERIFIED，不凭默认值批准",
+      "candidate_test_nodes": [
+        "tests/test_host_lifecycle.py::test_t45_legacy_grant_missing_proof_is_explicitly_unverified"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_host_lifecycle.py::test_t45_legacy_grant_missing_proof_is_explicitly_unverified"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-46",
+      "scenario": "宿主缺原生 UI，但有可信用户消息和可靠拦截",
+      "expected": "文本提问有效；未答前依赖操作不能执行",
+      "candidate_test_nodes": [
+        "tests/test_text_host.py::test_t46_t48_same_trusted_text_answer_drives_same_core_governance",
+        "tests/test_text_host.py::test_no_provider_or_invalid_text_never_approves",
+        "tests/test_text_host.py::test_text_input_unavailable_keeps_question_waiting",
+        "tests/test_text_host.py::test_direction_custom_text_never_becomes_authorization"
+      ],
+      "core_status": "PASS",
+      "host_status": "SHARED_TEXT_ADAPTER_FIXTURE_PASS",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Five supported host labels use the same trusted TextHostAdapter with a fixture-owned input provider and controlled executor. Missing/invalid/unavailable text leaves WAIT and issues no grant. No native UI or global interception claim.",
+      "test_nodes": [
+        "tests/test_text_host.py::test_t46_t48_same_trusted_text_answer_drives_same_core_governance",
+        "tests/test_text_host.py::test_no_provider_or_invalid_text_never_approves",
+        "tests/test_text_host.py::test_text_input_unavailable_keeps_question_waiting",
+        "tests/test_text_host.py::test_direction_custom_text_never_becomes_authorization"
+      ],
+      "layer": "TRUSTED_TEXT_ADAPTER_FIXTURE",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "SHARED_TEXT_ADAPTER_FIVE_HOST_LABEL_FIXTURES"
+    },
+    {
+      "id": "T-47",
+      "scenario": "宿主仅 Skill 或 MCP 服务，无法拦截其他写路径",
+      "expected": "报告 ADVISORY，不声明全局强制保护",
+      "candidate_test_nodes": [
+        "tests/test_host_contract.py::test_t47_skill_only_never_inherits_app_server_enforcement"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Skill-only and MCP-only are declared advisory by implementation; regression verifies default Codex advisory vs explicit app-server limited and unavailable DSH app-server. No global enforcement claim.",
+      "test_nodes": [
+        "tests/test_host_contract.py::test_t47_skill_only_never_inherits_app_server_enforcement"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-48",
+      "scenario": "同核心输入/策略，分别接入不同 Adapter",
+      "expected": "核心治理决定相同；执行能力状态可不同且明确",
+      "candidate_test_nodes": [
+        "tests/test_text_host.py::test_t46_t48_same_trusted_text_answer_drives_same_core_governance",
+        "tests/test_text_host.py::test_no_provider_or_invalid_text_never_approves",
+        "tests/test_text_host.py::test_text_input_unavailable_keeps_question_waiting",
+        "tests/test_text_host.py::test_direction_custom_text_never_becomes_authorization"
+      ],
+      "core_status": "PASS",
+      "host_status": "SHARED_TEXT_ADAPTER_FIXTURE_PASS",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "The same portable TextHostAdapter is parameterized across five host labels and drives the same signed core authorization/execution scenario. These are five shared-adapter fixtures, not five distinct native host integrations.",
+      "test_nodes": [
+        "tests/test_text_host.py::test_t46_t48_same_trusted_text_answer_drives_same_core_governance",
+        "tests/test_text_host.py::test_no_provider_or_invalid_text_never_approves",
+        "tests/test_text_host.py::test_text_input_unavailable_keeps_question_waiting",
+        "tests/test_text_host.py::test_direction_custom_text_never_becomes_authorization"
+      ],
+      "layer": "TRUSTED_TEXT_ADAPTER_FIXTURE",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "SHARED_TEXT_ADAPTER_FIVE_HOST_LABEL_FIXTURES"
+    },
+    {
+      "id": "T-49",
+      "scenario": "宿主版本/模式/Hook 信任或启用状态改变",
+      "expected": "原能力证明过期；重新检测前不声明已强制验证",
+      "candidate_test_nodes": [
+        "tests/test_host_lifecycle.py::test_t49_host_change_invalidates_old_baseline_and_authority",
+        "tests/test_host_lifecycle.py::test_t49_controller_cannot_dispatch_with_unmatched_host_binding",
+        "tests/test_host_lifecycle.py::test_t49_controller_matching_or_missing_binding_is_dispatch_bound",
+        "tests/test_host_lifecycle.py::test_t49_malformed_host_binding_is_a_contract_error"
+      ],
+      "core_status": "PASS",
+      "host_status": "LOCAL_CONTROLLER_FIXTURE_PASS",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_host_lifecycle.py::test_t49_host_change_invalidates_old_baseline_and_authority",
+        "tests/test_host_lifecycle.py::test_t49_controller_cannot_dispatch_with_unmatched_host_binding",
+        "tests/test_host_lifecycle.py::test_t49_controller_matching_or_missing_binding_is_dispatch_bound",
+        "tests/test_host_lifecycle.py::test_t49_malformed_host_binding_is_a_contract_error"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "SIMULATED_CODEX_CONTROLLER_FACTS"
+    },
+    {
+      "id": "T-50",
+      "scenario": "Token 无数据、超时、工具输出被截断",
+      "expected": "用量 UNKNOWN、结果按证据判断，不把缺值计零",
+      "candidate_test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t50_missing_usage_and_truncated_output_never_create_review_pass",
+        "tests/test_codex_host.py::test_timeout_and_close_wake_pending"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t50_missing_usage_and_truncated_output_never_create_review_pass",
+        "tests/test_codex_host.py::test_timeout_and_close_wake_pending"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-51",
+      "scenario": "操作已取得 dispatch 权后撤销/取消",
+      "expected": "阻止后续独立操作；已开始效果待核对，不声称撤销成功",
+      "candidate_test_nodes": [
+        "tests/test_workflow_acceptance.py::test_cancel_blocks_new_dispatch_and_late_observation"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_acceptance.py::test_cancel_blocks_new_dispatch_and_late_observation"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-52",
+      "scenario": "同一选项标签重复或返回无法唯一映射",
+      "expected": "拒绝推断所选 ID，保留待决",
+      "candidate_test_nodes": [
+        "tests/test_questions.py::test_option_labels_cannot_hide_whitespace_ambiguity"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_questions.py::test_option_labels_cannot_hide_whitespace_ambiguity"
+      ],
+      "layer": "CORE_UNIT_OR_SUBPROCESS_SIMULATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-53",
+      "scenario": "动态权限观察的内容未变，但有效期已过",
+      "expected": "不能复用放行，重核当前权限；静态证据不受无关 TTL 影响",
+      "candidate_test_nodes": [
+        "tests/test_contract_remaining.py::test_t53_dynamic_permission_expiry_does_not_corrupt_static_snapshot"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_contract_remaining.py::test_t53_dynamic_permission_expiry_does_not_corrupt_static_snapshot"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-54",
+      "scenario": "旧运行 CLOSED 后，用户合法变更验收基线",
+      "expected": "历史终态不变；新运行关联新基线，旧关闭证明不计新目标完成",
+      "candidate_test_nodes": [
+        "tests/test_workflow_acceptance.py::test_new_baseline_does_not_reuse_old_closure"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_acceptance.py::test_new_baseline_does_not_reuse_old_closure"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-55",
+      "scenario": "首轮 Reviewer 提出重要异议，主 Agent 反驳且 Meta 同意，但没有独立第二轮",
+      "expected": "必须记录争议；不得以 Meta 同意跳过所需复审或直接 PASS；无可核验依据时保持阻断",
+      "candidate_test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t12_t55_t56_refutation_requires_independent_second_round"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t12_t55_t56_refutation_requires_independent_second_round"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-56",
+      "scenario": "同一冻结材料下，第二轮 Reviewer 独立核验反证成立，主裁决及 Meta 认可，其他条件均满足",
+      "expected": "可解除相应异议并通过，保留首轮意见及二轮处置；不再派生第三轮",
+      "candidate_test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t12_t55_t56_refutation_requires_independent_second_round"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t12_t55_t56_refutation_requires_independent_second_round"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-57",
+      "scenario": "计划的目标、约束、阻塞与决策链接完整，验收仅语义声明、阈值尚未固定",
+      "expected": "可通过 PLAN 并进入 VERIFY 初始化；不能仅因该阈值未固定判 PLAN 失败",
+      "candidate_test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t57_plan_allows_semantic_acceptance_before_threshold_fixing"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t57_plan_allows_semantic_acceptance_before_threshold_fixing"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    },
+    {
+      "id": "T-58",
+      "scenario": "已进入 VERIFY，但该项范围或有限 EXIT_CRITERION 尚未固定",
+      "expected": "不得启动该项验证动作；入口固定条件后，才可按其余 Gate 决定开始",
+      "candidate_test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t58_verify_rejects_unfixed_scope_and_unbounded_exit"
+      ],
+      "core_status": "PASS",
+      "host_status": "NOT_RUN",
+      "coverage": "EXACT_CORE_SCENARIO",
+      "note": "Exact core acceptance at the stated local layer. Native UI, actual account permissions, external backend contracts and global host enforcement are not inferred.",
+      "test_nodes": [
+        "tests/test_workflow_contract_cases.py::test_t58_verify_rejects_unfixed_scope_and_unbounded_exit"
+      ],
+      "layer": "CONTROLLED_CORE_INTEGRATION",
+      "evidence": "audit/contract-mapped-tests.xml",
+      "mapped_test_status": "PASS",
+      "native_status": "NOT_RUN",
+      "host_evidence_level": "NO_NATIVE_HOST_EVIDENCE_IN_THIS_MAPPING"
+    }
+  ],
+  "execution": {
+    "command": "python -m pytest <deduplicated test_nodes> -q --junitxml=audit/contract-mapped-tests.xml",
+    "tests": 149,
+    "failures": 0,
+    "errors": 0,
+    "native_host_claim": "No native-host PASS is inferred from this run."
+  },
+  "remaining_gaps": []
+}

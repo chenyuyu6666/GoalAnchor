@@ -95,6 +95,8 @@ def apply_verification_transition(
     if result.outcome is VerificationOutcome.PASS:
         if contract.stage is not LifecycleState.EXECUTE:
             raise ContractValidationError("PASS requires an EXECUTE contract stage")
+        if set(result.acceptance_criteria) != set(contract.acceptance_criteria):
+            raise ContractValidationError("PASS acceptance_criteria must match the current GoalContract")
         return transition(contract, LifecycleState.CLOSED)
     if result.outcome is VerificationOutcome.FAIL:
         if contract.stage not in {LifecycleState.PLAN, LifecycleState.VERIFY, LifecycleState.EXECUTE}:

@@ -321,6 +321,7 @@ def _parser() -> argparse.ArgumentParser:
         description="Install and verify the portable GoalAnchor Agent Skill bundle.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers.add_parser("workflow", help="signed durable workflow, inspection, recovery and safe local demo")
     for command in ("install", "check"):
         sub = subparsers.add_parser(command)
         sub.add_argument("--target", required=True, choices=sorted(HOSTS))
@@ -941,7 +942,12 @@ def _run_platforms_report(config_path: Path | None, *, probe: bool = False) -> d
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = _parser().parse_args(argv)
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0] == "workflow":
+        from .workflow_cli import main as workflow_main
+
+        return workflow_main(arguments[1:])
+    args = _parser().parse_args(arguments)
     try:
         if args.command == "gate":
             result = _run_gate(args.phase, args.record)
