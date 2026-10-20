@@ -316,7 +316,7 @@ GoalAnchor 本身不是 Agent，也不提供模型。它以三种形态接入外
 
 ### 四、自定义应用与通用桥接
 
-内置调度器之外，任何"能从 stdin 读一行 JSON、向 stdout 写一行 JSON"的命令都可以作为审核执行器。
+内置调度器之外，任何“能从 stdin 读一行 JSON、向 stdout 写一行 JSON”的命令都可以作为审核执行器。
 
 ```json
 {
@@ -351,7 +351,7 @@ GoalAnchor 本身不是 Agent，也不提供模型。它以三种形态接入外
 | 现象 | 常见原因 | 处理方式 |
 |---|---|---|
 | `goalanchor platforms --json` 中 `available` 为 `false` | 对应 CLI 未安装，或不在当前 `PATH` | 安装并登录该 CLI，重开终端后复查；Windows 上需能找到 `.cmd` 入口 |
-| Skill 已安装但 Agent 不触发 | 未重启会话；或任务不满足触发条件 | 新建或刷新会话；确认是"审核已形成的方案/改动/结论"或用户显式要求审核，普通问答不触发 |
+| Skill 已安装但 Agent 不触发 | 未重启会话；或任务不满足触发条件 | 新建或刷新会话；确认是“审核已形成的方案/改动/结论”或用户显式要求审核，普通问答不触发 |
 | `review-cycle` 退出码 `2` | 配置或运行错误 | 检查 `platforms.<name>.argv`、`{prompt}` 占位符数量和 `timeout_seconds` |
 | `review-cycle` 退出码 `1` | 需要人工决策，或审核已 `STOPPED` | 查看输出的裁决与异议，补充证据或授权后重跑，不要直接当作通过 |
 | 子 Agent 结果解析失败 | stdout 混入日志，或输出了多个 JSON 对象 | 桥接脚本必须只向 stdout 写一行 JSON，日志改走 stderr |
