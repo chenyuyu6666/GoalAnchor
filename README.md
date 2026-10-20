@@ -1,12 +1,39 @@
 # GoalAnchor
 
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/chenyuyu6666/GoalAnchor?label=release)](https://github.com/chenyuyu6666/GoalAnchor/releases)
+[![Validate](https://github.com/chenyuyu6666/GoalAnchor/actions/workflows/validate.yml/badge.svg)](https://github.com/chenyuyu6666/GoalAnchor/actions/workflows/validate.yml)
+
 **中文** | [English](README.en.md)
 
 > 让复杂工程任务从“计划”走到可核验的执行与交付。
 
-GoalAnchor 是供 AI Agent 使用的目标与证据校验工具，适用于实施计划、代码改动、实验结论和多 Agent 审核。它把关键步骤组织为 **PLAN → VERIFY → EXECUTE**，帮助发现目标漂移、未经验证的假设、证据不足和过早宣称完成等问题。
+## 目录
 
-GoalAnchor 提供 Skill、Python 库和命令行工具。它帮助检查计划与记录是否符合规则，但不能替代真实测试、外部事实核验或工程判断。
+- [项目简介](#项目简介)
+- [主要功能](#主要功能)
+- [当前版本](#当前版本)
+- [运行环境](#运行环境)
+- [安装与运行](#安装与运行)
+- [使用说明](#使用说明)
+- [配置](#配置)
+- [项目结构](#项目结构)
+- [依赖与开发](#依赖与开发)
+- [支持的平台](#支持的平台)
+- [版本与兼容性](#版本与兼容性)
+- [贡献指南](#贡献指南)
+- [安全](#安全)
+- [许可证](#许可证)
+- [更多资料](#更多资料)
+
+## 项目简介
+
+GoalAnchor 是供 AI Agent 和开发者使用的**目标锚定与可信收敛工具**，适用于实施计划、代码改动、实验结论和多 Agent 审核。它把关键步骤组织为 **PLAN → VERIFY → EXECUTE**，帮助发现目标漂移、未经验证的假设、证据不足、审核异议被忽略和过早宣称完成等问题。
+
+它关注的不是“多收集信息”，而是**减少决策不确定性**：先固定目标和可观察的验收条件，再检查证据与假设，最后才允许执行与关闭。
+
+GoalAnchor 提供 Skill、Python 库、命令行工具和 PI-Desktop 插件。它帮助检查计划与记录是否符合规则，但**不能替代真实测试、外部事实核验或工程判断**。
 
 ## 主要功能
 
@@ -14,127 +41,221 @@ GoalAnchor 提供 Skill、Python 库和命令行工具。它帮助检查计划�
 - **证据与交付闭环**：记录证据来源、实验条件、结论强度和交付状态，避免把“测试通过”误当成“问题已解决”。
 - **多 Agent 审核**：Reviewer 并行审查，Arbiter 汇总，Meta Reviewer 复核；结果包含可读取的角色、模型和轮次记录。
 - **Skill 与 CLI**：把 GoalAnchor Skill 安装到支持的 Agent 宿主；用 CLI 执行确定性检查、查看平台配置或运行审核。
-- **PI-Desktop 插件**：提供桌面插件、Python 规则桥接、模型审核和可主动开启的工具门控。宿主适配细节见[插件指南](goalanchor/_pi_desktop/README.md)。
+- **严格工作流**：可信控制侧签名事件、SQLite 一次性授权账本、结构化问答、执行回执和验收观察。
+- **PI-Desktop 插件**：提供桌面插件、Python 规则桥接、模型审核和可主动开启的工具门控。
 
-## v0.9.1 严格工作流基线
+## 当前版本
 
-v0.9.1 将严格运行时拆分为稳定公共门面与 `StrictWorkflow` / legacy 两条路径。`Workflow` 的旧对象、JSON 和历史行为保持兼容；新增 `StrictWorkflow`、Strict 基线/证据/审核上下文和受限操作注册，SQLite schema v2 保存不可变 proof 历史与 CAS head。v1 数据库只新增结构，不把 legacy 记录升级为可信来源。
+| 项目 | 值 |
+|---|---|
+| 当前版本 | `0.9.1` |
+| 发布日期 | 2026-10-20 |
+| 发布类型 | MINOR（向后兼容的新能力） |
+| GitHub Release | [v0.9.1](https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.9.1) |
+| 发布提交 | `dfafe47` |
+| 核心场景 | 58/58 `PASS` |
+| 原生宿主 | 58/58 `NOT_RUN` |
 
-```python
-from goalanchor import StrictWorkflow
+v0.9.1 新增 `StrictWorkflow` 增量 API 和 strict/legacy 拆分。Strict 审核、问答、授权、执行、reconcile 与关闭仍返回 `UNAVAILABLE`；P2b–P7 尚未完成，不能把本版本当作完整严格闭环。完整变更见 [CHANGELOG](CHANGELOG.md)。
 
-# StrictWorkflow 需要 store、user_authority、observer_authority、policy 四个位置参数，
-# 并通过关键字参数注入 trusted_event_verifier / trusted_runtime_binding_provider。
-# 模型或 Agent 不能提供 principal / session / host facts；完整接入见严格运行时指南。
+## 运行环境
+
+- **Python 3.11 或更新版本**，支持 Windows、macOS 和 Linux。
+- Python 运行时不依赖第三方包。
+- 使用内置 CLI Agent 调度时，需要自行安装并登录对应的 Agent CLI；GoalAnchor 不安装这些 Agent，也不管理其凭据。
+- PI-Desktop 插件需要宿主进程能找到 Python；桌面开发测试需要 Node.js 20 或更新版本。
+- 构建或开发测试需要 `setuptools>=68`、`build`、`wheel`、`pytest`、`ruff`、`mypy==2.4.0`；详见[依赖与开发](#依赖与开发)。
+
+## 安装与运行
+
+### 从 GitHub 安装 CLI
+
+```sh
+git clone https://github.com/chenyuyu6666/GoalAnchor.git
+cd GoalAnchor
+python -m venv .venv
 ```
 
-Strict 审核、问答、授权、执行、reconcile 与关闭在 v0.9.1 仍返回 `UNAVAILABLE`；不能把旧审核、旧 grant、legacy `CLOSED` 当作严格完成证明。P2b–P7 尚未完成，原生宿主结论仍为 58 项 `NOT_RUN`。详细边界见[严格运行时指南](docs/workflow-v0.8.md)。
+Windows PowerShell：
 
-## v0.8.0 首批可信基础
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
 
-v0.8.0 新增确定性审核分歧检查、PASS 验收集合绑定和可选内容摘要。`ReviewContext` 可使用 `evidence_digests` 绑定调用方采集的证据：
+macOS / Linux：
+
+```sh
+source .venv/bin/activate
+```
+
+安装并验证：
+
+```sh
+python -m pip install .
+goalanchor --help
+python -c "import goalanchor; print(goalanchor.__version__)"
+```
+
+也可以从 [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases) 下载 wheel：
+
+```sh
+python -m pip install goalanchor-0.9.1-py3-none-any.whl
+```
+
+### 安装 GoalAnchor Skill
+
+以 Codex 用户目录为例：
+
+```sh
+goalanchor install --target codex --scope user
+```
+
+安装到当前项目：
+
+```sh
+goalanchor install --target claude --scope project --project-root .
+```
+
+安装后新建或刷新宿主会话，再让 Agent 使用 GoalAnchor 检查已形成的计划、改动或结论。Skill 安装目标只表示文件放置方式，不代表该宿主具备内置 Agent 调度。支持目标见[支持的平台](#支持的平台)。
+
+### 安装 PI-Desktop 插件
+
+PI-Desktop 使用独立 `.piplug` 插件，不使用 `--target pi`：
+
+```sh
+python -m goalanchor.pi_desktop build --destination build/pi-desktop --archive build/goalanchor.piplug
+```
+
+在 PI-Desktop 的 Plugins 页安装生成的 `.piplug`，按宿主界面审阅并启用权限。详细说明见 [PI-Desktop 插件指南](goalanchor/_pi_desktop/README.md)。
+
+### 快速运行
+
+```sh
+# 查看命令与平台环境，不会启动 Agent
+goalanchor --help
+goalanchor platforms --json
+
+# 离线多 Agent 审核示例（本地 echo Agent，不调用外部模型）
+goalanchor review-cycle --request examples/multi-platform-review/request.json --config examples/multi-platform-review/config.json
+
+# 严格工作流能力与本地 demo
+goalanchor workflow capabilities
+goalanchor workflow demo --directory ./workflow-demo-v08
+```
+
+## 使用说明
+
+### 基本流程
+
+1. **PLAN**：明确 `TASK_OBJECTIVE`、`CURRENT_BLOCKING_UNCERTAINTY`、拟执行步骤及其决策关联，依次检查 Q1 Goal、Q2 Logic、Q3 Path、Q4 Minimum、Q5 Structure。
+2. **VERIFY**：先固定可观察的验收条件，检查证据来源、实验条件和结论强度。
+3. **EXECUTE**：在授权与基线仍然有效时执行；保存回执和验收观察，满足全部条件后才能关闭目标。
+
+在支持 Skill 的宿主中，可以直接这样开始：
+
+> 请使用 GoalAnchor 审核这份实施方案。先明确 TASK_OBJECTIVE、CURRENT_BLOCKING_UNCERTAINTY 和 PROPOSED_STEP_AND_DECISION_LINK，再按 PLAN 阶段顺序检查 Q1–Q5。若通过，进入 VERIFY 并先固定验收条件，然后按 PLAN → VERIFY → EXECUTE 推进；报告未验证的事实。
+
+### Python API
+
+`ReviewContext` 可用 `evidence_digests` 绑定调用方采集的证据：
 
 ```python
 from hashlib import sha256
 from goalanchor import ReviewContext
 
 context = ReviewContext(
-    goal="审核候选修复", prompt="检查目标与证据", constraints=(),
-    evidence_refs=("E-report",), candidate="候选方案",
+    goal="审核候选修复",
+    prompt="检查目标与证据",
+    constraints=(),
+    evidence_refs=("E-report",),
+    candidate="候选方案",
     evidence_digests=(("E-report", sha256(b"frozen report").hexdigest()),),
 )
 ```
 
-非空摘要必须完整覆盖证据引用，每个引用只出现一次；摘要为 64 位十六进制 SHA-256。输入会冻结为 tuple、摘要转小写并按引用排序，支持 `to_dict` / `from_dict` 往返；内容摘要变化会使旧审核指纹失效。
+非空摘要必须完整覆盖证据引用，每个引用只出现一次；摘要为 64 位十六进制 SHA-256。输入会冻结为 tuple、摘要转小写并按引用排序，支持 `to_dict` / `from_dict` 往返；内容摘要变化会使旧审核指纹失效。未提供摘要时，旧指纹和 JSON 格式保持兼容，但仍然只有引用绑定；核心不自动读文件或核实摘要真实性，调用方负责可信采集和执行前重核。
 
-未提供摘要时，旧指纹和 JSON 格式保持兼容，也仍然只有引用绑定。核心不自动读文件或核实摘要真实性，调用方负责可信采集和执行前重核。首批摘要能力现与后续严格运行时共同发布；运行时版本单一来源为 `goalanchor.__version__`，当前为 `0.9.1`。
+### 严格工作流
 
-## v0.8.0 严格工作流
+`StrictWorkflow` 是与旧 `Workflow` 并列的增量 API。它需要 `store`、`user_authority`、`observer_authority`、`policy` 四个位置参数，并通过关键字参数注入 `trusted_event_verifier` / `trusted_runtime_binding_provider`。模型或 Agent 不能提供 principal、session 或 host facts；完整接入见[严格运行时指南](docs/workflow-v0.8.md)。
 
-新增 `Workflow`、可信控制侧签名事件、SQLite 一次性授权账本、结构化问题、执行回执与验收观察。旧 API 仍可作为辅助检查使用；严格门控要求可信控制侧保管密钥与数据库并接入受控 executor，模型不能签署批准。scope 检查 cwd 与声明路径，cwd 本身不是沙箱。`UNKNOWN` 表示结果不确定，默认恢复不自动重发。
+旧 `Workflow` 的对象、JSON 和历史空证据行为保持兼容；旧审核、旧 grant、legacy `CLOSED` 和 legacy `VerificationResult` 不会变成 Strict 证明。
 
-严格运行时还提供显式幂等恢复 transport（新用户许可、原授权/backend/key 和测试证据绑定、两段 CAS），原 UNKNOWN 仍须独立 reconcile；支持带当前对象摘要与原观察签名链的 criterion 复用，旧授权不会复活。展示更新仅限 title；旧授权缺 proof 时为 LEGACY_UNVERIFIED，无通用迁移。host binding 绑定控制侧提供的版本、模型、模式和 Hook 事实，变化后失效；它不证明原生 Hook。审核投递回执强制 session/digest/DELIVERED，synthetic 标记不证明模型阅读。五 host 的 TextHostAdapter 测试共享可信文本 fixture，不代表五个原生宿主实测。
+## 配置
 
-```powershell
-python -m goalanchor workflow capabilities
-python -m goalanchor workflow demo --directory .\workflow-demo-v08
+| 场景 | 配置方式 |
+|---|---|
+| 核心 CLI / Python 库 | 无必需配置文件，无必需环境变量；通过命令行参数或 API 参数调用。 |
+| Agent 调度 | 使用 JSON 配置描述平台、profile、命令与模型；参考 [示例配置](examples/multi-platform-review/config.json)，通过 `--config` 传入。模型解析优先级为 profile 级 > 平台级 > 顶层。 |
+| 严格工作流 | 需要持久 SQLite 数据库、可信 `EventAuthority` 密钥、受控 executor 和 observer；密钥与账本由可信控制侧保管，不能暴露给模型。详见[严格运行时指南](docs/workflow-v0.8.md)。 |
+| PI-Desktop | 在插件设置中填写 Python 可执行文件路径，或在启动桌面前设置 `GOALANCHOR_PYTHON`。插件不读取 API key。 |
+| Agent CLI 凭据 | 由各 Agent CLI 自行管理；GoalAnchor 不读取或保存这些凭据。 |
+| 测试脚本 | `GOALANCHOR_TEST_TASK_START/END`、`GOALANCHOR_DIALOGUE_TASK_START/END` 等为测试标记，普通用户无需设置。 |
+
+真实平台探测使用 `goalanchor platforms --probe --json`。它会调用已安装的 Agent CLI，可能产生模型用量；不需要探测时不要加 `--probe`。
+
+## 项目结构
+
+```text
+GoalAnchor/
+├── goalanchor/               Python 包（契约、门控、证据、审核、工作流、宿主适配）
+├── tests/                    单元/集成测试、回归夹具、PI-Desktop Node 测试
+├── docs/                     开发规范、工作流/PI-Desktop 帮助与 CI 任务定义
+├── skills/                   产品 Skill 与第三方 Skill 快照
+├── scripts/                  验证、回归、基准、Skill 同步与宿主检查脚本
+├── examples/                 离线多 Agent 审核示例
+├── audit/                    验收映射与 JUnit 证据
+├── delivery/                 已发布交付物（v0.8.0、v0.9.1）
+├── .github/ .workflow/       GitHub Actions / Gitee Go 流水线
+├── pyproject.toml            包元数据、依赖、Ruff/Mypy/pytest 配置
+├── requirements-dev.txt      开发与验证依赖
+├── requirements-image.txt    可选 ImageGen 依赖
+├── CONTRIBUTING.md           贡献与 Git 规范
+├── SECURITY.md               安全报告流程
+├── CODE_OF_CONDUCT.md        行为准则
+├── CHANGELOG.md              版本变更记录
+├── LICENSE                   项目许可证（MIT）
+├── THIRD_PARTY_NOTICES.md    第三方声明
+├── UPSTREAM_SOURCES.md       第三方 Skill 来源与同步规则
+└── README.md / README.en.md  中英文说明
 ```
 
-demo 仍是使用 synthetic 审核及测试批准的本地示例。Codex 0.162.1 已验证真实模型命令 callback、问答 fixture、拒绝、取消及精确固定命令批准闭环；批准闭环使用 synthetic review 和 explicit test approval，不代表人类 UI 或真实多模型审核。核心场景映射 58/58 PASS，但 58 项原生宿主状态均 NOT_RUN；全工具强制尚未覆盖，Claude / DSH / Zcode 为 ADVISORY / UNAVAILABLE 边界。CLI 离线检查、WAL 恢复限制与证据分层见[严格运行时指南](docs/workflow-v0.8.md)。
+`build/`、`.venv/`、缓存和 `test-results/` 是本地生成物，不属于源码结构。
 
-## 运行环境
+## 依赖与开发
 
-- **Python 3.11 或更新版本**，支持 Windows、macOS 和 Linux。
-- GoalAnchor 的 Python 运行时不依赖第三方 Python 包。
-- 使用内置 CLI Agent 调度时，需要自行安装并完成对应 Agent CLI 的登录。GoalAnchor 不会替你安装这些 Agent 或管理它们的凭据。
-- PI-Desktop 插件需要宿主进程能找到 Python。桌面开发测试另外需要 Node.js 20 或更新版本。
+### 运行时依赖
 
-## 安装
+- Python `>=3.11`。
+- 无第三方 Python 运行时依赖。
+- 内置 Agent 调度需要外部 Agent CLI（Codex、Claude、Gemini、OpenCode）。
+- PI-Desktop 需要 Python 在宿主 PATH 中；桌面开发测试需要 Node.js 20+。
 
-### 从 GitHub 安装 CLI
+### 开发依赖
 
-在仓库根目录创建虚拟环境：
+```sh
+python -m pip install -r requirements-dev.txt
+python -m pip install -e .
+python -m pip install ruff mypy==2.4.0
+```
 
-~~~sh
-git clone https://github.com/chenyuyu6666/GoalAnchor.git
-cd GoalAnchor
-python -m venv .venv
-~~~
+`requirements-dev.txt` 包含 pytest 与 YAML 校验依赖；`requirements-image.txt` 是显式 ImageGen CLI fallback 的可选依赖，不是运行 GoalAnchor 的必需项。
 
-Windows PowerShell：
+### 本地质量检查
 
-~~~powershell
-.\.venv\Scripts\Activate.ps1
-~~~
+```sh
+python -m pytest -q
+python -m ruff check goalanchor tests scripts
+python -m mypy goalanchor
+python scripts/evaluate_fixtures.py --fixtures tests/fixtures/regression --revision "$(git rev-parse HEAD)"
+python scripts/run_test_task.py --task docs/GoalAnchor-自动测试任务.md
+python scripts/sync_skill_bundle.py --check
+```
 
-macOS / Linux：
-
-~~~sh
-source .venv/bin/activate
-~~~
-
-激活虚拟环境后安装：
-
-~~~sh
-python -m pip install .
-~~~
-
-### 安装 GoalAnchor Skill
-
-下面以 Codex 用户目录为例：
-
-~~~sh
-goalanchor install --target codex --scope user
-~~~
-
-安装到项目目录：
-
-~~~sh
-goalanchor install --target claude --scope project --project-root .
-~~~
-
-安装完成后，在宿主中新建或刷新会话，然后让 Agent 使用 GoalAnchor 检查已形成的计划、改动或结论。安装目标见下方平台表。
-
-## 快速使用
-
-查看命令和本机可用的内置 Agent CLI。此命令只报告环境，不会启动 Agent：
-
-~~~sh
-goalanchor --help
-goalanchor platforms --json
-~~~
-
-运行仓库自带的离线审核示例。它使用本地 echo Agent，不调用外部模型：
-
-~~~sh
-goalanchor review-cycle --request examples/multi-platform-review/request.json --config examples/multi-platform-review/config.json
-~~~
-
-在支持的 Agent 宿主中安装 Skill 后，可以这样开始一次任务：
-
-> 请使用 GoalAnchor 审核这份实施方案。先明确 TASK_OBJECTIVE、CURRENT_BLOCKING_UNCERTAINTY 和 PROPOSED_STEP_AND_DECISION_LINK，再按 PLAN 阶段顺序检查 Q1 Goal、Q2 Logic、Q3 Path、Q4 Minimum、Q5 Structure。若通过，进入 VERIFY 并先固定验收条件，然后按 PLAN → VERIFY → EXECUTE 推进；报告未验证的事实。
-
-真实平台探测命令是 <code>goalanchor platforms --probe --json</code>。它会调用已安装的 Agent CLI，可能产生模型用量。
+- 回归夹具会在子进程中导入 GoalAnchor，测试前需要先 `pip install -e .`。
+- CI 使用三操作系统 × Python 3.11–3.13，并固定 MyPy 2.4.0。
+- `ruff` 只检查自有 Python 代码；`skills/.system/` 是上游快照，不纳入该门禁。
+- 涉及 JavaScript 或 PI-Desktop 桥接时，使用 Node.js 20 运行 `node --test tests/js/test_pi_desktop.cjs`。
 
 ## 支持的平台
 
@@ -142,34 +263,54 @@ goalanchor review-cycle --request examples/multi-platform-review/request.json --
 
 | 平台 / 宿主 | Skill 安装目标 | Agent 调度或插件方式 |
 |---|---|---|
-| Codex CLI | <code>codex</code> | 内置 CLI 调度器；需单独安装并登录 Codex CLI |
-| Claude Code | <code>claude</code> | 内置 CLI 调度器；需单独安装并登录 Claude CLI |
-| Gemini CLI | <code>gemini</code> | 内置 CLI 调度器；需单独安装并登录 Gemini CLI |
-| OpenCode | <code>opencode</code> | 内置 CLI 调度器；需单独安装并登录 OpenCode CLI |
-| Cursor | <code>cursor</code> | 可安装 Skill；Agent 执行需自定义命令或 JSON-over-stdio 桥接 |
-| Pi CLI | <code>pi</code> | 可安装 Skill；这是 Pi CLI，不是 PI-Desktop |
-| DeepSeek Harness (DSH) | <code>dsh</code> | 可安装 Skill；Agent 执行需自定义命令或桥接 |
-| Agent Skills 通用目录 | <code>agents</code> | 将 Skill 放入共享目录；Agent 调度由宿主或自定义配置提供 |
-| Zcode | <code>zcode</code>，需搭配 <code>--destination</code> | 需指定 Skill 目录；Agent 调度需自定义接入 |
-| 其他宿主 | <code>custom</code>，需搭配 <code>--destination</code> | 可配置自定义 CLI 命令或 JSON-over-stdio Agent |
-| PI-Desktop | 单独构建 <code>.piplug</code> 插件 | 独立 Extension 和 Python 桥接；不使用 <code>--target pi</code> 安装 |
+| Codex CLI | `codex` | 内置 CLI 调度器；需单独安装并登录 Codex CLI |
+| Claude Code | `claude` | 内置 CLI 调度器；需单独安装并登录 Claude CLI |
+| Gemini CLI | `gemini` | 内置 CLI 调度器；需单独安装并登录 Gemini CLI |
+| OpenCode | `opencode` | 内置 CLI 调度器；需单独安装并登录 OpenCode CLI |
+| Cursor | `cursor` | 可安装 Skill；Agent 执行需自定义命令或 JSON-over-stdio 桥接 |
+| Pi CLI | `pi` | 可安装 Skill；这是 Pi CLI，不是 PI-Desktop |
+| DeepSeek Harness (DSH) | `dsh` | 可安装 Skill；Agent 执行需自定义命令或桥接 |
+| Agent Skills 通用目录 | `agents` | 将 Skill 放入共享目录；Agent 调度由宿主或自定义配置提供 |
+| Zcode | `zcode`，需搭配 `--destination` | 需指定 Skill 目录；Agent 调度需自定义接入 |
+| 其他宿主 | `custom`，需搭配 `--destination` | 可配置自定义 CLI 命令或 JSON-over-stdio Agent |
+| PI-Desktop | 单独构建 `.piplug` 插件 | 独立 Extension 和 Python 桥接；不使用 `--target pi` 安装 |
 
-内置调度器目前是 Codex、Claude、Gemini 和 OpenCode。自定义命令和 JSON-over-stdio 桥接可用于其他 Agent。PI-Desktop 使用独立插件，并按宿主公开接口检测能力；具体验证基线和边界见[适配规格](docs/PI-Desktop适配规格.md)与[验证记录](docs/PI-Desktop验证记录.md)。
+内置调度器目前是 Codex、Claude、Gemini 和 OpenCode。PI-Desktop 使用独立插件，并按宿主公开接口检测能力；具体验证基线和边界见[适配规格](docs/PI-Desktop适配规格.md)与[验证记录](docs/PI-Desktop验证记录.md)。
 
-构建 PI-Desktop 插件：
+## 版本与兼容性
 
-~~~sh
-python -m goalanchor.pi_desktop build --destination build/pi-desktop --archive build/goalanchor.piplug
-~~~
+- 版本遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)：`MAJOR.MINOR.PATCH`。
+- 当前 `0.9.1` 是 MINOR 版本：新增 `StrictWorkflow` 增量 API，旧 `Workflow` 保持兼容。
+- 旧 `ONE_TIME` 授权仍存在已知限制，不能作为严格授权或关闭依据；需要可信门控时使用 `Workflow` / `workflow` 命令。
+- 原生宿主能力仍以逐宿主实测为准；fixture、受控回调和 TextHostAdapter 共享文本测试不替代原生验收。
+- 已发布版本与资产见 [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases)，完整历史见 [CHANGELOG](CHANGELOG.md)。
 
-详细安装和权限说明见[PI-Desktop 插件指南](goalanchor/_pi_desktop/README.md)。
+## 贡献指南
+
+欢迎提交 Issue 和 Pull Request。开始前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)，其中包含分支策略、提交标题、版本规则和本地质量检查要求。
+
+简要流程：
+
+1. 从最新 `master` 创建短期分支，不直接在 `master` 开发。
+2. 每个提交只做一件事，使用 Conventional Commits 标题。
+3. 提交前运行 pytest、Ruff、Mypy 和相关脚本检查。
+4. PR 描述写清目标、改动、验证结果和剩余风险；不要提交凭据、个人数据或未授权的大文件。
+
+参与项目即表示同意遵守 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)。
+
+## 安全
+
+请不要在公开 Issue、PR 或讨论中报告漏洞。优先使用 GitHub 仓库的 **Security → Advisories → Report a vulnerability**；不可用时发送邮件到 [chenyuyu6666@gmail.com](mailto:chenyuyu6666@gmail.com)，主题为 `GoalAnchor security report`。请包含受影响版本/提交、影响和复现步骤，不要附带真实凭据或个人数据。详见 [SECURITY.md](SECURITY.md)。
+
+## 许可证
+
+项目使用 [MIT License](LICENSE)。`skills/graphify/` 和 `skills/.system/` 中的第三方快照保留各自许可证；根目录 MIT 许可证不自动覆盖这些内容。第三方声明与来源见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 和 [UPSTREAM_SOURCES.md](UPSTREAM_SOURCES.md)。
 
 ## 更多资料
 
+- [严格运行时指南](docs/workflow-v0.8.md)
 - [离线多 Agent 审核示例](examples/multi-platform-review/README.md)
-- [变更记录](CHANGELOG.md) · [GitHub Releases](https://github.com/chenyuyu6666/GoalAnchor/releases)
-- [GitHub 主仓库](https://github.com/chenyuyu6666/GoalAnchor) · [Gitee 镜像](https://gitee.com/chen-yuyu6666/goal-anchor)
-- [贡献指南](CONTRIBUTING.md)
-- [许可证](LICENSE) · [第三方声明](THIRD_PARTY_NOTICES.md) · [上游来源记录](UPSTREAM_SOURCES.md)
-
-第三方 Skill 和快照保留各自许可；项目根目录的许可证不自动覆盖第三方内容。
+- [PI-Desktop 插件指南](goalanchor/_pi_desktop/README.md)
+- [仓库文档索引](docs/README.md)
+- [测试说明](tests/README.md)
+- [GitHub Releases](https://github.com/chenyuyu6666/GoalAnchor/releases) · [Gitee 镜像](https://gitee.com/chen-yuyu6666/goal-anchor)
