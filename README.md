@@ -20,7 +20,7 @@
 - [配置](#配置)
 - [项目结构](#项目结构)
 - [依赖与开发](#依赖与开发)
-- [支持的平台](#支持的平台)
+- [支持的应用](#支持的应用)
 - [版本与兼容性](#版本与兼容性)
 - [贡献指南](#贡献指南)
 - [安全](#安全)
@@ -115,7 +115,7 @@ goalanchor install --target codex --scope user
 goalanchor install --target claude --scope project --project-root .
 ```
 
-安装后新建或刷新宿主会话，再让 Agent 使用 GoalAnchor 检查已形成的计划、改动或结论。Skill 安装目标只表示文件放置方式，不代表该宿主具备内置 Agent 调度。支持目标见[支持的平台](#支持的平台)。
+安装后新建或刷新宿主会话，再让 Agent 使用 GoalAnchor 检查已形成的计划、改动或结论。可选目标为 `agents`、`claude`、`codex`、`cursor`、`custom`、`dsh`、`gemini`、`opencode`、`pi`、`zcode`；Skill 安装目标只表示文件放置方式，不代表该宿主具备内置 Agent 调度。各应用的用途、接入方式与角色见[支持的应用](#支持的应用)。
 
 ### 安装 PI-Desktop 插件
 
@@ -256,25 +256,116 @@ python scripts/sync_skill_bundle.py --check
 - `ruff` 只检查自有 Python 代码；`skills/.system/` 是上游快照，不纳入该门禁。
 - 涉及 JavaScript 或 PI-Desktop 桥接时，使用 Node.js 20 运行 `node --test tests/js/test_pi_desktop.cjs`。
 
-## 支持的平台
+## 支持的应用
 
-下表区分 Skill 文件安装位置、内置 Agent 调度器和独立桌面插件。**Skill 安装目标只表示文件放置方式，不代表该宿主内置了 Agent 调度适配。**
+GoalAnchor 本身不是 Agent，也不提供模型。它以三种形态接入外部应用，同一应用可以同时承担一种或多种：
 
-| 平台 / 宿主 | Skill 安装目标 | Agent 调度或插件方式 |
+- **Skill（规则注入）**：把 `PLAN → VERIFY → EXECUTE` 规则和 Q1–Q5 检查清单放进宿主的 Skill 目录，由宿主 Agent 在会话中遵循。
+- **执行器（子 Agent 调度）**：`review-cycle` 按配置调用外部 CLI，把 reviewer / arbiter / meta-reviewer 分派到独立进程并汇总结果。
+- **插件（桌面深度集成）**：以 `.piplug` 在桌面宿主中注册 Skill、工具和 Hook，获得比纯 Skill 更强的接入点。
+
+> **Skill 安装成功只代表文件已放置，不代表该应用具备内置调度器或原生强制执行能力。** 原生宿主能力仍以逐宿主实测为准。
+
+### 各应用的角色
+
+| 角色 | 作用 | 边界 |
 |---|---|---|
-| Codex CLI | `codex` | 内置 CLI 调度器；需单独安装并登录 Codex CLI |
-| Claude Code | `claude` | 内置 CLI 调度器；需单独安装并登录 Claude CLI |
-| Gemini CLI | `gemini` | 内置 CLI 调度器；需单独安装并登录 Gemini CLI |
-| OpenCode | `opencode` | 内置 CLI 调度器；需单独安装并登录 OpenCode CLI |
-| Cursor | `cursor` | 可安装 Skill；Agent 执行需自定义命令或 JSON-over-stdio 桥接 |
-| Pi CLI | `pi` | 可安装 Skill；这是 Pi CLI，不是 PI-Desktop |
-| DeepSeek Harness (DSH) | `dsh` | 可安装 Skill；Agent 执行需自定义命令或桥接 |
-| Agent Skills 通用目录 | `agents` | 将 Skill 放入共享目录；Agent 调度由宿主或自定义配置提供 |
-| Zcode | `zcode`，需搭配 `--destination` | 需指定 Skill 目录；Agent 调度需自定义接入 |
-| 其他宿主 | `custom`，需搭配 `--destination` | 可配置自定义 CLI 命令或 JSON-over-stdio Agent |
-| PI-Desktop | 单独构建 `.piplug` 插件 | 独立 Extension 和 Python 桥接；不使用 `--target pi` 安装 |
+| 宿主应用 | 提供会话界面、模型和工具调用，加载 Skill 或插件 | 规则在宿主内执行；GoalAnchor 不接管宿主的 Agent 循环 |
+| 审核执行器 | 被 `review-cycle` 调起，独立产出审核结论 | 子 Agent 可能是同一应用，也可能是另一个 CLI / 模型 |
+| 可信控制面 | 保管密钥、SQLite 账本、一次性授权与执行回执 | 必须由调用方应用持有，不能由模型或 Agent 自报 |
+| 构建与发布端 | 运行测试、构建 wheel、产出交付物 | CI 或本地脚本，不属于 Agent 能力 |
 
-内置调度器目前是 Codex、Claude、Gemini 和 OpenCode。PI-Desktop 使用独立插件，并按宿主公开接口检测能力；具体验证基线和边界见[适配规格](docs/PI-Desktop适配规格.md)与[验证记录](docs/PI-Desktop验证记录.md)。
+### 一、内置调度支持的宿主
+
+以下四个应用同时支持 Skill 安装和内置子 Agent 调度，可直接用于多 Agent 审核。
+
+| 应用 | 用途 | 接入方式 | 在方案中的角色 | 支持级别 |
+|---|---|---|---|---|
+| **Codex CLI** | OpenAI 的终端编码 Agent | `goalanchor install --target codex --scope user`（`CODEX_HOME` 或 `~/.codex`）；项目内装到 `.agents/skills`。调度命令 `codex exec -`，模型参数 `-m` | Skill 宿主 + 审核执行器；另有 `codex app-server` 受控事件回调通道 | Skill + 内置调度 + 受控回调（原生强制 `LIMITED`） |
+| **Claude Code** | Anthropic 的终端编码 Agent | `--target claude`（用户 `~/.claude`，项目 `.claude/skills`）。调度命令 `claude -p`，模型参数 `--model` | Skill 宿主 + 审核执行器 | Skill + 内置调度 |
+| **Gemini CLI** | Google 的终端 Agent | `--target gemini`（用户 `~/.gemini`，项目 `.gemini/skills`）。调度命令 `gemini`，模型参数 `-m` | Skill 宿主 + 审核执行器；常用于跨模型交叉审核 | Skill + 内置调度 |
+| **OpenCode** | 开源终端编码 Agent | `--target opencode`（用户 `~/.config/opencode`，项目 `.opencode/skills`）。调度命令 `opencode run`，模型参数 `-m` | Skill 宿主 + 审核执行器 | Skill + 内置调度 |
+
+四个内置调度器都通过 **stdin** 传入提示词，避免 Windows `cmd.exe` 破坏多行参数，并绕开命令行长度上限。使用前需自行安装并登录对应 CLI，GoalAnchor 不安装它们，也不管理其凭据。
+
+### 二、仅 Skill 接入的宿主
+
+这些应用可以安装并使用 GoalAnchor Skill，但没有内置调度器。需要独立审核时，可让宿主用自己的子 Agent 机制拉起，或配置自定义命令桥接。
+
+| 应用 | 用途 | 接入方式 | 在方案中的角色 | 支持级别 |
+|---|---|---|---|---|
+| **Cursor** | AI 代码编辑器 | `--target cursor`（用户 `~/.cursor`，项目 `.cursor/skills`） | Skill 宿主；审核执行需自定义命令或 JSON-over-stdio 桥接 | 仅 Skill |
+| **Pi CLI** | Pi 的终端 Agent | `--target pi`（用户 `~/.pi/agent`，项目 `.pi/skills`） | Skill 宿主；无内置调度 | 仅 Skill |
+| **DeepSeek Harness (DSH)** | DeepSeek 的 Agent harness | `--target dsh`（`DSH_HOME` 或 `~/.dsh`；项目 `.dsh/skills`） | Skill 宿主；审核执行需自定义桥接 | 仅 Skill |
+| **Zcode** | Zcode Agent 环境 | `--target zcode --destination <Skill 根目录>`；原生发现路径由宿主配置，必须显式指定 | Skill 宿主；调度需自定义接入 | 仅 Skill（需显式目录） |
+| **Agent Skills 通用目录** | 兼容 Agent Skills 规范的共享落盘位置 | `--target agents`（用户 `~/.agents`，项目 `.agents/skills`） | 通用文件位置；Agent 调度由使用它的宿主提供 | 仅文件放置 |
+
+**Pi CLI 与 PI-Desktop 是两个不同产品**：前者是终端 Agent，用 `--target pi` 安装 Skill；后者是桌面应用，必须构建独立插件。
+
+### 三、桌面插件：PI-Desktop
+
+| 项目 | 说明 |
+|---|---|
+| 用途 | 桌面 AI Agent 应用，支持插件、Skill、工具注册与会话扩展 |
+| 接入方式 | `python -m goalanchor.pi_desktop build --destination build/pi-desktop --archive build/goalanchor.piplug`，然后在 Plugins 页安装 `.piplug`。**不要**使用 `--target pi` |
+| 申请的宿主权限 | `agent.prompt.inject`（Skill）、`agent.extension`（Hook）、`agent.tool.register`（工具）、`agent.complete`（模型额度）、`session.read`（核对模型身份） |
+| 在方案中的角色 | 唯一提供**工具级**接入的形态：`goalanchor_review` 审核工具、`goalanchor_gate` 门控工具、工具批准 Hook 与会话状态命令 |
+| 支持级别 | 最低接口基线 0.18.0；已实际验证 0.18.0 与 0.19.1 的安装、审核、门控与卸载 |
+
+插件要求宿主进程能找到 Python；Python 内核随插件提供，不需要另外 `pip install`。插件不读取 API key，也不申请网络或文件写入权限。宿主权限模型不是 OS 沙箱。详见[插件指南](goalanchor/_pi_desktop/README.md)、[适配规格](docs/PI-Desktop适配规格.md)与[验证记录](docs/PI-Desktop验证记录.md)。
+
+### 四、自定义应用与通用桥接
+
+内置调度器之外，任何"能从 stdin 读一行 JSON、向 stdout 写一行 JSON"的命令都可以作为审核执行器。
+
+```json
+{
+  "platforms": {
+    "my-agent": {
+      "argv": ["python", "bridge.py", "{prompt}"],
+      "timeout_seconds": 300
+    }
+  }
+}
+```
+
+| 方式 | 适用场景 | 接入要点 |
+|---|---|---|
+| 自定义平台（`platforms.<name>.argv`） | 已有 CLI，可用 stdin 或参数接收提示词 | `argv` 最多一个 `{prompt}` 占位符；不写占位符时从 stdin 读取；`timeout_seconds` 默认 300 秒 |
+| JSON-over-stdio 桥接 | 宿主没有 CLI，但能执行命令 | stdin 一行 JSON 请求；stdout 必须输出且仅输出一行 JSON 结果 |
+| 宿主原生子 Agent | 希望在宿主界面看到每个角色的会话 | 用 `goalanchor review-prompt --role ...` 渲染提示词，交给宿主拉起子 Agent，再用 `goalanchor gate --phase review-cycle` 校验 |
+| 自定义 Skill 目录（`--target custom`） | 应用只支持 Skill，不支持调度 | 用 `--destination` 指定根目录，GoalAnchor 会追加 `goalanchor/` |
+
+### 五、如何选择
+
+| 你的目标 | 建议接入 |
+|---|---|
+| 只在自己的 Agent 会话中获得 PLAN / VERIFY / EXECUTE 检查 | 安装 Skill：`goalanchor install --target <host>` |
+| 让 reviewer / arbiter / meta-reviewer 由不同模型独立执行 | 用内置调度器或自定义 `platforms` 配置运行 `review-cycle` |
+| 在宿主界面中看到每个角色的对话 | 用 `review-prompt` 渲染提示词，交给宿主原生子 Agent |
+| 使用 PI-Desktop | 安装 `.piplug`，获得工具注册与批准 Hook |
+| 需要可信授权、持久账本、执行回执 | 使用 `Workflow` / `StrictWorkflow` 并自建可信控制面 |
+
+### 六、接入排查
+
+| 现象 | 常见原因 | 处理方式 |
+|---|---|---|
+| `goalanchor platforms --json` 中 `available` 为 `false` | 对应 CLI 未安装，或不在当前 `PATH` | 安装并登录该 CLI，重开终端后复查；Windows 上需能找到 `.cmd` 入口 |
+| Skill 已安装但 Agent 不触发 | 未重启会话；或任务不满足触发条件 | 新建或刷新会话；确认是"审核已形成的方案/改动/结论"或用户显式要求审核，普通问答不触发 |
+| `review-cycle` 退出码 `2` | 配置或运行错误 | 检查 `platforms.<name>.argv`、`{prompt}` 占位符数量和 `timeout_seconds` |
+| `review-cycle` 退出码 `1` | 需要人工决策，或审核已 `STOPPED` | 查看输出的裁决与异议，补充证据或授权后重跑，不要直接当作通过 |
+| 子 Agent 结果解析失败 | stdout 混入日志，或输出了多个 JSON 对象 | 桥接脚本必须只向 stdout 写一行 JSON，日志改走 stderr |
+| PI-Desktop 报找不到 Python | 宿主进程 `PATH` 中没有 Python | 在插件设置里填写 Python 绝对路径，或在启动前设置 `GOALANCHOR_PYTHON` |
+| PI-Desktop 修改插件后行为未变 | 宿主仍在用旧模块缓存 | 完整退出并重启桌面应用，重新初始化会话；批准状态不会继承 |
+
+### 支持级别的含义
+
+| 级别 | 含义 |
+|---|---|
+| Skill + 内置调度 + 受控回调 | 可安装 Skill、可被 `review-cycle` 调用，并额外支持宿主 App Server 的受控事件回调；原生强制仍为 `LIMITED` |
+| Skill + 内置调度 | 可安装 Skill，也可被 `review-cycle` 直接调用 |
+| 仅 Skill | 只能放置 Skill 文件；审核执行需宿主原生子 Agent 或自定义桥接 |
+| 仅文件放置 | 只提供目录位置，不代表该宿主存在可用的 Agent 运行时 |
 
 ## 版本与兼容性
 

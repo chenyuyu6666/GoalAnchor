@@ -20,7 +20,7 @@
 - [Configuration](#configuration)
 - [Project layout](#project-layout)
 - [Dependencies and development](#dependencies-and-development)
-- [Supported platforms](#supported-platforms)
+- [Supported applications](#supported-applications)
 - [Versioning and compatibility](#versioning-and-compatibility)
 - [Contributing](#contributing)
 - [Security](#security)
@@ -115,7 +115,7 @@ Install into the current project:
 goalanchor install --target claude --scope project --project-root .
 ```
 
-After installation, create or refresh a host session and ask the Agent to review a plan, change, or conclusion. A Skill install target only controls where files are placed; it does not imply built-in Agent dispatch. See [Supported platforms](#supported-platforms).
+After installation, create or refresh a host session and ask the Agent to review a formed plan, change, or conclusion. Valid targets are `agents`, `claude`, `codex`, `cursor`, `custom`, `dsh`, `gemini`, `opencode`, `pi`, and `zcode`; a Skill install target only controls where files are placed and does not imply built-in dispatch. See [Supported applications](#supported-applications) for each application's purpose, integration, and role.
 
 ### Install the PI-Desktop plugin
 
@@ -256,25 +256,116 @@ python scripts/sync_skill_bundle.py --check
 - `ruff` checks project Python only; `skills/.system/` is an upstream snapshot and is excluded.
 - For JavaScript or PI-Desktop bridge changes, use Node.js 20 and run `node --test tests/js/test_pi_desktop.cjs`.
 
-## Supported platforms
+## Supported applications
 
-The table separates Skill file placement, built-in Agent dispatch, and the desktop plugin. **A Skill install target only controls file placement; it does not imply native dispatch support.**
+GoalAnchor is not an Agent and does not provide a model. It integrates with external applications in three forms, and one application can carry more than one of them:
 
-| Platform / host | Skill target | Dispatch or plugin path |
+- **Skill (rule injection)**: places the `PLAN → VERIFY → EXECUTE` rules and the Q1–Q5 checklist in the host's Skill directory for the host Agent to follow.
+- **Executor (sub-agent dispatch)**: `review-cycle` invokes an external CLI from configuration and dispatches reviewer / arbiter / meta-reviewer into separate processes.
+- **Plugin (deep desktop integration)**: ships as a `.piplug` that registers a Skill, tools, and hooks inside a desktop host.
+
+> **A successful Skill install only means files were placed. It does not imply a built-in dispatcher or native enforcement.** Native host capability is always established by per-host testing.
+
+### Roles
+
+| Role | Purpose | Boundary |
 |---|---|---|
-| Codex CLI | `codex` | Built-in CLI dispatcher; install and sign in to Codex CLI separately |
-| Claude Code | `claude` | Built-in CLI dispatcher; install and sign in to Claude CLI separately |
-| Gemini CLI | `gemini` | Built-in CLI dispatcher; install and sign in to Gemini CLI separately |
-| OpenCode | `opencode` | Built-in CLI dispatcher; install and sign in to OpenCode CLI separately |
-| Cursor | `cursor` | Skill install; Agent execution needs a custom command or JSON-over-stdio bridge |
-| Pi CLI | `pi` | Skill install; this is Pi CLI, not PI-Desktop |
-| DeepSeek Harness (DSH) | `dsh` | Skill install; Agent execution needs a custom command or bridge |
-| Agent Skills directory | `agents` | Shared Skill directory; dispatch comes from the host or custom config |
-| Zcode | `zcode` plus `--destination` | Skill directory required; custom dispatch integration |
-| Other hosts | `custom` plus `--destination` | Custom CLI command or JSON-over-stdio Agent |
-| PI-Desktop | separate `.piplug` build | Extension and Python bridge; do not use `--target pi` |
+| Host application | Provides the session UI, model, and tool calls; loads the Skill or plugin | Rules run inside the host; GoalAnchor does not take over the host Agent loop |
+| Review executor | Invoked by `review-cycle` to produce independent review results | The sub-agent may be the same application or a different CLI / model |
+| Trusted control plane | Holds keys, the SQLite ledger, one-time authorizations, and execution receipts | Must be owned by the calling application, never self-reported by a model |
+| Build and release side | Runs tests, builds wheels, produces deliverables | CI or local scripts, not an Agent capability |
 
-Built-in dispatchers are Codex, Claude, Gemini, and OpenCode. PI-Desktop uses a separate plugin and detects capabilities through public host interfaces. See the [compatibility specification](docs/PI-Desktop适配规格.md) and [verification record](docs/PI-Desktop验证记录.md).
+### 1. Hosts with built-in dispatch
+
+These four applications support both Skill installation and built-in sub-agent dispatch, so they can drive multi-Agent review directly.
+
+| Application | Purpose | Integration | Role | Support level |
+|---|---|---|---|---|
+| **Codex CLI** | OpenAI terminal coding Agent | `goalanchor install --target codex --scope user` (`CODEX_HOME` or `~/.codex`); project installs go to `.agents/skills`. Dispatch: `codex exec -`, model flag `-m` | Skill host + review executor; also offers a `codex app-server` controlled event channel | Skill + dispatch + controlled callbacks (native enforcement `LIMITED`) |
+| **Claude Code** | Anthropic terminal coding Agent | `--target claude` (user `~/.claude`, project `.claude/skills`). Dispatch: `claude -p`, model flag `--model` | Skill host + review executor | Skill + dispatch |
+| **Gemini CLI** | Google terminal Agent | `--target gemini` (user `~/.gemini`, project `.gemini/skills`). Dispatch: `gemini`, model flag `-m` | Skill host + review executor; commonly used for cross-model review | Skill + dispatch |
+| **OpenCode** | Open-source terminal coding Agent | `--target opencode` (user `~/.config/opencode`, project `.opencode/skills`). Dispatch: `opencode run`, model flag `-m` | Skill host + review executor | Skill + dispatch |
+
+All four built-in dispatchers pass the prompt over **stdin**, which avoids Windows `cmd.exe` mangling multi-line arguments and bypasses the command-line length limit. Install and sign in to each CLI separately; GoalAnchor does not install them or manage their credentials.
+
+### 2. Skill-only hosts
+
+These applications can install and use the Skill but have no built-in dispatcher. For independent review, let the host start its own sub-agents or configure a custom bridge.
+
+| Application | Purpose | Integration | Role | Support level |
+|---|---|---|---|---|
+| **Cursor** | AI code editor | `--target cursor` (user `~/.cursor`, project `.cursor/skills`) | Skill host; review execution needs a custom command or JSON-over-stdio bridge | Skill only |
+| **Pi CLI** | Pi terminal Agent | `--target pi` (user `~/.pi/agent`, project `.pi/skills`) | Skill host; no built-in dispatch | Skill only |
+| **DeepSeek Harness (DSH)** | DeepSeek Agent harness | `--target dsh` (`DSH_HOME` or `~/.dsh`; project `.dsh/skills`) | Skill host; review execution needs a custom bridge | Skill only |
+| **Zcode** | Zcode Agent environment | `--target zcode --destination <skill root>`; native discovery is host-configured, so the root is mandatory | Skill host; custom dispatch integration | Skill only (explicit directory) |
+| **Agent Skills directory** | Shared root compatible with the Agent Skills convention | `--target agents` (user `~/.agents`, project `.agents/skills`) | Shared file location; dispatch comes from whichever host reads it | File placement only |
+
+**Pi CLI and PI-Desktop are different products**: the former is a terminal Agent installed with `--target pi`; the latter is a desktop application that requires a separate plugin build.
+
+### 3. Desktop plugin: PI-Desktop
+
+| Item | Description |
+|---|---|
+| Purpose | Desktop AI Agent application with plugin, Skill, tool-registration, and session-extension support |
+| Integration | `python -m goalanchor.pi_desktop build --destination build/pi-desktop --archive build/goalanchor.piplug`, then install the `.piplug` from the Plugins page. Do **not** use `--target pi` |
+| Requested host permissions | `agent.prompt.inject` (Skill), `agent.extension` (hooks), `agent.tool.register` (tools), `agent.complete` (model quota), `session.read` (identity check) |
+| Role | The only **tool-level** integration: the `goalanchor_review` tool, the `goalanchor_gate` tool, tool-approval hooks, and a session status command |
+| Support level | Minimum public baseline 0.18.0; install, review, gating, and uninstall verified on 0.18.0 and 0.19.1 |
+
+The plugin requires the host process to find Python; the Python core ships inside the plugin, so no separate `pip install` is needed. It does not read API keys and requests no network or file-write permissions. Host permissions are not an OS sandbox. See the [plugin guide](goalanchor/_pi_desktop/README.md), [compatibility specification](docs/PI-Desktop适配规格.md), and [verification record](docs/PI-Desktop验证记录.md).
+
+### 4. Custom applications and generic bridges
+
+Beyond the built-in dispatchers, any command that reads one JSON line from stdin and writes one JSON line to stdout can act as a review executor.
+
+```json
+{
+  "platforms": {
+    "my-agent": {
+      "argv": ["python", "bridge.py", "{prompt}"],
+      "timeout_seconds": 300
+    }
+  }
+}
+```
+
+| Approach | When to use it | Key points |
+|---|---|---|
+| Custom platform (`platforms.<name>.argv`) | You already have a CLI that accepts a prompt via stdin or argv | At most one `{prompt}` placeholder; without it the prompt is read from stdin; `timeout_seconds` defaults to 300 |
+| JSON-over-stdio bridge | The host has no CLI but can execute commands | One JSON request line in; exactly one JSON result line out |
+| Host-native sub-agents | You want each role visible in the host UI | Render prompts with `goalanchor review-prompt --role ...`, let the host start sub-agents, then validate with `goalanchor gate --phase review-cycle` |
+| Custom Skill root (`--target custom`) | The application supports Skills but not dispatch | Point `--destination` at the root; GoalAnchor appends `goalanchor/` |
+
+### 5. Choosing an integration
+
+| Your goal | Recommended integration |
+|---|---|
+| Just get PLAN / VERIFY / EXECUTE checks in your own Agent session | Install the Skill: `goalanchor install --target <host>` |
+| Have reviewer / arbiter / meta-reviewer run independently on different models | Run `review-cycle` with the built-in dispatchers or custom `platforms` |
+| See every role's conversation in the host UI | Render prompts with `review-prompt` for host-native sub-agents |
+| Use PI-Desktop | Install the `.piplug` for tool registration and approval hooks |
+| Need trusted authorization, a durable ledger, and execution receipts | Use `Workflow` / `StrictWorkflow` with your own trusted control plane |
+
+### 6. Integration troubleshooting
+
+| Symptom | Usual cause | What to do |
+|---|---|---|
+| `goalanchor platforms --json` reports `available: false` | The CLI is not installed or not on `PATH` | Install and sign in to that CLI, reopen the terminal, and recheck; on Windows the `.cmd` entry point must be resolvable |
+| Skill is installed but the Agent never triggers it | The session was not refreshed, or the task does not meet the trigger condition | Start or refresh a session; confirm you are reviewing a formed plan/change/conclusion or explicitly asked for a review — ordinary Q&A does not trigger it |
+| `review-cycle` exits with `2` | Configuration or runtime error | Check `platforms.<name>.argv`, the number of `{prompt}` placeholders, and `timeout_seconds` |
+| `review-cycle` exits with `1` | Human decision required, or review already `STOPPED` | Read the verdict and objections, add evidence or authorization, and rerun; do not treat it as a pass |
+| Sub-agent result cannot be parsed | Logs on stdout, or more than one JSON object | The bridge must write exactly one JSON line to stdout; send logs to stderr |
+| PI-Desktop cannot find Python | No Python on the host process `PATH` | Set the plugin's Python field to an absolute path, or set `GOALANCHOR_PYTHON` before launch |
+| PI-Desktop behaves unchanged after an edit | The host is still using cached modules | Fully quit and restart the desktop app, then reinitialize the session; approvals are not inherited |
+
+### Support level definitions
+
+| Level | Meaning |
+|---|---|
+| Skill + dispatch + controlled callbacks | Skill install, `review-cycle` dispatch, and host App Server event callbacks; native enforcement is still `LIMITED` |
+| Skill + dispatch | Skill install and direct `review-cycle` dispatch |
+| Skill only | Skill files only; review execution needs host-native sub-agents or a custom bridge |
+| File placement only | Provides a directory location only; it does not imply a usable Agent runtime |
 
 ## Versioning and compatibility
 
