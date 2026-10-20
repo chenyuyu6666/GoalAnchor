@@ -194,9 +194,8 @@ git describe --tags --exact-match <release-commit>
 
 ### 9.1 Release 命名
 
-- Git tag 永远为纯 `vX.Y.Z`，不加任何后缀；主题后缀只允许出现在 Release 显示标题中。
-- 默认 Release 标题为纯版本号（如 `v0.7.0`）；里程碑或主题版本采用 `vX.Y.Z - <English Theme>` 格式（如 `v0.9.1 - Strict Workflow Baseline`），主题用英文、实词首字母大写。
-- 同一版本的主题在 Release 标题、说明正文和 `CHANGELOG.md` 三处保持一致；tag、发布提交与资产命名不受主题影响。
+- Git tag 与 Release 标题均为纯 `vX.Y.Z`，不使用主题后缀或任何修饰语（与 v0.7.0 及之前所有版本保持一致）。
+- 版本主题、亮点与说明一律写入 Release 说明正文和 `CHANGELOG.md`，不进入标题。
 
 发布步骤：
 
