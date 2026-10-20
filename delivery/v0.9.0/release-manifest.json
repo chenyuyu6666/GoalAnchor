@@ -1,0 +1,60 @@
+{
+  "task_id": "GA-V090-PUBLISH",
+  "state": "LOCAL_BUILD_VERIFIED",
+  "version": "0.9.0",
+  "release_date": "2026-10-20",
+  "repository": "chenyuyu6666/GoalAnchor",
+  "base_tag": "v0.8.0",
+  "base_commit": "1af37a3d90c625d835d8ebba8fe5977f1ff31b7a",
+  "release_commit": "486cd5b33a47d1f7577ee2259990a81b14480b0a",
+  "tag_name": "v0.9.0",
+  "tag_message": "v0.9.0 发布 GoalAnchor 严格工作流基线",
+  "release_title": "v0.9.0 GoalAnchor 严格工作流基线",
+  "release_notes_file": "delivery\\v0.9.0\\release-notes.md",
+  "assets": [
+    {
+      "name": "goalanchor-0.9.0-py3-none-any.whl",
+      "size_bytes": 188951,
+      "sha256": "35a46043142194de57ad2f4988ab7c796a7b8198f83a1db9b806cdb0f7b7a442"
+    },
+    {
+      "name": "goalanchor-0.9.0.tar.gz",
+      "size_bytes": 527637,
+      "sha256": "6a290ddacad0287449c40094ef8ab2de774ab0b3fce324f31f467b39093d7470"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size_bytes": 190,
+      "sha256": "e6b05874cd4997da8b685d8ed26f1df9c9d6dd15a2bef624ce242775c9025caf"
+    }
+  ],
+  "expected_release_state": {
+    "draft": false,
+    "prerelease": false,
+    "published_at_required": true
+  },
+  "tag_object_sha": "49d8da7b4bcc034e5be8a44089728993c1ccd191",
+  "tag_pushed": false,
+  "release_id": null,
+  "release_url": null,
+  "draft": false,
+  "prerelease": false,
+  "public_unauthenticated_download_verified": false,
+  "gitee_mirror": {
+    "repository_url": "https://gitee.com/chen-yuyu6666/goal-anchor.git",
+    "direction": "github-to-gitee",
+    "status": "PENDING"
+  },
+  "task_status": "IN_PROGRESS",
+  "release_notes_sha256": "0c40d247d1552156e961d6783a079cb5bd4c82d99bd3d70b63ee728383f5e372",
+  "verification": {
+    "ruff": "PASS",
+    "mypy": "PASS_37_FILES",
+    "skill_bundle": "IN_SYNC",
+    "focused_tests": "284_PASS",
+    "full_suite": "844_PASS_2_KNOWN_FLAKY",
+    "core_acceptance": "58_OF_58_PASS",
+    "native_hosts": "58_OF_58_NOT_RUN",
+    "wheel_install_smoke": "PASS_0.9.0"
+  }
+}
