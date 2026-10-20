@@ -12,6 +12,7 @@ from dataclasses import asdict, dataclass, fields, replace
 from typing import Any, Self
 
 from .core import ContractValidationError
+from .workflow_protocol import parse_time, sha256_text
 
 
 def _text(value: Any, name: str) -> str:
@@ -84,13 +85,27 @@ class Question(_Serializable):
     question_revision: int = 1
     baseline_digest: str | None = None
     decision_key: str | None = None
+    trigger_reason: str | None = None
+    expires_at: str | None = None
+    authorization_context_digest: str | None = None
 
     def __post_init__(self) -> None:
         for name in ("question_id", "goal_id", "title", "prompt"):
             _text(getattr(self, name), name)
-        for name in ("operation_digest", "approval_option_id", "baseline_digest", "decision_key"):
+        for name in (
+            "operation_digest", "approval_option_id", "baseline_digest", "decision_key", "trigger_reason",
+            "expires_at", "authorization_context_digest",
+        ):
             if getattr(self, name) is not None:
                 _text(getattr(self, name), name)
+        if self.expires_at is not None:
+            parse_time(self.expires_at)
+        if self.authorization_context_digest is not None:
+            normalized_digest = sha256_text(self.authorization_context_digest, "authorization_context_digest")
+            if normalized_digest != self.authorization_context_digest:
+                raise ContractValidationError("authorization_context_digest must be lowercase")
+        if self.kind == "DIRECTION" and self.authorization_context_digest is not None:
+            raise ContractValidationError("Direction questions cannot bind authorization context")
         for name in ("plan_revision", "question_revision"):
             value = getattr(self, name)
             if type(value) is not int or value < 1:
@@ -115,11 +130,19 @@ class Question(_Serializable):
         ):
             raise ContractValidationError("Authorization requires exact operation and single approval option")
 
+    def to_dict(self) -> dict[str, Any]:
+        data = super().to_dict()
+        for name in ("trigger_reason", "expires_at", "authorization_context_digest"):
+            if getattr(self, name) is None:
+                data.pop(name)
+        return data
+
     def _digest(self, *, dedupe: bool) -> str:
         data = self.to_dict()
         if dedupe:
             del data["question_id"]
             del data["question_revision"]
+            data.pop("expires_at", None)
         encoded = json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
@@ -171,6 +194,13 @@ class QuestionRecord(_Serializable):
                 raise ContractValidationError("ANSWERED requires a non-empty answer")
         elif self.answer is not None:
             raise ContractValidationError("Only ANSWERED records can contain an answer")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "question": self.question.to_dict(),
+            "state": self.state,
+            "answer": None if self.answer is None else self.answer.to_dict(),
+        }
 
     def _validate_answer(self, answer: QuestionAnswer | None) -> None:
         q = self.question

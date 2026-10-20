@@ -15,6 +15,7 @@ import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from types import MappingProxyType
 from typing import Any
 
 from .core import ContractValidationError
@@ -152,11 +153,24 @@ class SignedEvent:
 
 
 class EventAuthority:
+    source: str
+    _key: bytes
+
     def __init__(self, key: bytes, source: str) -> None:
         if not isinstance(key, bytes) or len(key) < 32:
             raise ContractValidationError("authority requires at least 32 secret bytes")
-        self._key = key
-        self.source = text(source, "source")
+        object.__setattr__(self, "_key", key)
+        object.__setattr__(self, "source", text(source, "source"))
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name in {"_key", "source"} and hasattr(self, name):
+            raise AttributeError(f"EventAuthority {name} is immutable; replace the authority to rotate it")
+        object.__setattr__(self, name, value)
+
+    @property
+    def verification_fingerprint(self) -> str:
+        """Non-secret identity for safely keying ephemeral verification caches."""
+        return hashlib.sha256(self.source.encode("utf-8") + b"\0" + self._key).hexdigest()
 
     def sign(self, kind: str, subject: str, payload: Mapping[str, Any], *,
              event_id: str | None = None, at: str | None = None) -> SignedEvent:
@@ -203,8 +217,25 @@ class Criterion:
         return cls(**data, expected_json=canonical(expected))
 
 
+DecisionDependencyItems = tuple[str, ...] | list[str]
+DecisionDependencyInput = (
+    Mapping[str, DecisionDependencyItems]
+    | tuple[tuple[str, DecisionDependencyItems], ...]
+)
+DecisionDependencyPairs = tuple[tuple[str, tuple[str, ...]], ...]
+
+
 @dataclass(frozen=True)
 class Baseline:
+    """Content-bound plan revision.
+
+    ``decision_dependencies`` accepts a mapping or canonical tuple-pairs at
+    construction and is stored as sorted immutable pairs. The tuple form is
+    intended for immutable reconstruction (for example, ``dataclasses.replace``).
+    Consumers that need key lookup should use ``decision_dependency_map``;
+    ``to_dict`` retains the JSON object form.
+    """
+
     goal_id: str
     revision: int
     objective: str
@@ -212,6 +243,7 @@ class Baseline:
     criteria: tuple[Criterion, ...]
     constraints: tuple[str, ...] = ()
     required_operations: tuple[str, ...] = ()
+    decision_dependencies: DecisionDependencyInput = ()
 
     def __post_init__(self) -> None:
         for name in ("goal_id", "objective", "plan"):
@@ -225,11 +257,56 @@ class Baseline:
         object.__setattr__(self, "criteria", items)
         object.__setattr__(self, "constraints", strings(self.constraints, "constraints"))
         object.__setattr__(self, "required_operations", strings(self.required_operations, "required_operations"))
+        raw_dependencies = self.decision_dependencies
+        if isinstance(raw_dependencies, Mapping):
+            raw_items = list(raw_dependencies.items())
+        elif isinstance(raw_dependencies, tuple):
+            raw_items = list(raw_dependencies)
+        else:
+            raise ContractValidationError("decision_dependencies must be an object")
+        dependencies: dict[str, tuple[str, ...]] = {}
+        for pair in raw_items:
+            if not isinstance(pair, tuple) or len(pair) != 2:
+                raise ContractValidationError("decision_dependencies entries must be key/item pairs")
+            raw_key, raw_decision_items = pair
+            key = text(raw_key, "decision_key")
+            if key in dependencies:
+                raise ContractValidationError("decision_dependencies keys collide after normalization")
+            if not isinstance(raw_decision_items, (tuple, list)):
+                raise ContractValidationError("decision work items must be an array")
+            items_for_decision = strings(raw_decision_items, "decision work items")
+            if len(set(items_for_decision)) != len(items_for_decision):
+                raise ContractValidationError("decision work items contain duplicates")
+            dependencies[key] = tuple(sorted(items_for_decision))
+        object.__setattr__(self, "decision_dependencies", tuple(sorted(dependencies.items())))
 
     def to_dict(self) -> dict[str, Any]:
-        return {"goal_id": self.goal_id, "revision": self.revision, "objective": self.objective, "plan": self.plan,
-                "criteria": [item.to_dict() for item in self.criteria], "constraints": list(self.constraints),
-                "required_operations": list(self.required_operations)}
+        data = {
+            "goal_id": self.goal_id,
+            "revision": self.revision,
+            "objective": self.objective,
+            "plan": self.plan,
+            "criteria": [item.to_dict() for item in self.criteria],
+            "constraints": list(self.constraints),
+            "required_operations": list(self.required_operations),
+        }
+        dependencies = self._normalized_decision_dependencies()
+        if dependencies:
+            data["decision_dependencies"] = {
+                key: list(items) for key, items in dependencies
+            }
+        return data
+
+    def _normalized_decision_dependencies(self) -> DecisionDependencyPairs:
+        dependencies = self.decision_dependencies
+        if not isinstance(dependencies, tuple):
+            raise ContractValidationError("decision_dependencies are not normalized")
+        return tuple((key, tuple(items)) for key, items in dependencies)
+
+    @property
+    def decision_dependency_map(self) -> Mapping[str, tuple[str, ...]]:
+        """Read-only mapping view of the canonical dependency pairs."""
+        return MappingProxyType(dict(self._normalized_decision_dependencies()))
 
     @property
     def fingerprint(self) -> str:
@@ -237,8 +314,13 @@ class Baseline:
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> Baseline:
-        data = shape(value, {"goal_id", "revision", "objective", "plan", "criteria"},
-                     {"constraints", "required_operations"})
+        data = shape(
+            value,
+            {"goal_id", "revision", "objective", "plan", "criteria"},
+            {"constraints", "required_operations", "decision_dependencies"},
+        )
+        if "decision_dependencies" in data and not isinstance(data["decision_dependencies"], Mapping):
+            raise ContractValidationError("decision_dependencies must be an object")
         data["criteria"] = tuple(Criterion.from_dict(item) for item in data["criteria"])
         return cls(**data)
 
