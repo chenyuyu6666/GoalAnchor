@@ -31,6 +31,34 @@ git push -u origin feature/evidence-gate
 PR 合并并通过 CI 后删除远程和本地工作分支；PR 页面和提交历史仍可追溯。
 分支名不绑定版本号，版本边界由发布标签和 `CHANGELOG.md` 统一管理。
 
+## 本地质量检查
+
+从仓库根目录准备并运行与 CI 对齐的 Python 检查：
+
+```powershell
+python -m pip install -r requirements-dev.txt
+python -m pip install -e .
+python -m pip install ruff mypy==2.4.0
+$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = '1'
+python -m pytest -q
+$goalAnchorRevision = (git rev-parse HEAD).Trim()
+python scripts/evaluate_fixtures.py --fixtures tests/fixtures/regression --revision $goalAnchorRevision
+python scripts/run_test_task.py --task docs/GoalAnchor-自动测试任务.md
+python scripts/sync_skill_bundle.py --check
+python -m ruff check goalanchor tests scripts
+python -m mypy goalanchor
+```
+
+回归夹具会在子进程中导入 GoalAnchor，因此测试前需要执行 editable install。CI 将 MyPy 2.4.0 作为阻断检查；本地使用相同版本可避免检查结果因版本差异而变化。
+
+改动涉及 JavaScript 或 PI-Desktop 桥接时，使用 Node.js 20 运行：
+
+```powershell
+node --check skills/.system/openai-docs/scripts/fetch-codex-manual.mjs
+node --check skills/.system/openai-docs/scripts/resolve-latest-model-info.cjs
+node --test tests/js/test_pi_desktop.cjs
+```
+
 ## 提交标题
 
 日常开发提交使用 Conventional Commits；只有合并到 `master` 的发布聚合提交带版本号：

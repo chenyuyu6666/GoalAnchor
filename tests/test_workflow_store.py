@@ -52,6 +52,171 @@ def test_commit_atomic_cas_events_and_reopen(tmp_path):
     assert reopened.get_event('e') == {'x': 1}
 
 
+def test_commit_many_events_and_records_is_atomic_and_idempotent(tmp_path):
+    store = WorkflowStore(tmp_path / 'state.db')
+    initial_goal = {'goal_id': 'goal', 'state': 'VERIFY', 'generation': 0}
+    store.commit(
+        [('goal', 'goal', initial_goal)], {('goal', 'goal'): None}, 'seed-goal', {'kind': 'seed'}
+    )
+    goal = store.get('goal', 'goal')
+    generation_before = goal['generation']
+    changes = [
+        ('strict_question', 'q-1', {'goal_id': 'goal', 'state': 'ANSWERED'}),
+        ('strict_grant', 'g-1', {'goal_id': 'goal', 'state': 'ACTIVE'}),
+    ]
+    expected = {
+        ('goal', 'goal'): store.fingerprint(goal),
+        ('strict_question', 'q-1'): None,
+        ('strict_grant', 'g-1'): None,
+    }
+    events = [
+        ('answer-event-1', {'kind': 'user.answer', 'question_id': 'q-1'}),
+        ('grant-event-1', {'kind': 'controller.strict_grant', 'question_id': 'q-1', 'grant_id': 'g-1'}),
+    ]
+
+    # This store test verifies atomic persistence; caller-side code verifies event-to-record meaning.
+    assert store.commit_many(changes, expected, events)
+    assert store.get('strict_question', 'q-1') == changes[0][2]
+    assert store.get('strict_grant', 'g-1') == changes[1][2]
+    assert store.get('goal', 'goal')['generation'] == generation_before + 1
+    assert [item['event_id'] for item in store.audit()] == [
+        'seed-goal', 'answer-event-1', 'grant-event-1'
+    ]
+    assert not store.commit_many(changes, expected, events)
+    reopened = WorkflowStore(tmp_path / 'state.db')
+    assert reopened.get('strict_question', 'q-1') == changes[0][2]
+    assert reopened.get('strict_grant', 'g-1') == changes[1][2]
+    assert reopened.get('goal', 'goal')['generation'] == generation_before + 1
+
+    stale_changes = [
+        ('strict_question', 'q-2', {'goal_id': 'goal', 'state': 'ANSWERED'}),
+        ('strict_grant', 'g-2', {'goal_id': 'goal', 'state': 'ACTIVE'}),
+    ]
+    stale_expected = {
+        ('goal', 'goal'): store.fingerprint(store.get('goal', 'goal')),
+        ('strict_question', 'q-2'): None,
+        ('strict_grant', 'g-2'): 'stale',
+    }
+    stale_events = [
+        ('answer-event-3', {'kind': 'user.answer', 'question_id': 'q-2'}),
+        ('grant-event-2', {'kind': 'controller.strict_grant', 'question_id': 'q-2', 'grant_id': 'g-2'}),
+    ]
+    with pytest.raises(ContractValidationError):
+        store.commit_many(stale_changes, stale_expected, stale_events)
+
+    assert store.get('strict_question', 'q-2') is None
+    assert store.get('strict_grant', 'g-2') is None
+    assert store.get_event('answer-event-3') is None
+    assert store.get_event('grant-event-2') is None
+    assert store.get('goal', 'goal')['generation'] == generation_before + 1
+    assert [item['event_id'] for item in store.audit()] == [
+        'seed-goal', 'answer-event-1', 'grant-event-1'
+    ]
+
+    invalid_changes = [
+        ('strict_question', 'q-3', {'goal_id': 'goal', 'state': 'ANSWERED'}),
+        ('strict_grant', 'g-3', {'goal_id': 'goal', 'expires_at': float('inf')}),
+    ]
+    invalid_expected = {
+        ('goal', 'goal'): store.fingerprint(store.get('goal', 'goal')),
+        ('strict_question', 'q-3'): None,
+        ('strict_grant', 'g-3'): None,
+    }
+    invalid_events = [
+        ('answer-event-5', {'kind': 'user.answer', 'question_id': 'q-3'}),
+        ('grant-event-3', {'kind': 'controller.strict_grant', 'question_id': 'q-3', 'grant_id': 'g-3'}),
+    ]
+    with pytest.raises(ContractValidationError):
+        store.commit_many(invalid_changes, invalid_expected, invalid_events)
+
+    assert store.get('strict_question', 'q-3') is None
+    assert store.get('strict_grant', 'g-3') is None
+    assert store.get_event('answer-event-5') is None
+    assert store.get_event('grant-event-3') is None
+    assert store.get('goal', 'goal')['generation'] == generation_before + 1
+    assert [item['event_id'] for item in store.audit()] == [
+        'seed-goal', 'answer-event-1', 'grant-event-1'
+    ]
+
+
+def test_commit_many_rejects_partial_event_replay_without_partial_writes(tmp_path):
+    store = WorkflowStore(tmp_path / 'state.db')
+    store.commit([], {}, 'already-recorded', {'kind': 'user.answer', 'question_id': 'q-2'})
+    changes = [('strict_question', 'q-2', {'goal_id': 'goal', 'state': 'ANSWERED'})]
+    events = [
+        ('already-recorded', {'kind': 'user.answer', 'question_id': 'q-2'}),
+        ('not-yet-recorded', {'kind': 'user.answer', 'question_id': 'q-2'}),
+    ]
+
+    with pytest.raises(ContractValidationError):
+        store.commit_many(changes, {('strict_question', 'q-2'): None}, events)
+
+    assert store.get('strict_question', 'q-2') is None
+    assert store.get_event('not-yet-recorded') is None
+    assert [item['event_id'] for item in store.audit()] == ['already-recorded']
+
+
+def test_commit_many_rechecks_valid_until_after_record_writes(monkeypatch, tmp_path):
+    store = WorkflowStore(tmp_path / 'expiry-before-commit.db')
+    clock_value = [AT]
+    original_put = store._put
+
+    def expire_after_write(db, kind, key, payload):
+        original_put(db, kind, key, payload)
+        if kind == 'strict_operation':
+            clock_value[0] = LATER
+
+    monkeypatch.setattr(store, '_put', expire_after_write)
+
+    with pytest.raises(ContractValidationError, match='expired before commit'):
+        store.commit(
+            [('strict_operation', 'op-1', {'goal_id': 'goal', 'operation_digest': 'digest'})],
+            {('strict_operation', 'op-1'): None},
+            'operation-event',
+            {'kind': 'controller.operation'},
+            valid_until=LATER,
+            clock=lambda: clock_value[0],
+        )
+
+    assert store.get('strict_operation', 'op-1') is None
+    assert store.get_event('operation-event') is None
+    assert store.audit() == ()
+
+
+def test_commit_many_checks_valid_until_after_slow_pre_commit_callback(tmp_path):
+    store = WorkflowStore(tmp_path / 'expiry-in-pre-commit-callback.db')
+    initial_goal = {'goal_id': 'goal', 'generation': 0}
+    store.commit([('goal', 'goal', initial_goal)], {('goal', 'goal'): None}, 'seed-goal', {'kind': 'seed'})
+    goal_before = store.get('goal', 'goal')
+    clock_value = [AT]
+    callback_count = 0
+
+    def expire_during_final_callback():
+        nonlocal callback_count
+        callback_count += 1
+        if callback_count == 2:
+            clock_value[0] = LATER
+
+    with pytest.raises(ContractValidationError, match='expired before commit'):
+        store.commit_many(
+            [('strict_operation', 'op-1', {'goal_id': 'goal', 'operation_digest': 'digest'})],
+            {
+                ('goal', 'goal'): store.fingerprint(goal_before),
+                ('strict_operation', 'op-1'): None,
+            },
+            [('operation-event', {'kind': 'controller.operation'})],
+            valid_until=LATER,
+            clock=lambda: clock_value[0],
+            pre_commit_check=expire_during_final_callback,
+        )
+
+    assert callback_count == 2
+    assert store.get('strict_operation', 'op-1') is None
+    assert store.get_event('operation-event') is None
+    assert store.get('goal', 'goal') == goal_before
+    assert [item['event_id'] for item in store.audit()] == ['seed-goal']
+
+
 def test_fingerprint_strict_and_deterministic():
     assert WorkflowStore.fingerprint({'b': 2, 'a': 1}) == WorkflowStore.fingerprint({'a': 1, 'b': 2})
     for value in ({1: 'bad'}, {'x': float('nan')}, {'x': {2: 'bad'}}):
