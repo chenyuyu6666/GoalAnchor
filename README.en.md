@@ -50,13 +50,12 @@ GoalAnchor provides a Skill, a Python library, a CLI, and a PI-Desktop plugin. I
 |---|---|
 | Version | `0.9.1` |
 | Release date | 2026-10-20 |
-| Release type | MINOR (backward-compatible capability) |
 | GitHub Release | [v0.9.1](https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.9.1) |
 | Release commit | `dfafe47` |
 | Core scenarios | 58/58 `PASS` |
 | Native hosts | 58/58 `NOT_RUN` |
 
-v0.9.1 adds the incremental `StrictWorkflow` API and the strict/legacy split. Strict review, questions, authorization, execution, reconcile, and closure still return `UNAVAILABLE`. P2b–P7 is incomplete; do not treat this release as a complete strict loop. See [CHANGELOG](CHANGELOG.md).
+GoalAnchor provides two paths over the same contract and evidence model: legacy `Workflow` for existing calls and auxiliary checks, and `StrictWorkflow` for trusted-controller baselines, evidence, review contexts, and restricted operations. Strict review, questions, authorization, execution, reconcile, and closure still return `UNAVAILABLE`; P2b–P7 is incomplete. See [CHANGELOG](CHANGELOG.md) for release history.
 
 ## Requirements
 
@@ -205,7 +204,7 @@ GoalAnchor/
 ├── scripts/                  validation, regression, benchmark, bundle sync, host checks
 ├── examples/                 offline multi-Agent review example
 ├── audit/                    acceptance map and JUnit evidence
-├── delivery/                 published artifacts (v0.8.0, v0.9.1)
+├── delivery/                 published artifacts (wheel/sdist/checksums/manifest)
 ├── .github/ .workflow/       GitHub Actions / Gitee Go pipelines
 ├── pyproject.toml            package metadata, dependencies, Ruff/Mypy/pytest config
 ├── requirements-dev.txt      development and validation dependencies
@@ -280,7 +279,7 @@ Built-in dispatchers are Codex, Claude, Gemini, and OpenCode. PI-Desktop uses a 
 ## Versioning and compatibility
 
 - Versions follow [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`.
-- `0.9.1` is a MINOR release: the incremental `StrictWorkflow` API is added and legacy `Workflow` remains compatible.
+- The current `0.9.x` line provides both legacy `Workflow` and `StrictWorkflow`; legacy objects, JSON, and historical empty-evidence behavior remain compatible.
 - Legacy `ONE_TIME` authorization has known limits and must not be used as strict authorization or closure proof; use `Workflow` / `workflow` for trusted gating.
 - Native host claims require per-host testing. Fixtures, controlled callbacks, and shared TextHostAdapter tests do not replace native acceptance.
 - See [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases) and [CHANGELOG](CHANGELOG.md) for published versions and assets.

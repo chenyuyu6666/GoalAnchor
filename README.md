@@ -50,13 +50,12 @@ GoalAnchor 提供 Skill、Python 库、命令行工具和 PI-Desktop 插件。�
 |---|---|
 | 当前版本 | `0.9.1` |
 | 发布日期 | 2026-10-20 |
-| 发布类型 | MINOR（向后兼容的新能力） |
 | GitHub Release | [v0.9.1](https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.9.1) |
 | 发布提交 | `dfafe47` |
 | 核心场景 | 58/58 `PASS` |
 | 原生宿主 | 58/58 `NOT_RUN` |
 
-v0.9.1 新增 `StrictWorkflow` 增量 API 和 strict/legacy 拆分。Strict 审核、问答、授权、执行、reconcile 与关闭仍返回 `UNAVAILABLE`；P2b–P7 尚未完成，不能把本版本当作完整严格闭环。完整变更见 [CHANGELOG](CHANGELOG.md)。
+GoalAnchor 以同一套契约与证据模型提供 legacy `Workflow` 和 `StrictWorkflow` 两条路径：legacy 路径保留既有调用与辅助检查；Strict 路径用于可信控制侧绑定基线、证据、审核上下文和受限操作。Strict 审核、问答、授权、执行、reconcile 与关闭仍返回 `UNAVAILABLE`；P2b–P7 尚未完成。版本历史见 [CHANGELOG](CHANGELOG.md)。
 
 ## 运行环境
 
@@ -205,7 +204,7 @@ GoalAnchor/
 ├── scripts/                  验证、回归、基准、Skill 同步与宿主检查脚本
 ├── examples/                 离线多 Agent 审核示例
 ├── audit/                    验收映射与 JUnit 证据
-├── delivery/                 已发布交付物（v0.8.0、v0.9.1）
+├── delivery/                 已发布交付物（wheel/sdist/校验和/manifest）
 ├── .github/ .workflow/       GitHub Actions / Gitee Go 流水线
 ├── pyproject.toml            包元数据、依赖、Ruff/Mypy/pytest 配置
 ├── requirements-dev.txt      开发与验证依赖
@@ -280,7 +279,7 @@ python scripts/sync_skill_bundle.py --check
 ## 版本与兼容性
 
 - 版本遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)：`MAJOR.MINOR.PATCH`。
-- 当前 `0.9.1` 是 MINOR 版本：新增 `StrictWorkflow` 增量 API，旧 `Workflow` 保持兼容。
+- 当前 `0.9.x` 同时提供 legacy `Workflow` 和 `StrictWorkflow`：旧对象、JSON 与历史空证据行为保持兼容。
 - 旧 `ONE_TIME` 授权仍存在已知限制，不能作为严格授权或关闭依据；需要可信门控时使用 `Workflow` / `workflow` 命令。
 - 原生宿主能力仍以逐宿主实测为准；fixture、受控回调和 TextHostAdapter 共享文本测试不替代原生验收。
 - 已发布版本与资产见 [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases)，完整历史见 [CHANGELOG](CHANGELOG.md)。
