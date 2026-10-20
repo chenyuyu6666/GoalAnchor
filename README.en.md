@@ -138,9 +138,12 @@ goalanchor platforms --json
 # Offline multi-Agent review example (local echo Agent; no external model)
 goalanchor review-cycle --request examples/multi-platform-review/request.json --config examples/multi-platform-review/config.json
 
+# Render round-1 reviewer prompts only, without invoking any Agent (integration check)
+goalanchor review-cycle --request ... --config ... --dry-run
+
 # Strict workflow capabilities and local demo
 goalanchor workflow capabilities
-goalanchor workflow demo --directory ./workflow-demo-v08
+goalanchor workflow demo --directory ./workflow-demo
 ```
 
 ## Usage
@@ -209,11 +212,23 @@ Output: a human-readable JSON summary by default; pass `--json` for machine-read
 
 Real platform probing uses `goalanchor platforms --probe --json`. It invokes installed Agent CLIs and may consume model usage; omit `--probe` when not needed.
 
+Top-level fields of the dispatch config:
+
+| Field | Meaning |
+|---|---|
+| `model` | Top-level default model ID; `review-cycle --model` overrides it from the command line. Resolution order: profile > platform > top level. |
+| `platforms.<name>` | Platform definition: `argv` (at most one `{prompt}` placeholder), `timeout_seconds` (default 600), `model`, `model_flag`. |
+| `profiles.<id>` | A named Agent: `platform` (references a platform) or `command`/`argv` (stdio bridge, mutually exclusive), `roles` (`reviewer`/`arbiter`/`meta_reviewer`), `display_name`; optional `model`, `timeout_seconds`, `env`, `enabled`, `retries`, `capabilities`. |
+| `role_bindings` | Assigns profiles to `arbiter` and `meta_reviewer`; reviewer roles use every profile declaring that role. |
+| `capabilities` | Dispatch capability flags: `supports_parallel` (concurrent reviewers per round), `max_concurrency`. |
+
+Field validation lives in `goalanchor/platforms/platform_config.py`; see the [sample config](examples/multi-platform-review/config.json) for a minimal working example.
+
 ### Performance and scale limits
 
 | Item | Default | Notes |
 |---|---|---|
-| Per-call Agent timeout | 300 s | Override per platform with `timeout_seconds` in the config. |
+| Platform dispatch timeout | 600 s | Override per platform with `timeout_seconds` in the config (`AgentRequest` defaults to 300 s internally; dispatch follows the platform config). |
 | Reviewer concurrency per round | 4 | `AgentRuntime.max_concurrency`, must be a positive integer; Arbiter and Meta Reviewer always run sequentially. |
 | Review rounds | 2 | Adjust via `max_rounds` in the request; hitting the limit returns `REVIEW_REQUIRED`. |
 | SQLite ledger concurrency | single writer | Write transactions serialize with `BEGIN IMMEDIATE`; `busy_timeout` follows the store's `timeout`. Under heavy Windows load, multi-process writes can contend on locks — a known boundary. |
@@ -233,8 +248,11 @@ GoalAnchor/
 ├── delivery/                 published artifacts (wheel/sdist/checksums/manifest)
 ├── .github/ .workflow/       GitHub Actions / Gitee Go pipelines
 ├── pyproject.toml            package metadata, dependencies, Ruff/Mypy/pytest config
+├── MANIFEST.in               sdist packaging manifest
 ├── requirements-dev.txt      development and validation dependencies
+├── requirements-validation.txt  Skill frontmatter validation dependencies (PyYAML)
 ├── requirements-image.txt    optional ImageGen dependencies
+├── AGENT-COMPATIBILITY.md    Agent compatibility tiers and support boundaries
 ├── CONTRIBUTING.md           contribution and Git rules
 ├── SECURITY.md               security reporting process
 ├── CODE_OF_CONDUCT.md        code of conduct
@@ -245,7 +263,7 @@ GoalAnchor/
 └── README.md / README.en.md  Chinese/English documentation
 ```
 
-`build/`, `.venv/`, caches, and `test-results/` are local generated files, not source structure.
+`build/`, `.venv/`, caches, `test-results/`, and `graphify-out/` are local generated files, not source structure.
 
 ## Dependencies and development
 
@@ -264,7 +282,7 @@ python -m pip install -e .
 python -m pip install ruff mypy==2.4.0
 ```
 
-`requirements-dev.txt` contains pytest and YAML validation dependencies. `requirements-image.txt` is optional for the explicit ImageGen CLI fallback and is not required to run GoalAnchor.
+`requirements-dev.txt` contains pytest and YAML validation dependencies; `requirements-validation.txt` holds the standalone Skill-frontmatter and Agent-metadata validation dependencies (PyYAML); `requirements-image.txt` is optional for the explicit ImageGen CLI fallback and is not required to run GoalAnchor.
 
 ### Local quality checks
 
@@ -376,7 +394,7 @@ Beyond the built-in dispatchers, any command that reads one JSON line from stdin
 
 | Approach | When to use it | Key points |
 |---|---|---|
-| Custom platform (`platforms.<name>.argv`) | You already have a CLI that accepts a prompt via stdin or argv | At most one `{prompt}` placeholder; without it the prompt is read from stdin; `timeout_seconds` defaults to 300 |
+| Custom platform (`platforms.<name>.argv`) | You already have a CLI that accepts a prompt via stdin or argv | At most one `{prompt}` placeholder; without it the prompt is read from stdin; `timeout_seconds` defaults to 600 |
 | JSON-over-stdio bridge | The host has no CLI but can execute commands | One JSON request line in; exactly one JSON result line out |
 | Host-native sub-agents | You want each role visible in the host UI | Render prompts with `goalanchor review-prompt --role ...`, let the host start sub-agents, then validate with `goalanchor gate --phase review-cycle` |
 | Custom Skill root (`--target custom`) | The application supports Skills but not dispatch | Point `--destination` at the root; GoalAnchor appends `goalanchor/` |
@@ -422,7 +440,7 @@ Beyond the built-in dispatchers, any command that reads one JSON line from stdin
 
 ### Upgrade and rollback
 
-- **Upgrade the runtime**: `python -m pip install --upgrade goalanchor` (or reinstall the wheel); no third-party runtime dependencies are affected.
+- **Upgrade the runtime**: download the new wheel from [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases) and run `python -m pip install --upgrade <wheel file>`, or reinstall with `pip install .`; the project is not published to PyPI, so `pip install goalanchor` will not work. No third-party runtime dependencies are affected.
 - **Upgrade the Skill**: `goalanchor install --target <host> --force` overwrites the previous files.
 - **Upgrade the SQLite ledger**: the schema version lives in `PRAGMA user_version`. A v1 ledger is automatically extended to v2 (additive only; legacy records stay untouched) the first time a newer release opens it; an empty database is created directly at v2; unsupported newer versions are rejected. Strict features require a v2 ledger.
 - **Rollback**: stop the processes using the ledger and back up the database file, then install the older wheel. How an older release reads a v2 ledger is defined by that release's code; for a full rollback, restore the backed-up v1 file.
@@ -469,6 +487,7 @@ GoalAnchor is released under the [MIT License](LICENSE). Third-party snapshots u
 ## More information
 
 - [Strict runtime guide](docs/workflow-v0.8.md)
+- [Agent compatibility](AGENT-COMPATIBILITY.md)
 - [Offline multi-Agent review example](examples/multi-platform-review/README.md)
 - [PI-Desktop plugin guide](goalanchor/_pi_desktop/README.md)
 - [Repository documentation index](docs/README.md)

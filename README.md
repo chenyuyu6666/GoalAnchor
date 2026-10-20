@@ -138,9 +138,12 @@ goalanchor platforms --json
 # 离线多 Agent 审核示例（本地 echo Agent，不调用外部模型）
 goalanchor review-cycle --request examples/multi-platform-review/request.json --config examples/multi-platform-review/config.json
 
+# 只渲染第一轮 Reviewer 提示词，不调用任何 Agent（用于接入检查）
+goalanchor review-cycle --request ... --config ... --dry-run
+
 # 严格工作流能力与本地 demo
 goalanchor workflow capabilities
-goalanchor workflow demo --directory ./workflow-demo-v08
+goalanchor workflow demo --directory ./workflow-demo
 ```
 
 ## 使用说明
@@ -209,11 +212,23 @@ context = ReviewContext(
 
 真实平台探测使用 `goalanchor platforms --probe --json`。它会调用已安装的 Agent CLI，可能产生模型用量；不需要探测时不要加 `--probe`。
 
+Agent 调度配置的顶层字段：
+
+| 字段 | 说明 |
+|---|---|
+| `model` | 顶层默认模型标识；`review-cycle --model` 可在命令行覆盖它。解析优先级为 profile 级 > 平台级 > 顶层。 |
+| `platforms.<name>` | 平台定义：`argv`（最多一个 `{prompt}` 占位符）、`timeout_seconds`（默认 600）、`model`、`model_flag`。 |
+| `profiles.<id>` | 具名 Agent：`platform`（引用平台）或 `command`/`argv`（stdio 桥接，二选一）、`roles`（`reviewer`/`arbiter`/`meta_reviewer`）、`display_name`，可选 `model`、`timeout_seconds`、`env`、`enabled`、`retries`、`capabilities`。 |
+| `role_bindings` | 为 `arbiter`、`meta_reviewer` 指定使用的 profile；未绑定的 reviewer 角色使用所有声明了该角色的 profile。 |
+| `capabilities` | 调度能力声明：`supports_parallel`（同轮并发）、`max_concurrency`。 |
+
+完整字段校验在 `goalanchor/platforms/platform_config.py`；最小可跑示例见[示例配置](examples/multi-platform-review/config.json)。
+
 ### 性能与规模上限
 
 | 项 | 默认值 | 说明 |
 |---|---|---|
-| 单次 Agent 调用超时 | 300 秒 | 可在配置中对每个平台用 `timeout_seconds` 覆盖。 |
+| 平台调度超时 | 600 秒 | 每个平台可在配置中用 `timeout_seconds` 覆盖（`AgentRequest` 内部默认 300 秒，实际调度以平台配置为准）。 |
 | 同轮 Reviewer 并发 | 4 | `AgentRuntime.max_concurrency`，必须是正整数；Arbiter 与 Meta Reviewer 始终顺序执行。 |
 | 审核轮次 | 2 | 请求中的 `max_rounds` 可调整；到上限仍未收敛即返回 `REVIEW_REQUIRED`。 |
 | SQLite 账本并发 | 单写者 | 写事务用 `BEGIN IMMEDIATE` 串行化；`busy_timeout` 由 store 的 `timeout` 参数控制。Windows 高负载下多进程同时写入可能出现锁竞争等待，这是已知边界。 |
@@ -233,8 +248,11 @@ GoalAnchor/
 ├── delivery/                 已发布交付物（wheel/sdist/校验和/manifest）
 ├── .github/ .workflow/       GitHub Actions / Gitee Go 流水线
 ├── pyproject.toml            包元数据、依赖、Ruff/Mypy/pytest 配置
+├── MANIFEST.in               sdist 打包清单
 ├── requirements-dev.txt      开发与验证依赖
+├── requirements-validation.txt  Skill frontmatter 校验依赖（PyYAML）
 ├── requirements-image.txt    可选 ImageGen 依赖
+├── AGENT-COMPATIBILITY.md    Agent 兼容性层级与支持边界
 ├── CONTRIBUTING.md           贡献与 Git 规范
 ├── SECURITY.md               安全报告流程
 ├── CODE_OF_CONDUCT.md        行为准则
@@ -245,7 +263,7 @@ GoalAnchor/
 └── README.md / README.en.md  中英文说明
 ```
 
-`build/`、`.venv/`、缓存和 `test-results/` 是本地生成物，不属于源码结构。
+`build/`、`.venv/`、缓存、`test-results/` 和 `graphify-out/` 是本地生成物，不属于源码结构。
 
 ## 依赖与开发
 
@@ -264,7 +282,7 @@ python -m pip install -e .
 python -m pip install ruff mypy==2.4.0
 ```
 
-`requirements-dev.txt` 包含 pytest 与 YAML 校验依赖；`requirements-image.txt` 是显式 ImageGen CLI fallback 的可选依赖，不是运行 GoalAnchor 的必需项。
+`requirements-dev.txt` 包含 pytest 与 YAML 校验依赖；`requirements-validation.txt` 是 Skill frontmatter 与 Agent 元数据校验的独立依赖（PyYAML）；`requirements-image.txt` 是显式 ImageGen CLI fallback 的可选依赖，不是运行 GoalAnchor 的必需项。
 
 ### 本地质量检查
 
@@ -376,7 +394,7 @@ GoalAnchor 本身不是 Agent，也不提供模型。它以三种形态接入外
 
 | 方式 | 适用场景 | 接入要点 |
 |---|---|---|
-| 自定义平台（`platforms.<name>.argv`） | 已有 CLI，可用 stdin 或参数接收提示词 | `argv` 最多一个 `{prompt}` 占位符；不写占位符时从 stdin 读取；`timeout_seconds` 默认 300 秒 |
+| 自定义平台（`platforms.<name>.argv`） | 已有 CLI，可用 stdin 或参数接收提示词 | `argv` 最多一个 `{prompt}` 占位符；不写占位符时从 stdin 读取；`timeout_seconds` 默认 600 秒 |
 | JSON-over-stdio 桥接 | 宿主没有 CLI，但能执行命令 | stdin 一行 JSON 请求；stdout 必须输出且仅输出一行 JSON 结果 |
 | 宿主原生子 Agent | 希望在宿主界面看到每个角色的会话 | 用 `goalanchor review-prompt --role ...` 渲染提示词，交给宿主拉起子 Agent，再用 `goalanchor gate --phase review-cycle` 校验 |
 | 自定义 Skill 目录（`--target custom`） | 应用只支持 Skill，不支持调度 | 用 `--destination` 指定根目录，GoalAnchor 会追加 `goalanchor/` |
@@ -422,7 +440,7 @@ GoalAnchor 本身不是 Agent，也不提供模型。它以三种形态接入外
 
 ### 升级与回滚
 
-- **升级运行时**：`python -m pip install --upgrade goalanchor`（或重新安装 wheel）；零第三方依赖，升级不影响其他包。
+- **升级运行时**：从 [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases) 下载新版本 wheel 后 `python -m pip install --upgrade <wheel 文件>`，或重新 `pip install .`；项目未发布到 PyPI，`pip install goalanchor` 不可用。零第三方依赖，升级不影响其他包。
 - **升级 Skill**：`goalanchor install --target <host> --force` 覆盖旧版本文件。
 - **升级 SQLite 账本**：schema 版本记录在 `PRAGMA user_version`。v1 账本首次被新版本打开时自动补齐 v2 结构（只增不迁移，legacy 记录保持原样）；空库直接建为 v2；高于当前支持的版本会拒绝打开。Strict 功能要求账本已是 v2。
 - **回滚**：先停止使用账本的进程并备份数据库文件，再安装旧版 wheel。旧版本对 v2 账本的读取行为以该版本代码为准；如需完全回退，恢复备份的 v1 备份文件。
@@ -471,6 +489,7 @@ GoalAnchor 的门控逻辑在**本地 Python 进程**中执行，模型或 Agent
 ## 更多资料
 
 - [严格运行时指南](docs/workflow-v0.8.md)
+- [Agent 兼容性说明](AGENT-COMPATIBILITY.md)
 - [离线多 Agent 审核示例](examples/multi-platform-review/README.md)
 - [PI-Desktop 插件指南](goalanchor/_pi_desktop/README.md)
 - [仓库文档索引](docs/README.md)
