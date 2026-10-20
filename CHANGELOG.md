@@ -5,6 +5,28 @@
 
 ## [未发布]
 
+## [0.9.1] - 2026-10-20
+
+### Added
+
+- `StrictWorkflow` 增量 API：目标基线、证据快照、Strict 审核上下文与受限操作注册。旧 `Workflow` 的对象、JSON 和历史空证据行为保持兼容，旧记录不会因此变成 Strict 证明。
+- SQLite schema v2：不可变 Strict proof/event 历史与 CAS 保护的当前 head；v1→v2 只新增结构，不把 legacy baseline、evidence、review、授权或关闭记录迁移成可信来源。
+- `ReviewContext.strict_binding` 及 `TrustedEventProofProvider` / `TrustedRuntimeBindingProvider` / `TrustedReviewProofProvider` 类型；Strict 基线证明绑定 policy、host、principal、account、session 与 generation 摘要。
+- Strict/legacy 导入、存储迁移、事件与 proof 回归测试。
+
+### Changed
+
+- `workflow.py` 保留为稳定公共门面；legacy 实现迁至 `workflow_legacy.py`，Strict 实现位于 `workflow_strict.py`，SQLite 存储拆为 `workflow_store_core` / `workflow_store_strict`。
+- `workflow_cli` 的只读检查接受 schema v2。
+- 仓库 `docs/` 精简为开发规范、项目帮助与 CI 任务定义；v0.8.0 交付物纳入 `delivery/v0.8.0`，仓库外不再保留第二套 `Delivery`。
+
+### Notes
+
+- 无破坏性 API 变更；`Workflow` 旧路径继续可用。
+- Strict 审核、问答、授权、执行、reconcile 与关闭仍返回 `UNAVAILABLE`；P2b–P7 未完成，不能把本版本当作完整严格闭环。
+- 核心场景映射 58/58 PASS；58 项原生宿主状态均 `NOT_RUN`。fixture 与受控回调不替代原生宿主验收。
+- 验证：Ruff、Mypy（37 files）、Skill bundle 同步通过；strict/legacy 重点测试 284 项通过；排除 `test_idempotent_recovery.py`、`test_contract_remaining.py` 后全量 807 项通过；这两个文件中的 SQLite 跨进程用例仍受 Windows 负载影响。
+
 ## [0.8.0] - 2026-10-16
 
 ### Added
@@ -19,6 +41,10 @@
 - [严格运行时使用与兼容说明](docs/workflow-v0.8.md)：可信密钥/数据库边界、cwd 非沙箱、UNKNOWN 处理和宿主证据分层。
 
 - v0.8.0 首批：`ReviewContext.evidence_digests` 可选绑定全部证据引用的 SHA-256；校验格式和覆盖范围、冻结输入、规范化顺序，并随上下文序列化传递。无摘要的旧调用保留原指纹及 JSON 形态。
+
+### Changed
+
+- CI push 验证仅由 `master` 触发，PR 与手动触发保持启用；MyPy 固定为 2.4.0，清理类型诊断后改为阻断门禁。
 
 ### Fixed
 

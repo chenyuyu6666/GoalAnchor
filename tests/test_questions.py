@@ -17,6 +17,162 @@ def answer(q, **changes):
     return replace(QuestionAnswer("a", q.question_id, q.fingerprint, custom="Continue"), **changes)
 
 
+_V08_AUTHORIZATION_QUESTION = {
+    "question_id": "q-legacy-001",
+    "goal_id": "goal-001",
+    "plan_revision": 7,
+    "title": "Choose rollout",
+    "prompt": "Approve the rollout?",
+    "options": [
+        {"option_id": "approve", "label": "Approve"},
+        {"option_id": "reject", "label": "Reject"},
+    ],
+    "multi_select": False,
+    "allow_custom": False,
+    "blocking_items": ["deploy-prod"],
+    "kind": "AUTHORIZATION",
+    "operation_digest": "op-digest-v1",
+    "approval_option_id": "approve",
+    "question_revision": 3,
+    "baseline_digest": "baseline-v7",
+    "decision_key": "prod-rollout",
+}
+_V08_AUTHORIZATION_FINGERPRINT = "27e7231b759aa2c664297b475a8aeb4ccb5e7d5d2b3bb49e9864749331f976c3"
+_V08_AUTHORIZATION_DEDUPE_KEY = "fb55c0134c01afc175e62c7174c5dc9a8668719ec7a27d32d18bf125ed7e8b1c"
+
+
+def test_v08_question_wire_hashes_and_nested_answer_fingerprint_are_stable():
+    legacy = Question.from_dict(_V08_AUTHORIZATION_QUESTION)
+
+    assert legacy.to_dict() == _V08_AUTHORIZATION_QUESTION
+    assert legacy.fingerprint == _V08_AUTHORIZATION_FINGERPRINT
+    assert legacy.dedupe_key == _V08_AUTHORIZATION_DEDUPE_KEY
+
+    legacy_answer = QuestionAnswer(
+        "answer-v08",
+        legacy.question_id,
+        _V08_AUTHORIZATION_FINGERPRINT,
+        selected=("approve",),
+        custom=None,
+        source_event_id="event-v08",
+    )
+    records = (
+        QuestionRecord(legacy),
+        QuestionRecord(legacy).wait(),
+        QuestionRecord(legacy).wait().receive(legacy_answer),
+    )
+    for record in records:
+        serialized = record.to_dict()
+        assert serialized["question"] == _V08_AUTHORIZATION_QUESTION
+        assert "trigger_reason" not in serialized["question"]
+        assert QuestionRecord.from_dict(serialized) == record
+
+    answered = records[-1].to_dict()
+    assert answered["answer"]["question_fingerprint"] == _V08_AUTHORIZATION_FINGERPRINT
+
+
+def test_legacy_question_with_explicit_null_reason_keeps_v08_wire_shape():
+    legacy = Question.from_dict({**_V08_AUTHORIZATION_QUESTION, "trigger_reason": None})
+
+    assert legacy.to_dict() == _V08_AUTHORIZATION_QUESTION
+    assert legacy.fingerprint == _V08_AUTHORIZATION_FINGERPRINT
+    assert legacy.dedupe_key == _V08_AUTHORIZATION_DEDUPE_KEY
+
+
+def test_absent_expiry_and_authorization_context_keep_v08_question_identity():
+    legacy = Question.from_dict(_V08_AUTHORIZATION_QUESTION)
+
+    assert legacy.to_dict() == _V08_AUTHORIZATION_QUESTION
+    assert legacy.fingerprint == _V08_AUTHORIZATION_FINGERPRINT
+    assert legacy.dedupe_key == _V08_AUTHORIZATION_DEDUPE_KEY
+
+
+def test_question_expiry_is_fingerprinted_but_not_part_of_dedupe_identity():
+    first = Question.from_dict({
+        **_V08_AUTHORIZATION_QUESTION,
+        "expires_at": "2026-10-17T00:00:00+08:00",
+    })
+    later = Question.from_dict({
+        **_V08_AUTHORIZATION_QUESTION,
+        "expires_at": "2026-10-17T00:30:00+08:00",
+    })
+
+    assert first.to_dict()["expires_at"] == "2026-10-17T00:00:00+08:00"
+    assert first.fingerprint != later.fingerprint
+    assert first.dedupe_key == later.dedupe_key
+    assert Question.from_dict(first.to_dict()) == first
+
+
+@pytest.mark.parametrize(
+    "expires_at",
+    ["", 1, True, "not-a-time", "2026-10-17T00:00:00", "2026-02-30T00:00:00+00:00"],
+)
+def test_question_expiry_requires_a_valid_timezone_aware_timestamp(expires_at):
+    with pytest.raises(ContractValidationError):
+        Question.from_dict({**_V08_AUTHORIZATION_QUESTION, "expires_at": expires_at})
+
+
+def test_authorization_context_digest_is_part_of_question_identity():
+    first = Question.from_dict({
+        **_V08_AUTHORIZATION_QUESTION,
+        "authorization_context_digest": "a" * 64,
+    })
+    second = Question.from_dict({
+        **_V08_AUTHORIZATION_QUESTION,
+        "authorization_context_digest": "b" * 64,
+    })
+
+    assert first.to_dict()["authorization_context_digest"] == "a" * 64
+    assert first.fingerprint != second.fingerprint
+    assert first.dedupe_key != second.dedupe_key
+    assert Question.from_dict(first.to_dict()) == first
+
+
+@pytest.mark.parametrize("digest", ["", "0" * 63, "G" * 64, "a" * 63 + "A"])
+def test_authorization_context_digest_requires_canonical_sha256(digest):
+    with pytest.raises(ContractValidationError):
+        Question.from_dict({
+            **_V08_AUTHORIZATION_QUESTION,
+            "authorization_context_digest": digest,
+        })
+
+
+def test_direction_questions_cannot_carry_authorization_context_digest():
+    with pytest.raises(ContractValidationError):
+        Question.from_dict({
+            "question_id": "direction-1",
+            "goal_id": "goal-1",
+            "plan_revision": 1,
+            "title": "Choose",
+            "prompt": "Which path?",
+            "authorization_context_digest": "a" * 64,
+        })
+
+
+def test_trigger_reason_is_serialized_and_changes_question_identity():
+    first = Question.from_dict({
+        **_V08_AUTHORIZATION_QUESTION,
+        "trigger_reason": "The operation changes the production rollout.",
+    })
+    second = Question.from_dict({
+        **_V08_AUTHORIZATION_QUESTION,
+        "trigger_reason": "The production rollout needs explicit approval.",
+    })
+
+    assert first.to_dict()["trigger_reason"] == "The operation changes the production rollout."
+    assert first.fingerprint != _V08_AUTHORIZATION_FINGERPRINT
+    assert first.dedupe_key != _V08_AUTHORIZATION_DEDUPE_KEY
+    assert first.fingerprint != second.fingerprint
+    assert first.dedupe_key != second.dedupe_key
+    assert Question.from_dict(first.to_dict()) == first
+
+
+@pytest.mark.parametrize("reason", ["", "   ", 1, True])
+def test_trigger_reason_rejects_empty_or_non_text_values(reason):
+    with pytest.raises(ContractValidationError):
+        Question.from_dict({**_V08_AUTHORIZATION_QUESTION, "trigger_reason": reason})
+
+
 def test_t16_roundtrip_and_immutable_inputs():
     options = [QuestionOption("yes", "Yes")]
     q = question(options=options, blocking_items=["work"])

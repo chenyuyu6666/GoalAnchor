@@ -7,6 +7,7 @@ import json
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
+from types import MappingProxyType
 from typing import Any
 
 from .core import ContractValidationError, LifecycleState
@@ -68,6 +69,22 @@ def _enum(value: Any, enum_type: type[Enum], field_name: str) -> Enum:
         raise ContractValidationError(f"{field_name} is invalid") from exc
 
 
+def _freeze_json(value: Any) -> Any:
+    if isinstance(value, dict):
+        return MappingProxyType({key: _freeze_json(item) for key, item in value.items()})
+    if isinstance(value, list):
+        return tuple(_freeze_json(item) for item in value)
+    return value
+
+
+def _thaw_json(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {key: _thaw_json(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_thaw_json(item) for item in value]
+    return value
+
+
 @dataclass(frozen=True)
 class ReviewContext:
     """Immutable subject shared by every independent reviewer."""
@@ -78,6 +95,7 @@ class ReviewContext:
     evidence_refs: tuple[str, ...]
     candidate: str
     evidence_digests: tuple[tuple[str, str], ...] = ()
+    strict_binding: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "goal", _text(self.goal, "goal"))
@@ -101,6 +119,19 @@ class ReviewContext:
         if digests and set(digests) != set(self.evidence_refs):
             raise ContractValidationError("evidence_digests must cover exactly the evidence_refs")
         object.__setattr__(self, "evidence_digests", tuple(sorted(digests.items())))
+        if self.strict_binding is not None:
+            if not isinstance(self.strict_binding, Mapping):
+                raise ContractValidationError("strict_binding must be an object")
+            try:
+                normalized = json.loads(json.dumps(
+                    dict(self.strict_binding), ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+                    allow_nan=False,
+                ))
+            except (TypeError, ValueError, RecursionError) as exc:
+                raise ContractValidationError("strict_binding must be canonical JSON") from exc
+            if not isinstance(normalized, dict):
+                raise ContractValidationError("strict_binding must be an object")
+            object.__setattr__(self, "strict_binding", _freeze_json(normalized))
 
     @property
     def fingerprint(self) -> str:
@@ -113,6 +144,8 @@ class ReviewContext:
         }
         if self.evidence_digests:
             payload["evidence_digests"] = [list(pair) for pair in self.evidence_digests]
+        if self.strict_binding is not None:
+            payload["strict_binding"] = _thaw_json(self.strict_binding)
         encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
@@ -127,6 +160,8 @@ class ReviewContext:
         }
         if self.evidence_digests:
             payload["evidence_digests"] = [list(pair) for pair in self.evidence_digests]
+        if self.strict_binding is not None:
+            payload["strict_binding"] = _thaw_json(self.strict_binding)
         return payload
 
     @classmethod

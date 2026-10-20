@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -93,6 +94,8 @@ def test_read_rejects_unknown_schema_without_migrating(tmp_path: Path, capsys) -
 def test_wal_read_commands_fail_closed_without_side_files(tmp_path: Path, capsys) -> None:
     database = tmp_path / 'wal.db'
     WorkflowStore(database)
+    with sqlite3.connect(database) as db:
+        db.execute('PRAGMA journal_mode=WAL')
     before = {item.name: item.read_bytes() for item in tmp_path.iterdir()}
     for command in ('status', 'audit'):
         assert main([command, '--database', str(database)]) == 2
@@ -106,6 +109,7 @@ def test_live_wal_is_never_ignored_by_read_commands(tmp_path: Path, capsys) -> N
     database = tmp_path / 'live.db'
     WorkflowStore(database)
     with sqlite3.connect(database) as writer:
+        writer.execute('PRAGMA journal_mode=WAL')
         writer.execute('PRAGMA wal_autocheckpoint=0')
         writer.execute("INSERT INTO records VALUES ('goal','live','{\"state\":\"PLAN\"}')")
         writer.commit()

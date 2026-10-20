@@ -31,6 +31,34 @@ git push -u origin feature/evidence-gate
 PR 合并并通过 CI 后删除远程和本地工作分支；PR 页面和提交历史仍可追溯。
 分支名不绑定版本号，版本边界由发布标签和 `CHANGELOG.md` 统一管理。
 
+## 本地质量检查
+
+从仓库根目录准备并运行与 CI 对齐的 Python 检查：
+
+```powershell
+python -m pip install -r requirements-dev.txt
+python -m pip install -e .
+python -m pip install ruff mypy==2.4.0
+$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = '1'
+python -m pytest -q
+$goalAnchorRevision = (git rev-parse HEAD).Trim()
+python scripts/evaluate_fixtures.py --fixtures tests/fixtures/regression --revision $goalAnchorRevision
+python scripts/run_test_task.py --task docs/GoalAnchor-自动测试任务.md
+python scripts/sync_skill_bundle.py --check
+python -m ruff check goalanchor tests scripts
+python -m mypy goalanchor
+```
+
+回归夹具会在子进程中导入 GoalAnchor，因此测试前需要执行 editable install。CI 将 MyPy 2.4.0 作为阻断检查；本地使用相同版本可避免检查结果因版本差异而变化。
+
+改动涉及 JavaScript 或 PI-Desktop 桥接时，使用 Node.js 20 运行：
+
+```powershell
+node --check skills/.system/openai-docs/scripts/fetch-codex-manual.mjs
+node --check skills/.system/openai-docs/scripts/resolve-latest-model-info.cjs
+node --test tests/js/test_pi_desktop.cjs
+```
+
 ## 提交标题
 
 日常开发提交使用 Conventional Commits；只有合并到 `master` 的发布聚合提交带版本号：
@@ -87,6 +115,7 @@ v0.3.2 简化多人协作流程
 - `v0.6.0`：platforms 拆子包、wheel 携带 Skill、ruff/mypy 门禁、Gitee Go 流水线、分发与工程优化。
 - `v0.7.0`：PI-Desktop Skill/Extension 插件、同模型独立审核、显式工具门控及真实桌面验收。
 - `v0.8.0`：目标/证据绑定、逐项审核异议、持久一次性授权、结构化问答、执行回执与验收关闭，以及 Codex App Server 受控回调。
+- `v0.9.1`：`StrictWorkflow` 增量 API、strict/legacy 门面拆分、SQLite schema v2 与 Strict 基线/证据/审核上下文；Strict 审核/授权/执行/关闭仍为 `UNAVAILABLE`。
 - 新功能增加 `MINOR`，兼容性修复增加 `PATCH`，破坏性变更增加 `MAJOR`。
 - 运行时版本以 `goalanchor/__init__.py` 导出的 `__version__` 为单一来源。
 - 发布前更新 `CHANGELOG.md`，在 `master` 上使用一个发布聚合提交和同名 `vX.Y.Z` 标签，

@@ -1,6 +1,6 @@
-# v0.8.0 严格运行时使用与兼容说明
+# v0.8/v0.9 严格运行时使用与兼容说明
 
-本文描述 GoalAnchor v0.8.0 正式版中的严格运行时。58 项核心场景映射均通过，58 项原生宿主状态均为 `NOT_RUN`；宿主 fixture 和受控回调证据按各自层级解释。既有 `ReviewContext`、审核周期和 Skill API 保留，属于辅助检查路径；只有接入 `Workflow`、可信事件、持久账本和受控 executor 的执行才具备这里描述的门控。
+本文描述 GoalAnchor v0.8.0 引入、v0.9.1 扩展的严格运行时。58 项核心场景映射均通过，58 项原生宿主状态均为 `NOT_RUN`；宿主 fixture 和受控回调证据按各自层级解释。既有 `ReviewContext`、审核周期和 Skill API 保留，属于辅助检查路径；只有接入 `Workflow` / `StrictWorkflow`、可信事件、持久账本和受控 executor 的执行才具备这里描述的门控。
 
 ## 信任边界与接入顺序
 
@@ -16,7 +16,7 @@
 4. 执行前重核当前基线、审核、策略、依赖问题、期限及资源条件。事务预留并消费授权后，可信 executor 才能派发。
 5. 保存实际执行回执，再由 observer 提交与成功回执、验收对象及当前基线关联的观察；满足全部关闭条件后才可 `CLOSED`。退出码为零本身不足以关闭目标。
 
-scope 仅允许当前策略中的工具和 workspace，并受基线、审核和到期时间约束。运行时检查解析后的 cwd 和声明的资源前置条件路径。**cwd 不是沙箱**：任意 shell 参数、程序行为、未声明路径、网络和子进程副作用仍须由可信 executor 与宿主隔离机制约束。不要把 scope 描述成对任意 shell 命令的完整路径隔离。
+scope 仅允许当前策略中的工具和 workspace，并受基线、审核和到期时间约束。Strict 操作注册依赖可信 composition root 提供的逐工具路径参数 schema；未配置 schema 或出现未声明的路径字段时 fail closed。它会解析 cwd、schema 指定的参数路径和资源前置条件；资源摘要会在取得写锁后及提交前重新核验。注册只建立绑定当前基线、完整操作摘要和路径 schema 摘要的 Strict 记录，不创建授权，也不执行操作。**cwd 不是沙箱**：任意 shell 参数、程序行为、未声明路径、网络和子进程副作用仍须由可信 executor 与宿主隔离机制约束。不要把 scope 描述成对任意 shell 命令的完整路径隔离。
 
 ## 一次性执行与恢复
 
@@ -49,6 +49,18 @@ python -m goalanchor workflow audit --database .\workflow-demo-v08\state.db
 ```
 
 `recover` 是显式写入操作，可以打开 WAL 数据库，可能创建或更改 SQLite sidecar；输出 `dispatched=false`。`status` 返回目标和回执，`audit` 返回事件，不会启动模型，也不是密码学完整性审计命令。正常输出使用 `goalanchor.workflow.v1` envelope；错误写 stderr 并返回非零退出码。`capabilities` 报告 CLI 层能力，不是本机宿主探测结果。
+
+## Strict baseline 与证据来源
+
+`StrictWorkflow` 是与旧 `Workflow` 并列的增量 API。旧 `Workflow` 的对象、JSON、历史空证据行为保持兼容；旧记录不会因此变成 Strict 证明。当前严格路径支持创建目标基线、添加证据快照、构造审核上下文和注册受限 Strict 操作。Strict 审核、问答、授权、执行、reconcile 与关闭仍返回 `UNAVAILABLE`；不能把旧审核、旧 grant、legacy `CLOSED` 或 legacy `VerificationResult` 当作严格授权或完成证明。
+
+构造 Strict 路径时，控制侧必须注入 `trusted_runtime_binding_provider` 和 `trusted_event_verifier`。前者由可信 composition root / 宿主 Adapter 提供当前规范化的 host facts、principal、account、session 和递增 generation，并提供 `acquire_lease(expected_digest)` 上下文管理器。租约持有期间，这些绑定事实不得轮换。租约能力缺失、不可用或与预期摘要不符时，操作分别 fail closed 为 `UNAVAILABLE` 或 `STALE`。模型或 Agent 不得提供这些事实，也不得自行声明用户身份。
+
+Strict 基线证明固定一组 `WorkflowPolicy`、host、principal、account、session 与 generation 摘要；每项证据必须绑定相同摘要。用户账号、会话、模型、mode 或 Hook 事实变化后，旧基线和证据不能生成新上下文；须重新确认基线并重新采集证据。证据签名方 `SERVICE` 的身份单独保存在来源证明中。Adapter 对 Hook 的声明仍只是可信控制侧声明；它不能证明原生 Hook 实际工作或覆盖全部工具，原生平台结论必须由 P5 的逐宿主实测提供。
+
+schema v2 在 SQLite 中保存不可变的 Strict proof/event 历史和 CAS 保护的当前 head。首次创建 v2 或将 v1 数据库迁到 v2 时只新增结构，不把 legacy baseline、evidence、review、授权或关闭记录迁移成可信来源。迁移前先在内存数据库验证 SQLite 外键与 deferred-FK 能力，并在目标数据库写锁内重读 schema version。`status` / `audit` 对离线 DELETE-journal 的 v1、v2 数据库都只读；活跃 WAL 库仍拒绝零写检查。
+
+Strict 审核上下文从单个只读 SQLite 快照读取当前基线、proof head、来源事件和投影，并在外部 proof 核验后再次读取以检测并发变化。只有 generic legacy baseline 时返回 `LEGACY_UNVERIFIED`；legacy-only evidence 不会进入上下文。Strict 上下文可能包含零项证据，但它只表示“当前没有严格证据”，不表示治理通过、执行成功或目标完成。provider 后续核验可以刷新 nonce、provider digest 或临时 expiry，但这不会修改、续期或复活已保存的 proof；完全相同的源事件只有在持久 proof 仍有效、来源身份/目的/subject/binding 一致且它仍是当前 head 时才可幂等复用。
 
 ## 宿主绑定与兼容证据层级
 

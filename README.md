@@ -16,6 +16,20 @@ GoalAnchor 提供 Skill、Python 库和命令行工具。它帮助检查计划�
 - **Skill 与 CLI**：把 GoalAnchor Skill 安装到支持的 Agent 宿主；用 CLI 执行确定性检查、查看平台配置或运行审核。
 - **PI-Desktop 插件**：提供桌面插件、Python 规则桥接、模型审核和可主动开启的工具门控。宿主适配细节见[插件指南](goalanchor/_pi_desktop/README.md)。
 
+## v0.9.1 严格工作流基线
+
+v0.9.1 将严格运行时拆分为稳定公共门面与 `StrictWorkflow` / legacy 两条路径。`Workflow` 的旧对象、JSON 和历史行为保持兼容；新增 `StrictWorkflow`、Strict 基线/证据/审核上下文和受限操作注册，SQLite schema v2 保存不可变 proof 历史与 CAS head。v1 数据库只新增结构，不把 legacy 记录升级为可信来源。
+
+```python
+from goalanchor import StrictWorkflow
+
+# StrictWorkflow 需要 store、user_authority、observer_authority、policy 四个位置参数，
+# 并通过关键字参数注入 trusted_event_verifier / trusted_runtime_binding_provider。
+# 模型或 Agent 不能提供 principal / session / host facts；完整接入见严格运行时指南。
+```
+
+Strict 审核、问答、授权、执行、reconcile 与关闭在 v0.9.1 仍返回 `UNAVAILABLE`；不能把旧审核、旧 grant、legacy `CLOSED` 当作严格完成证明。P2b–P7 尚未完成，原生宿主结论仍为 58 项 `NOT_RUN`。详细边界见[严格运行时指南](docs/workflow-v0.8.md)。
+
 ## v0.8.0 首批可信基础
 
 v0.8.0 新增确定性审核分歧检查、PASS 验收集合绑定和可选内容摘要。`ReviewContext` 可使用 `evidence_digests` 绑定调用方采集的证据：
@@ -33,7 +47,7 @@ context = ReviewContext(
 
 非空摘要必须完整覆盖证据引用，每个引用只出现一次；摘要为 64 位十六进制 SHA-256。输入会冻结为 tuple、摘要转小写并按引用排序，支持 `to_dict` / `from_dict` 往返；内容摘要变化会使旧审核指纹失效。
 
-未提供摘要时，旧指纹和 JSON 格式保持兼容，也仍然只有引用绑定。核心不自动读文件或核实摘要真实性，调用方负责可信采集和执行前重核。首批摘要能力现与后续严格运行时共同发布；运行时版本单一来源为 `goalanchor.__version__`，当前为 `0.8.0`。
+未提供摘要时，旧指纹和 JSON 格式保持兼容，也仍然只有引用绑定。核心不自动读文件或核实摘要真实性，调用方负责可信采集和执行前重核。首批摘要能力现与后续严格运行时共同发布；运行时版本单一来源为 `goalanchor.__version__`，当前为 `0.9.1`。
 
 ## v0.8.0 严格工作流
 
