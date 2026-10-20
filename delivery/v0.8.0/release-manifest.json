@@ -1,0 +1,64 @@
+﻿{
+  "task_id": "GA-V080-PUBLISH",
+  "state": "PUBLISHED_AND_PUBLIC_DOWNLOADS_VERIFIED",
+  "version": "0.8.0",
+  "release_date": "2026-10-16",
+  "repository": "chenyuyu6666/GoalAnchor",
+  "master_merge_commit": "d94c577fa0fe80257f42dcd8a4e3b95c98292244",
+  "release_commit": "1af37a3d90c625d835d8ebba8fe5977f1ff31b7a",
+  "merged_pr": 6,
+  "tag_name": "v0.8.0",
+  "tag_message": "v0.8.0 发布 GoalAnchor 可信工作流",
+  "release_title": "v0.8.0 GoalAnchor 可信工作流",
+  "release_notes_file": "D:\\Project\\GoalAnchor\\Delivery\\v0.8.0-release-1af37a3\\release-notes.md",
+  "assets": [
+    {
+      "name": "goalanchor-0.8.0-py3-none-any.whl",
+      "size_bytes": 150457,
+      "sha256": "cb74dadedeb6dd29a3101be05603ec73227142acb0c32995429cff05aa1dd29e"
+    },
+    {
+      "name": "goalanchor-0.8.0.tar.gz",
+      "size_bytes": 444418,
+      "sha256": "e98e26fb0b16ed3bb9d061d77f7d3096a0304b73141959811d85ecca70134c0d"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size_bytes": 192,
+      "sha256": "75618a1c4c329b31224e0431c1e9ef4b28150b85c3a3e42c798cd657d6b9be52"
+    }
+  ],
+  "expected_release_state": {
+    "draft": false,
+    "prerelease": false,
+    "published_at_required": true
+  },
+  "tag_object_sha": "d9f823bad7fad6bfda21a87be375c16b6591293f",
+  "release_id": 414840032,
+  "published_at": "2026-10-16T10:43:25Z",
+  "tag_pushed": true,
+  "release_url": "https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.8.0",
+  "draft": false,
+  "prerelease": false,
+  "immutable": true,
+  "public_unauthenticated_download_verified": true,
+  "gitee_mirror": {
+    "repository_url": "https://gitee.com/chen-yuyu6666/goal-anchor.git",
+    "direction": "github-to-gitee",
+    "status": "SYNCED_AND_VERIFIED",
+    "verified_on": "2026-10-16",
+    "master_sha": "d94c577fa0fe80257f42dcd8a4e3b95c98292244",
+    "tag_name": "v0.8.0",
+    "tag_object_sha": "d9f823bad7fad6bfda21a87be375c16b6591293f",
+    "peeled_commit_sha": "1af37a3d90c625d835d8ebba8fe5977f1ff31b7a",
+    "push_exit_code": 0,
+    "readback_verified": true,
+    "assets_uploaded": false
+  },
+  "task_status": "COMPLETE",
+  "prior_release_notes_sha256": "f745d4e2a01bbd53e49d7b84d86a11ff90950fc01d550e8634b9e79c48d33aae",
+  "release_notes_sha256": "0733b2c5ade1fa02758cd9e07a263d9c4a435172a35d9b3bbc5fa505292e232a",
+  "release_notes_updated_at_utc": "2026-10-16T15:02:02Z",
+  "release_notes_update_scope": "Release body only; tag and assets unchanged",
+  "release_notes_verified": true
+}
