@@ -192,6 +192,12 @@ git describe --tags --exact-match <release-commit>
 
 项目采用 SemVer：`MAJOR` 表示破坏性变更，`MINOR` 表示兼容的新能力，`PATCH` 表示兼容性修复。
 
+### 9.1 Release 命名
+
+- Git tag 永远为纯 `vX.Y.Z`，不加任何后缀；主题后缀只允许出现在 Release 显示标题中。
+- 默认 Release 标题为纯版本号（如 `v0.7.0`）；里程碑或主题版本采用 `vX.Y.Z - <English Theme>` 格式（如 `v0.9.1 - Strict Workflow Baseline`），主题用英文、实词首字母大写。
+- 同一版本的主题在 Release 标题、说明正文和 `CHANGELOG.md` 三处保持一致；tag、发布提交与资产命名不受主题影响。
+
 发布步骤：
 
 1. 确认目标版本和变更范围；
