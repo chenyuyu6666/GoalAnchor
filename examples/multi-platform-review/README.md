@@ -4,6 +4,9 @@
 三个逻辑角色调度到**不同平台的独立子 Agent** 上并发审核。目录内配置默认指向
 离线 `echo-agent.py`,不装任何平台 CLI 即可跑通全链路。
 
+请求文件:`request.json` 为默认示例(`risk: HIGH`);`request-risk-medium.json`
+是仅把 `risk` 改为 `MEDIUM` 的变体,用于对比不同风险级别下的审核行为。
+
 ## 想在宿主界面里看到子 Agent 对话?
 
 无头子进程永远不会有聊天界面。可见的路径是**让宿主用自己的子 Agent 机制拉起**,
