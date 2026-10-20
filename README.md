@@ -180,7 +180,7 @@ context = ReviewContext(
 
 ### 严格工作流
 
-`StrictWorkflow` 是与旧 `Workflow` 并列的增量 API。它需要 `store`、`user_authority`、`observer_authority`、`policy` 四个位置参数，并通过关键字参数注入 `trusted_event_verifier` / `trusted_runtime_binding_provider`。模型或 Agent 不能提供 principal、session 或 host facts；完整接入见[严格运行时指南](docs/workflow-v0.8.md)。
+`StrictWorkflow` 是与旧 `Workflow` 并列的增量 API。它需要 `store`、`user_authority`、`observer_authority`、`policy` 四个位置参数，并通过关键字参数注入 `trusted_event_verifier` / `trusted_runtime_binding_provider`。模型或 Agent 不能提供 principal、session 或 host facts。可用 `goalanchor workflow demo --directory <新目录>` 在本地离线体验完整门控链路；信任边界要点见下文[安全](#安全)一节。
 
 旧 `Workflow` 的对象、JSON 和历史空证据行为保持兼容；旧审核、旧 grant、legacy `CLOSED` 和 legacy `VerificationResult` 不会变成 Strict 证明。
 
@@ -205,7 +205,7 @@ context = ReviewContext(
 |---|---|
 | 核心 CLI / Python 库 | 无必需配置文件，无必需环境变量；通过命令行参数或 API 参数调用。 |
 | Agent 调度 | 使用 JSON 配置描述平台、profile、命令与模型；参考 [示例配置](examples/multi-platform-review/config.json)，通过 `--config` 传入。模型解析优先级为 profile 级 > 平台级 > 顶层。 |
-| 严格工作流 | 需要持久 SQLite 数据库、可信 `EventAuthority` 密钥、受控 executor 和 observer；密钥与账本由可信控制侧保管，不能暴露给模型。详见[严格运行时指南](docs/workflow-v0.8.md)。 |
+| 严格工作流 | 需要持久 SQLite 数据库、可信 `EventAuthority` 密钥、受控 executor 和 observer；密钥与账本由可信控制侧保管，不能暴露给模型。 |
 | PI-Desktop | 在插件设置中填写 Python 可执行文件路径，或在启动桌面前设置 `GOALANCHOR_PYTHON`。插件不读取 API key。 |
 | Agent CLI 凭据 | 由各 Agent CLI 自行管理；GoalAnchor 不读取或保存这些凭据。 |
 | 测试脚本 | `GOALANCHOR_TEST_TASK_START/END`、`GOALANCHOR_DIALOGUE_TASK_START/END` 等为测试标记，普通用户无需设置。 |
@@ -375,7 +375,7 @@ GoalAnchor 本身不是 Agent，也不提供模型。它以三种形态接入外
 | 在方案中的角色 | 唯一提供**工具级**接入的形态：`goalanchor_review` 审核工具、`goalanchor_gate` 门控工具、工具批准 Hook 与会话状态命令 |
 | 支持级别 | 最低接口基线 0.18.0；已实际验证 0.18.0 与 0.19.1 的安装、审核、门控与卸载 |
 
-插件要求宿主进程能找到 Python；Python 内核随插件提供，不需要另外 `pip install`。插件不读取 API key，也不申请网络或文件写入权限。宿主权限模型不是 OS 沙箱。详见[插件指南](goalanchor/_pi_desktop/README.md)、[适配规格](docs/PI-Desktop适配规格.md)与[验证记录](docs/PI-Desktop验证记录.md)。
+插件要求宿主进程能找到 Python；Python 内核随插件提供，不需要另外 `pip install`。插件不读取 API key，也不申请网络或文件写入权限。宿主权限模型不是 OS 沙箱。详见[插件指南](goalanchor/_pi_desktop/README.md)；适配规格与验证记录由项目文档中心维护，不随代码分发。
 
 ### 四、自定义应用与通用桥接
 
@@ -488,7 +488,6 @@ GoalAnchor 的门控逻辑在**本地 Python 进程**中执行，模型或 Agent
 
 ## 更多资料
 
-- [严格运行时指南](docs/workflow-v0.8.md)
 - [Agent 兼容性说明](AGENT-COMPATIBILITY.md)
 - [离线多 Agent 审核示例](examples/multi-platform-review/README.md)
 - [PI-Desktop 插件指南](goalanchor/_pi_desktop/README.md)
