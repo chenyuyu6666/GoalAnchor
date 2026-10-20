@@ -6,12 +6,12 @@
 
 | 路径 | 内容 |
 |---|---|
-| `test_*.py` | 38 个测试文件，约 8,500 行，覆盖契约、门控、证据、审核、工作流、平台适配与宿主生命周期 |
+| `test_*.py` | 42 个测试文件，约 15,100 行，覆盖契约、门控、证据、审核、工作流、平台适配与宿主生命周期 |
 | `fixtures/regression/cases.json` | 12 个固定回归场景；每项包含期望通过与期望 finding code |
 | `js/test_pi_desktop.cjs` | PI-Desktop 桥接的 Node 行为测试 |
 | `conftest.py` | 共享夹具与临时目录/进程辅助 |
 
-当前共收集 524 个用例。测试以离线、确定性为原则，不依赖外部模型或网络；平台探测类测试使用受控 fixture。
+当前共收集 846 个用例。测试以离线、确定性为原则，不依赖外部模型或网络；平台探测类测试使用受控 fixture。
 
 ## 运行
 
@@ -38,9 +38,10 @@ CI 在三个操作系统和 Python 3.11–3.13 上运行同一套 pytest，并�
 
 ## 已知问题
 
-在 Windows 高负载、全量并发运行时，以下两个 SQLite 跨进程用例可能因锁竞争失败，单独复跑通过：
+在 Windows 高负载、全量并发运行时，以下 SQLite 跨进程用例可能因锁竞争失败或长时间等待，单独复跑通过：
 
 - `tests/test_contract_remaining.py::test_t24_t25_two_workflow_processes_one_authorization_one_dispatch`
 - `tests/test_idempotent_recovery.py::test_t36_shared_sqlite_processes_elect_one_recovery_transport`
+- `tests/test_workflow_store.py::test_two_processes_only_one_dispatch`（负载下曾出现 `attempt to write a readonly database`）
 
 在修复前，遇到这两项失败应先单独复跑并记录负载条件，不要直接判定为产品回归。
