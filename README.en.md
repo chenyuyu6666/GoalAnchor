@@ -16,13 +16,19 @@ GoalAnchor provides a Skill, a Python library, and a command-line interface. It 
 - **Skill and CLI**: Install the GoalAnchor Skill into supported Agent hosts; use the CLI for deterministic checks, platform configuration, and reviews.
 - **PI-Desktop plugin**: Provides a desktop plugin, Python rules bridge, model review, and opt-in tool gating. See the [plugin guide](goalanchor/_pi_desktop/README.md) for host details.
 
+## v0.9.0 strict workflow baseline
+
+v0.9.0 splits the strict runtime into a stable public façade plus `StrictWorkflow` and legacy paths. Existing `Workflow` objects, JSON, and historical behavior remain compatible. `StrictWorkflow` adds baseline/evidence/review-context construction and restricted operation registration; SQLite schema v2 stores immutable proof history and a CAS-protected head. Opening a v1 database only adds structure and does not promote legacy records into trusted sources.
+
+Strict review, questions, authorization, execution, reconcile, and closure still return `UNAVAILABLE` in v0.9.0. Legacy reviews, grants, and `CLOSED` results are not strict completion proof. P2b–P7 remains incomplete, and all 58 native-host statuses remain `NOT_RUN`. See the [strict runtime guide](docs/workflow-v0.8.md) for the trust boundary and required providers.
+
 ## v0.8.0 first-batch trust foundations
 
 v0.8.0 detects Reviewer/Arbiter verdict disagreements, binds PASS closure to the current acceptance set, and supports optional `ReviewContext.evidence_digests` pairs `(reference, sha256_hex)`.
 
 Nonempty digests must cover all distinct evidence references exactly once. Inputs are frozen, SHA-256 values are normalized to lowercase, and pairs are sorted by reference. Digests participate in the fingerprint and survive `to_dict` / `from_dict`; changed content digests invalidate old review results.
 
-Without digests, the legacy fingerprint and JSON shape remain unchanged and bind references only. Callers must collect trustworthy evidence and recheck it before execution; the core does not read files or establish digest authenticity. The first-batch digest changes ship with the strict runtime in v0.8.0; the runtime version is `0.8.0`.
+Without digests, the legacy fingerprint and JSON shape remain unchanged and bind references only. Callers must collect trustworthy evidence and recheck it before execution; the core does not read files or establish digest authenticity. The first-batch digest changes ship with the strict runtime in v0.8.0; the runtime version is `0.9.0`.
 
 ## v0.8.0 strict workflow
 

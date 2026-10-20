@@ -1,6 +1,6 @@
-# v0.8.0 严格运行时使用与兼容说明
+# v0.8/v0.9 严格运行时使用与兼容说明
 
-本文描述 GoalAnchor v0.8.0 正式版中的严格运行时。58 项核心场景映射均通过，58 项原生宿主状态均为 `NOT_RUN`；宿主 fixture 和受控回调证据按各自层级解释。既有 `ReviewContext`、审核周期和 Skill API 保留，属于辅助检查路径；只有接入 `Workflow`、可信事件、持久账本和受控 executor 的执行才具备这里描述的门控。
+本文描述 GoalAnchor v0.8.0 引入、v0.9.0 扩展的严格运行时。58 项核心场景映射均通过，58 项原生宿主状态均为 `NOT_RUN`；宿主 fixture 和受控回调证据按各自层级解释。既有 `ReviewContext`、审核周期和 Skill API 保留，属于辅助检查路径；只有接入 `Workflow` / `StrictWorkflow`、可信事件、持久账本和受控 executor 的执行才具备这里描述的门控。
 
 ## 信任边界与接入顺序
 
