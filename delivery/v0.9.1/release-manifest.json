@@ -1,0 +1,62 @@
+{
+  "task_id": "GA-V091-PUBLISH",
+  "state": "PUBLISHED_AND_PUBLIC_DOWNLOADS_VERIFIED",
+  "version": "0.9.1",
+  "release_date": "2026-10-20",
+  "repository": "chenyuyu6666/GoalAnchor",
+  "base_tag": "v0.8.0",
+  "base_commit": "1af37a3d90c625d835d8ebba8fe5977f1ff31b7a",
+  "release_commit": "dfafe47c37ffb287efdc1cb7f8d4391ec814ca63",
+  "tag_name": "v0.9.1",
+  "tag_message": "v0.9.1 发布 GoalAnchor 严格工作流基线",
+  "release_title": "v0.9.1 GoalAnchor 严格工作流基线",
+  "release_notes_file": "delivery\\v0.9.1\\release-notes.md",
+  "assets": [
+    {
+      "name": "goalanchor-0.9.1-py3-none-any.whl",
+      "size_bytes": 188958,
+      "sha256": "c6032c89c1a868d7f4cf2e70467dfe934661cbaa61df3c72e68170bd4c4a143c"
+    },
+    {
+      "name": "goalanchor-0.9.1.tar.gz",
+      "size_bytes": 527385,
+      "sha256": "e10e3a29b5db0116bc37497df5865d7cb138ecd392add6e33e2d7508acffc394"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size_bytes": 190,
+      "sha256": "aa896b0229812fe5f9279fa9bf8ca6f571115f105f9eb354ab768a1bcb506063"
+    }
+  ],
+  "expected_release_state": {
+    "draft": false,
+    "prerelease": false,
+    "published_at_required": true
+  },
+  "tag_object_sha": "743db3e8b49431d81a9046e33f86434f4edc0109",
+  "tag_pushed": true,
+  "release_id": 418062912,
+  "release_url": "https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.9.1",
+  "published_at": "2026-10-20T06:08:56Z",
+  "draft": false,
+  "prerelease": false,
+  "immutable": true,
+  "public_unauthenticated_download_verified": true,
+  "gitee_mirror": {
+    "repository_url": "https://gitee.com/chen-yuyu6666/goal-anchor.git",
+    "direction": "github-to-gitee",
+    "status": "PENDING"
+  },
+  "task_status": "IN_PROGRESS",
+  "release_notes_sha256": "6769613970367741505f71dfcc0d01dfe554688fd167a3c6cb746a647df79b91",
+  "verification": {
+    "ruff": "PASS",
+    "mypy": "PASS_37_FILES",
+    "skill_bundle": "IN_SYNC",
+    "focused_tests": "284_PASS",
+    "full_suite": "844_PASS_2_KNOWN_FLAKY",
+    "core_acceptance": "58_OF_58_PASS",
+    "native_hosts": "58_OF_58_NOT_RUN",
+    "wheel_install_smoke": "PASS_0.9.1"
+  }
+}
