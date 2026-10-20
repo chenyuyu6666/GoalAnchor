@@ -20,6 +20,7 @@
 - [Configuration](#configuration)
 - [Project layout](#project-layout)
 - [Dependencies and development](#dependencies-and-development)
+- [Core terminology](#core-terminology)
 - [Supported applications](#supported-applications)
 - [Versioning and compatibility](#versioning-and-compatibility)
 - [Contributing](#contributing)
@@ -180,6 +181,21 @@ Nonempty digests must cover every evidence reference exactly once and be 64-char
 
 Legacy `Workflow` objects, JSON, and historical empty-evidence behavior remain compatible. Legacy reviews, grants, `CLOSED`, and `VerificationResult` do not become Strict proof.
 
+### Review request and output
+
+The multi-Agent review command `goalanchor review-cycle --request request.json --config config.json` takes a request file with these fields:
+
+| Field | Required | Meaning |
+|---|---|---|
+| `context` | Yes | Review context: `goal`, `prompt`, `constraints`, `evidence_refs`, `candidate`; optional `evidence_digests` binds evidence content. |
+| `risk` | Yes | Review risk level: `LOW` / `MEDIUM` / `HIGH` / `CRITICAL`; `CRITICAL` requires a `risk_declaration` with non-empty `declared_by` and `reason`. |
+| `max_rounds` | No | Round limit, default `2`; each round is Reviewer → Arbiter → Meta Reviewer. |
+| `max_workers` | No | Reviewer concurrency per round; runtime default applies when omitted. |
+
+`--config` fields are described under “Configuration” and in the [sample config](examples/multi-platform-review/config.json); `--model` overrides the configured model for one run.
+
+Output: a human-readable JSON summary by default; pass `--json` for machine-readable output. Key fields: `outcome` (`PASS` / `WARN` / `REVIEW_REQUIRED` / `HUMAN_DECISION_REQUIRED` / `STOPPED`), the round number with per-round reviewer results, the arbiter summary with receipt validation info, plus `warnings` (model-consistency warnings) and `usage_summary` (call count, token usage, models actually used). Exit code `0` means the flow completed (not that the review passed), `1` means the review did not pass (`STOPPED` or `HUMAN_DECISION_REQUIRED`), and `2` means the request or config is invalid. To validate a serialized review record, use `goalanchor gate --phase review-cycle`, which enforces the same schema over `context`, `reviewer_results`, `arbiter`, `meta_review`, and related fields.
+
 ## Configuration
 
 | Area | Configuration |
@@ -192,6 +208,16 @@ Legacy `Workflow` objects, JSON, and historical empty-evidence behavior remain c
 | Test harness | `GOALANCHOR_TEST_TASK_START/END` and `GOALANCHOR_DIALOGUE_TASK_START/END` are test markers; users do not need to set them. |
 
 Real platform probing uses `goalanchor platforms --probe --json`. It invokes installed Agent CLIs and may consume model usage; omit `--probe` when not needed.
+
+### Performance and scale limits
+
+| Item | Default | Notes |
+|---|---|---|
+| Per-call Agent timeout | 300 s | Override per platform with `timeout_seconds` in the config. |
+| Reviewer concurrency per round | 4 | `AgentRuntime.max_concurrency`, must be a positive integer; Arbiter and Meta Reviewer always run sequentially. |
+| Review rounds | 2 | Adjust via `max_rounds` in the request; hitting the limit returns `REVIEW_REQUIRED`. |
+| SQLite ledger concurrency | single writer | Write transactions serialize with `BEGIN IMMEDIATE`; `busy_timeout` follows the store's `timeout`. Under heavy Windows load, multi-process writes can contend on locks — a known boundary. |
+| Database size | no built-in cap | The ledger is append-only; archive old database files for long-running use. |
 
 ## Project layout
 
@@ -255,6 +281,25 @@ python scripts/sync_skill_bundle.py --check
 - CI covers three operating systems and Python 3.11–3.13 with a pinned MyPy 2.4.0.
 - `ruff` checks project Python only; `skills/.system/` is an upstream snapshot and is excluded.
 - For JavaScript or PI-Desktop bridge changes, use Node.js 20 and run `node --test tests/js/test_pi_desktop.cjs`.
+
+## Core terminology
+
+| Term | Meaning |
+|---|---|
+| Three-stage gating | `PLAN → VERIFY → EXECUTE`: fix the goal and plan first, then the evidence and acceptance conditions, and only then allow execution and closure. |
+| Five questions Q1–Q5 | Plan-stage checks: Q1 Goal, Q2 Logic, Q3 Path, Q4 Minimum (smallest sufficient set), Q5 Structure (executable structure). |
+| Gate | Deterministic hard checks, not prompt-level soft constraints; `GateId` also covers VERIFY, EXECUTE, CLOSURE, ARTIFACT, PROVENANCE, and more. |
+| Evidence levels | `Observation` → `Fact` → `ReproducibleExperiment` → `ExclusionaryEvidence` → `RootCauseEvidence`. |
+| Conclusion ceilings | Each evidence item only supports conclusions up to a strength: `Observation` / `Fact` / `Association` / `Causal` / `RootCause` / `DesignNecessity`; stronger claims must be downgraded or backed by more evidence. |
+| Evidence status | `VALID` / `LIMITED` / `INSUFFICIENT` / `CONTRADICTED`, decided by how evidence matches the claimed conclusion. |
+| Nine closure levels | Ascending closure strength: `Symptom Suppressed` → `Containment` → `Local Fix` → `Root Cause Identified` → `Root Fix` → `Build Success` → `Artifact Verified` → `System Validation` → `Product Closure`; claiming a level requires matching evidence. |
+| Provenance chain | Embedded-delivery chain: `Source → Object → ELF → BIN/FW → Flashed Artifact → Device Under Test`. |
+| ReviewContext | The frozen context of one review: goal, prompt, constraints, evidence refs, and the candidate; optionally binds evidence content via `evidence_digests`. |
+| Review roles | Reviewer → Arbiter → Meta Reviewer per round; unresolved rounds continue until `max_rounds`. |
+| Strict / Legacy | Two paths over the same contract and evidence model: `Workflow` (legacy, unchanged behavior) and `StrictWorkflow` (trusted-controller binding of baselines, evidence, review, and authorization). |
+| Review packet | The full input handed to one role: role prompt, context, prior rounds, and receipts; receipt validation prevents result substitution. |
+
+All of these terms have concrete implementations in `gates.py`, `evidence.py`, `closure.py`, and `review_service.py`; the code is authoritative.
 
 ## Supported applications
 
@@ -375,6 +420,20 @@ Beyond the built-in dispatchers, any command that reads one JSON line from stdin
 - Native host claims require per-host testing. Fixtures, controlled callbacks, and shared TextHostAdapter tests do not replace native acceptance.
 - See [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases) and [CHANGELOG](CHANGELOG.md) for published versions and assets.
 
+### Upgrade and rollback
+
+- **Upgrade the runtime**: `python -m pip install --upgrade goalanchor` (or reinstall the wheel); no third-party runtime dependencies are affected.
+- **Upgrade the Skill**: `goalanchor install --target <host> --force` overwrites the previous files.
+- **Upgrade the SQLite ledger**: the schema version lives in `PRAGMA user_version`. A v1 ledger is automatically extended to v2 (additive only; legacy records stay untouched) the first time a newer release opens it; an empty database is created directly at v2; unsupported newer versions are rejected. Strict features require a v2 ledger.
+- **Rollback**: stop the processes using the ledger and back up the database file, then install the older wheel. How an older release reads a v2 ledger is defined by that release's code; for a full rollback, restore the backed-up v1 file.
+- **Roll back the PI-Desktop plugin**: uninstall the old `.piplug` in the desktop app and install the target build; plugin and ledger versions are not coupled.
+
+### Support window
+
+- Only the **latest MINOR branch** (currently `0.9.x`) is maintained; fixes and security patches land in the newest release first.
+- Older MINOR branches (such as `0.8.x`) receive no routine fixes; upgrade to the latest Release.
+- Release cadence and asset verification are tracked on the [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases) page; every release ships `SHA256SUMS.txt` and a `release-manifest.json`.
+
 ## Contributing
 
 Issues and Pull Requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for branch strategy, commit titles, version rules, and local checks.
@@ -389,6 +448,19 @@ Participation is subject to [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 ## Security
 
 Do not report vulnerabilities in public Issues, PRs, or discussions. Prefer **Security → Advisories → Report a vulnerability** in the GitHub repository. If unavailable, email [chenyuyu6666@gmail.com](mailto:chenyuyu6666@gmail.com) with the subject `GoalAnchor security report`. Include the affected version/commit, impact, and reproduction steps; never include live credentials or personal data. See [SECURITY.md](SECURITY.md).
+
+### Trust boundary
+
+GoalAnchor's gating runs inside a **local Python process**; models and Agents participate only through structured input:
+
+| Party | May do | Must not do |
+|---|---|---|
+| Local core (trusted) | Runs Gate checks, evidence validation, ledger writes, signed-event verification, one-time authorization accounting | Never reads or exfiltrates your model credentials |
+| Model / Agent (untrusted) | Produces conclusion text, review opinions, question answers, plan revisions | Cannot alter Gate verdicts, unlock EXECUTE blocks, or write the ledger; such inputs must pass Reviewer → Arbiter → Meta structured confirmation |
+| Host application | Loads Skills, dispatches sub-Agents, enforces execution blocks | Self-reported fields (e.g. `isolated`, `agrees_with_arbiter`) cannot be verified by the core — a known boundary |
+| Caller (trusted control plane) | Holds `EventAuthority` keys, the SQLite ledger, and execution receipts | Keys and the ledger must never be exposed to model or Agent CLI processes |
+
+Practical requirements: the caller collects review evidence and (optionally) binds it via `evidence_digests`; execution blocking ultimately relies on the host, since GoalAnchor does not enforce process-level isolation outside the host process.
 
 ## License
 

@@ -20,6 +20,7 @@
 - [配置](#配置)
 - [项目结构](#项目结构)
 - [依赖与开发](#依赖与开发)
+- [核心术语](#核心术语)
 - [支持的应用](#支持的应用)
 - [版本与兼容性](#版本与兼容性)
 - [贡献指南](#贡献指南)
@@ -180,6 +181,21 @@ context = ReviewContext(
 
 旧 `Workflow` 的对象、JSON 和历史空证据行为保持兼容；旧审核、旧 grant、legacy `CLOSED` 和 legacy `VerificationResult` 不会变成 Strict 证明。
 
+### 审核请求与输出
+
+多 Agent 审核命令 `goalanchor review-cycle --request request.json --config config.json` 的请求文件包含以下字段：
+
+| 字段 | 必填 | 说明 |
+|---|---|---|
+| `context` | 是 | 审核上下文：`goal`（目标）、`prompt`（审核要求）、`constraints`（约束列表）、`evidence_refs`（证据引用）、`candidate`（被审方案）；可选 `evidence_digests` 绑定证据内容。 |
+| `risk` | 是 | 审核风险级别：`LOW` / `MEDIUM` / `HIGH` / `CRITICAL`；`CRITICAL` 必须携带 `risk_declaration`（含非空 `declared_by` 与 `reason`）的签名风险声明。 |
+| `max_rounds` | 否 | 审核轮次上限，默认 `2`；每轮为 Reviewer → Arbiter → Meta Reviewer。 |
+| `max_workers` | 否 | 同轮 Reviewer 并发上限；不填使用运行时默认值。 |
+
+`--config` 的字段见“配置”一节与[示例配置](examples/multi-platform-review/config.json)；`--model` 可在命令行临时覆盖配置中的模型。
+
+输出：默认打印人读 JSON；加 `--json` 输出机器可读结果。主要字段：`outcome`（`PASS` / `WARN` / `REVIEW_REQUIRED` / `HUMAN_DECISION_REQUIRED` / `STOPPED`）、轮次与每轮 Reviewer 结果、Arbiter 汇总与收据校验信息，以及 `warnings`（模型一致性警告）和 `usage_summary`（调用次数、token 用量、实际使用模型）。退出码 `0` 表示流程完成（不代表审核通过），`1` 表示审核未通过（`STOPPED` 或 `HUMAN_DECISION_REQUIRED`），`2` 表示请求或配置不合法。需要手工校验一份序列化审核记录时，使用 `goalanchor gate --phase review-cycle`，它会按同一 schema 校验 `context`、`reviewer_results`、`arbiter`、`meta_review` 等字段。
+
 ## 配置
 
 | 场景 | 配置方式 |
@@ -192,6 +208,16 @@ context = ReviewContext(
 | 测试脚本 | `GOALANCHOR_TEST_TASK_START/END`、`GOALANCHOR_DIALOGUE_TASK_START/END` 等为测试标记，普通用户无需设置。 |
 
 真实平台探测使用 `goalanchor platforms --probe --json`。它会调用已安装的 Agent CLI，可能产生模型用量；不需要探测时不要加 `--probe`。
+
+### 性能与规模上限
+
+| 项 | 默认值 | 说明 |
+|---|---|---|
+| 单次 Agent 调用超时 | 300 秒 | 可在配置中对每个平台用 `timeout_seconds` 覆盖。 |
+| 同轮 Reviewer 并发 | 4 | `AgentRuntime.max_concurrency`，必须是正整数；Arbiter 与 Meta Reviewer 始终顺序执行。 |
+| 审核轮次 | 2 | 请求中的 `max_rounds` 可调整；到上限仍未收敛即返回 `REVIEW_REQUIRED`。 |
+| SQLite 账本并发 | 单写者 | 写事务用 `BEGIN IMMEDIATE` 串行化；`busy_timeout` 由 store 的 `timeout` 参数控制。Windows 高负载下多进程同时写入可能出现锁竞争等待，这是已知边界。 |
+| 数据库大小 | 无内置上限 | 账本只追加不清理；长期运行请自行归档旧数据库文件。 |
 
 ## 项目结构
 
@@ -255,6 +281,25 @@ python scripts/sync_skill_bundle.py --check
 - CI 使用三操作系统 × Python 3.11–3.13，并固定 MyPy 2.4.0。
 - `ruff` 只检查自有 Python 代码；`skills/.system/` 是上游快照，不纳入该门禁。
 - 涉及 JavaScript 或 PI-Desktop 桥接时，使用 Node.js 20 运行 `node --test tests/js/test_pi_desktop.cjs`。
+
+## 核心术语
+
+| 术语 | 含义 |
+|---|---|
+| 三段门控 | `PLAN → VERIFY → EXECUTE`：先固定目标与计划，再固定证据与验收条件，最后才允许执行与关闭。 |
+| 五问 Q1–Q5 | 计划阶段的五项检查：Q1 Goal（目标明确）、Q2 Logic（推理成立）、Q3 Path（路径可行）、Q4 Minimum（最小充分集）、Q5 Structure（结构可执行）。 |
+| 门控 Gate | 确定性硬检查，不是提示词软约束；`GateId` 还包括 VERIFY、EXECUTE、CLOSURE、ARTIFACT、PROVENANCE 等阶段与专项检查。 |
+| 证据分级 | `Observation`（观察）→ `Fact`（事实）→ `ReproducibleExperiment`（可复现实验）→ `ExclusionaryEvidence`（排除性证据）→ `RootCauseEvidence`（根因证据）。 |
+| 结论上限 | 每条证据只支持到一定强度的结论：`Observation` / `Fact` / `Association` / `Causal` / `RootCause` / `DesignNecessity`；超出上限的结论必须降级或补充证据。 |
+| 证据状态 | `VALID` / `LIMITED` / `INSUFFICIENT` / `CONTRADICTED`，由门控按证据与结论的匹配关系判定。 |
+| 九级闭合 | 关闭强度从低到高：`Symptom Suppressed` → `Containment` → `Local Fix` → `Root Cause Identified` → `Root Fix` → `Build Success` → `Artifact Verified` → `System Validation` → `Product Closure`；宣称哪一级必须有对应证据。 |
+| 溯源链 | 嵌入式交付物链：`Source → Object → ELF → BIN/FW → Flashed Artifact → Device Under Test`，每级对应产物类型与验证动作。 |
+| ReviewContext | 一次审核的固定上下文：目标、要求、约束、证据引用与被审方案；可选携带 `evidence_digests` 绑定证据内容。 |
+| 审核三角色 | Reviewer 独立审 → Arbiter 汇总 → Meta Reviewer 复核仲裁；一轮未收敛可进入下一轮，受 `max_rounds` 约束。 |
+| Strict / Legacy | 同一契约与证据模型下的两条路径：`Workflow`（legacy，保持既有行为）与 `StrictWorkflow`（可信控制侧绑定基线、证据、审核与授权）。 |
+| 审核包 packet | 派发给某个角色的完整输入：角色提示词、上下文、既往轮次与收据；收据校验防止结果被替换。 |
+
+以上术语在测试与源码中都有对应实现（`gates.py`、`evidence.py`、`closure.py`、`review_service.py`），以代码为准。
 
 ## 支持的应用
 
@@ -375,6 +420,20 @@ GoalAnchor 本身不是 Agent，也不提供模型。它以三种形态接入外
 - 原生宿主能力仍以逐宿主实测为准；fixture、受控回调和 TextHostAdapter 共享文本测试不替代原生验收。
 - 已发布版本与资产见 [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases)，完整历史见 [CHANGELOG](CHANGELOG.md)。
 
+### 升级与回滚
+
+- **升级运行时**：`python -m pip install --upgrade goalanchor`（或重新安装 wheel）；零第三方依赖，升级不影响其他包。
+- **升级 Skill**：`goalanchor install --target <host> --force` 覆盖旧版本文件。
+- **升级 SQLite 账本**：schema 版本记录在 `PRAGMA user_version`。v1 账本首次被新版本打开时自动补齐 v2 结构（只增不迁移，legacy 记录保持原样）；空库直接建为 v2；高于当前支持的版本会拒绝打开。Strict 功能要求账本已是 v2。
+- **回滚**：先停止使用账本的进程并备份数据库文件，再安装旧版 wheel。旧版本对 v2 账本的读取行为以该版本代码为准；如需完全回退，恢复备份的 v1 备份文件。
+- **回滚 PI-Desktop 插件**：在桌面中卸载旧 `.piplug` 后安装目标版本构建产物；数据库与桌面插件版本无绑定关系。
+
+### 支持周期
+
+- 仅维护**最新一个 MINOR 分支**（当前 `0.9.x`）；缺陷修复与安全修复优先发布在最新版本。
+- 旧 MINOR 分支（如 `0.8.x`）不再接受常规修复；如仍在使用，请升级到最新 Release。
+- 发布节奏与资产校验以 [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases) 页面为准；每个版本的交付物都附 `SHA256SUMS.txt` 与 `release-manifest.json`。
+
 ## 贡献指南
 
 欢迎提交 Issue 和 Pull Request。开始前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)，其中包含分支策略、提交标题、版本规则和本地质量检查要求。
@@ -391,6 +450,19 @@ GoalAnchor 本身不是 Agent，也不提供模型。它以三种形态接入外
 ## 安全
 
 请不要在公开 Issue、PR 或讨论中报告漏洞。优先使用 GitHub 仓库的 **Security → Advisories → Report a vulnerability**；不可用时发送邮件到 [chenyuyu6666@gmail.com](mailto:chenyuyu6666@gmail.com)，主题为 `GoalAnchor security report`。请包含受影响版本/提交、影响和复现步骤，不要附带真实凭据或个人数据。详见 [SECURITY.md](SECURITY.md)。
+
+### 信任边界
+
+GoalAnchor 的门控逻辑在**本地 Python 进程**中执行，模型或 Agent 只通过结构化输入参与：
+
+| 主体 | 能做什么 | 不能做什么 |
+|---|---|---|
+| 本地核心（可信） | 执行 Gate 判定、证据校验、账本读写、签名事件验证、一次性授权记账 | 不会读取或上报你的模型凭据 |
+| 模型 / Agent（不可信） | 产出结论文本、审核意见、问答内容、计划修订 | 不能直接修改门控判定、解锁 EXECUTE 阻断或写入账本；这些输入都要经过 Reviewer → Arbiter → Meta 结构化确认 |
+| 宿主应用 | 加载 Skill、调度子 Agent、落实执行阻断 | 宿主自报字段（如 `isolated`、`agrees_with_arbiter`）不可被核心核验，属于已知边界 |
+| 调用方（可信控制面） | 保管 `EventAuthority` 密钥、SQLite 账本与执行回执 | 密钥与账本不能暴露给模型或 Agent CLI 进程 |
+
+实践要求：审核证据由调用方采集并（可选）以 `evidence_digests` 绑定；执行阻断最终依赖宿主落实，GoalAnchor 不在宿主进程外强制进程级隔离。
 
 ## 许可证
 
