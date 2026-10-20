@@ -115,7 +115,7 @@ v0.3.2 简化多人协作流程
 - `v0.6.0`：platforms 拆子包、wheel 携带 Skill、ruff/mypy 门禁、Gitee Go 流水线、分发与工程优化。
 - `v0.7.0`：PI-Desktop Skill/Extension 插件、同模型独立审核、显式工具门控及真实桌面验收。
 - `v0.8.0`：目标/证据绑定、逐项审核异议、持久一次性授权、结构化问答、执行回执与验收关闭，以及 Codex App Server 受控回调。
-- `v0.9.0`：`StrictWorkflow` 增量 API、strict/legacy 门面拆分、SQLite schema v2 与 Strict 基线/证据/审核上下文；Strict 审核/授权/执行/关闭仍为 `UNAVAILABLE`。
+- `v0.9.1`：`StrictWorkflow` 增量 API、strict/legacy 门面拆分、SQLite schema v2 与 Strict 基线/证据/审核上下文；Strict 审核/授权/执行/关闭仍为 `UNAVAILABLE`。
 - 新功能增加 `MINOR`，兼容性修复增加 `PATCH`，破坏性变更增加 `MAJOR`。
 - 运行时版本以 `goalanchor/__init__.py` 导出的 `__version__` 为单一来源。
 - 发布前更新 `CHANGELOG.md`，在 `master` 上使用一个发布聚合提交和同名 `vX.Y.Z` 标签，
