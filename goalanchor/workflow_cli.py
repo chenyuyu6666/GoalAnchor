@@ -46,7 +46,7 @@ def _read_database(path: Path, command: str, *, allow_wal: bool = False) -> dict
             'checkpointed database explicitly switched to journal_mode=DELETE')
     uri = path.as_uri() + ('?mode=ro' if allow_wal else '?mode=ro&immutable=1')
     with sqlite3.connect(uri, uri=True) as db:
-        if db.execute('PRAGMA user_version').fetchone()[0] != 1:
+        if db.execute('PRAGMA user_version').fetchone()[0] not in (1, 2):
             raise ContractValidationError('Unsupported workflow schema')
         if command == 'audit':
             rows = db.execute('SELECT seq,event_id,payload FROM events ORDER BY seq').fetchall()

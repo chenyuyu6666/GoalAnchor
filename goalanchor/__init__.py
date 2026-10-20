@@ -165,6 +165,16 @@ from .verification import (
     VerificationResult,
     apply_verification_transition,
 )
+from .workflow import (
+    StrictWorkflow,
+    StrictWorkflowError,
+    TrustedBindingStale,
+    TrustedBindingUnavailable,
+    TrustedEventProofProvider,
+    TrustedProofRejected,
+    TrustedProofUnavailable,
+    TrustedRuntimeBindingProvider,
+)
 
 __all__ = [
     "__version__",
@@ -261,6 +271,14 @@ __all__ = [
     "DecisionReport",
     "evaluate_review_cycle",
     "run_review_cycle",
+    "StrictWorkflow",
+    "StrictWorkflowError",
+    "TrustedBindingStale",
+    "TrustedBindingUnavailable",
+    "TrustedEventProofProvider",
+    "TrustedProofRejected",
+    "TrustedProofUnavailable",
+    "TrustedRuntimeBindingProvider",
     "AgentAdapter",
     "AgentCatalog",
     "AgentCommand",
