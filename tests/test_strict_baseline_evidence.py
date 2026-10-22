@@ -1345,7 +1345,7 @@ def test_runtime_identity_change_invalidates_evidence_and_strict_decisions(tmp_p
 
     assert_strict_code(lambda: runtime.add_evidence(baseline.goal_id, snapshot, event), "STALE")
     assert_strict_code(lambda: runtime.work_item_decision(baseline.goal_id, "write"), "STALE")
-    assert_strict_code(lambda: runtime.close(baseline.goal_id), "UNAVAILABLE")
+    assert_strict_code(lambda: runtime.close(baseline.goal_id), "STALE")
     runtime.store.commit(
         [("question", "legacy-q", {"goal_id": baseline.goal_id, "state": "WAIT"})],
         {("question", "legacy-q"): None},

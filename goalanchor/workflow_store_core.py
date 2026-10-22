@@ -24,9 +24,8 @@ Payload = dict[str, Any]
 Expected = Mapping[tuple[str, str], str | None]
 _GOAL_GENERATION_RECORD_KINDS = frozenset({
     'goal', 'baseline', 'evidence', 'strict_evidence', 'strict_operation', 'question', 'observation', 'risk',
-    'strict_review', 'strict_review_chain', 'strict_question', 'strict_grant',
-    'strict_scope', 'strict_receipt', 'strict_recovery', 'strict_observation',
-    'strict_closure', 'strict_risk',
+    'strict_review', 'strict_question',
+    'strict_scope', 'strict_recovery', 'strict_risk',
 })
 class WorkflowStoreConflict(ContractValidationError):
     """A strict store conflict with a stable fail-closed outcome."""

@@ -5,6 +5,11 @@
 
 ## [未发布]
 
+### Changed
+
+- StrictWorkflow 离线核心链已接通审核、授权问题、一次性 grant、受限执行、UNKNOWN/reconcile、取消、观察和关闭；legacy Workflow 保持兼容。
+- 原生宿主验收和效率治理继续按宿主矩阵与实测证据推进，不把离线 fixture 计作原生完成。
+
 ## [0.9.1] - 2026-10-20
 
 ### Added

@@ -30,6 +30,62 @@ def compete(path, attempt, ready, start, out):
         out.put(False)
 
 
+def compete_review_head(path, candidate, ready, start, out):
+    store = WorkflowStore(path)
+    old = store.get('strict_review_head', 'goal')
+    ready.put(True)
+    start.wait(10)
+    head = {
+        'goal_id': 'goal', 'round_number': 2, 'context_fingerprint': 'ctx',
+        'chain_key': candidate, 'source_event_id': candidate, 'status': 'PASSED',
+    }
+    try:
+        store.commit(
+            [('strict_review_chain', candidate, {'goal_id': 'goal', 'round_number': 2}),
+             ('strict_review_head', 'goal', head)],
+            {('strict_review_chain', candidate): None,
+             ('strict_review_head', 'goal'): store.fingerprint(old)},
+            'event-' + candidate,
+            {'kind': 'observer.review', 'candidate': candidate},
+        )
+        out.put(True)
+    except ContractValidationError:
+        out.put(False)
+
+
+def test_two_processes_only_one_strict_review_head_wins(tmp_path):
+    path = str(tmp_path / 'state.db')
+    store = WorkflowStore(path)
+    initial = {'goal_id': 'goal', 'round_number': 1, 'context_fingerprint': 'ctx',
+               'chain_key': 'goal:1', 'source_event_id': 'event-1', 'status': 'REVIEW_REQUIRED'}
+    store.commit([('strict_review_chain', 'goal:1', initial),
+                  ('strict_review_head', 'goal', initial)],
+                 {('strict_review_chain', 'goal:1'): None, ('strict_review_head', 'goal'): None},
+                 'event-1', {'kind': 'observer.review', 'round': 1})
+    ctx = multiprocessing.get_context('spawn')
+    ready, out, start = ctx.Queue(), ctx.Queue(), ctx.Event()
+    children = [ctx.Process(target=compete_review_head, args=(path, 'goal:2:' + str(i), ready, start, out))
+                for i in range(2)]
+    try:
+        for child in children:
+            child.start()
+        for _ in children:
+            ready.get(timeout=15)
+        start.set()
+        assert sum(out.get(timeout=15) for _ in children) == 1
+        for child in children:
+            child.join(15)
+            assert child.exitcode == 0
+    finally:
+        for child in children:
+            if child.is_alive():
+                child.terminate()
+            child.join(5)
+        ready.close()
+        out.close()
+    head = WorkflowStore(path).get('strict_review_head', 'goal')
+    assert head['round_number'] == 2
+    assert head['chain_key'] in {'goal:2:0', 'goal:2:1'}
 def test_commit_atomic_cas_events_and_reopen(tmp_path):
     store = WorkflowStore(tmp_path / 'state.db')
     value = {'goal_id': 'goal', 'nested': {'x': [1]}}
