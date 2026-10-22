@@ -180,7 +180,7 @@ Nonempty digests must cover every evidence reference exactly once and be 64-char
 
 ### Strict workflow
 
-`StrictWorkflow` is an incremental API alongside legacy `Workflow`. It takes `store`, `user_authority`, `observer_authority`, and `policy` positionally, plus keyword providers such as `trusted_event_verifier` and `trusted_runtime_binding_provider`. Models or Agents must not supply principal, session, or host facts. See the [strict runtime guide](docs/workflow-v0.8.md).
+`StrictWorkflow` is an incremental API alongside legacy `Workflow`. It takes `store`, `user_authority`, `observer_authority`, and `policy` positionally, plus keyword providers such as `trusted_event_verifier` and `trusted_runtime_binding_provider`. Models or Agents must not supply principal, session, or host facts. Use `goalanchor workflow demo --directory <new directory>` to try the full gating chain offline; see the trust-boundary table under [Security](#security).
 
 Legacy `Workflow` objects, JSON, and historical empty-evidence behavior remain compatible. Legacy reviews, grants, `CLOSED`, and `VerificationResult` do not become Strict proof.
 
@@ -205,7 +205,7 @@ Output: a human-readable JSON summary by default; pass `--json` for machine-read
 |---|---|
 | Core CLI / Python API | No required config file or environment variable; use CLI/API arguments. |
 | Agent dispatch | JSON config describing platforms, profiles, commands, and models. See the [example config](examples/multi-platform-review/config.json) and pass it with `--config`. Model resolution priority is profile > platform > top level. |
-| Strict workflow | Requires a persistent SQLite database, trusted `EventAuthority` keys, a controlled executor, and an observer. Keys and the ledger must stay on the trusted control side and must not be exposed to models. See the [strict runtime guide](docs/workflow-v0.8.md). |
+| Strict workflow | Requires a persistent SQLite database, trusted `EventAuthority` keys, a controlled executor, and an observer. Keys and the ledger must stay on the trusted control side and must not be exposed to models. |
 | PI-Desktop | Set the Python executable in the plugin settings, or set `GOALANCHOR_PYTHON` before launching the desktop. The plugin does not read API keys. |
 | Agent CLI credentials | Managed by each Agent CLI. GoalAnchor does not read or store them. |
 | Test harness | `GOALANCHOR_TEST_TASK_START/END` and `GOALANCHOR_DIALOGUE_TASK_START/END` are test markers; users do not need to set them. |
@@ -375,7 +375,7 @@ These applications can install and use the Skill but have no built-in dispatcher
 | Role | The only **tool-level** integration: the `goalanchor_review` tool, the `goalanchor_gate` tool, tool-approval hooks, and a session status command |
 | Support level | Minimum public baseline 0.18.0; install, review, gating, and uninstall verified on 0.18.0 and 0.19.1 |
 
-The plugin requires the host process to find Python; the Python core ships inside the plugin, so no separate `pip install` is needed. It does not read API keys and requests no network or file-write permissions. Host permissions are not an OS sandbox. See the [plugin guide](goalanchor/_pi_desktop/README.md), [compatibility specification](docs/PI-Desktop适配规格.md), and [verification record](docs/PI-Desktop验证记录.md).
+The plugin requires the host process to find Python; the Python core ships inside the plugin, so no separate `pip install` is needed. It does not read API keys and requests no network or file-write permissions. Host permissions are not an OS sandbox. See the [plugin guide](goalanchor/_pi_desktop/README.md); the compatibility specification and verification record are maintained in the project documentation center, not distributed with the code.
 
 ### 4. Custom applications and generic bridges
 
@@ -486,7 +486,6 @@ GoalAnchor is released under the [MIT License](LICENSE). Third-party snapshots u
 
 ## More information
 
-- [Strict runtime guide](docs/workflow-v0.8.md)
 - [Agent compatibility](AGENT-COMPATIBILITY.md)
 - [Offline multi-Agent review example](examples/multi-platform-review/README.md)
 - [PI-Desktop plugin guide](goalanchor/_pi_desktop/README.md)

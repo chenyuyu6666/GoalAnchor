@@ -5,9 +5,6 @@
 | 文档 | 类型 | 内容 |
 |---|---|---|
 | [开发Git提交与维护更新规范.md](开发Git提交与维护更新规范.md) | 开发规范 | 分支、提交、PR、发布拓扑、回滚与 AI 协作规则 |
-| [workflow-v0.8.md](workflow-v0.8.md) | 项目帮助 | 严格运行时：可信控制侧、一次性授权、UNKNOWN 恢复、WAL 与证据分层 |
-| [PI-Desktop适配规格.md](PI-Desktop适配规格.md) | 开发规格 | PI-Desktop 插件的能力基线、宿主接口与降级边界 |
-| [PI-Desktop验证记录.md](PI-Desktop验证记录.md) | 兼容性证据 | 0.18.0/0.19.1 的安装、审核、工具门控与卸载验证，帮助判断支持边界 |
 | [GoalAnchor-自动测试任务.md](GoalAnchor-自动测试任务.md) | CI/开发帮助 | 机器可读的 pytest/fixtures/CLI/file 检查定义，供 `scripts/run_test_task.py` 使用 |
 | [GoalAnchor-对话体验测试任务.md](GoalAnchor-对话体验测试任务.md) | 开发帮助 | 在真实 Agent 对话中执行的体验测试任务 |
 
@@ -27,8 +24,8 @@
 ## 阅读顺序
 
 1. 先读仓库根 [README.md](../README.md) 了解产品与安装。
-2. 修改工作流或授权逻辑前读 [workflow-v0.8.md](workflow-v0.8.md)。
-3. 修改桌面插件前读 [PI-Desktop适配规格.md](PI-Desktop适配规格.md)，并核对验证记录。
+2. 修改工作流或授权逻辑前，核对 CHANGELOG 与对应版本发布说明中的严格运行时边界（完整指南维护在项目文档中心，不随代码分发）。
+3. 修改桌面插件前核对适配规格与验证记录（已移至项目文档中心 02/03 分类）。
 4. 提交或发布前读 [开发Git提交与维护更新规范.md](开发Git提交与维护更新规范.md) 与 [CONTRIBUTING.md](../CONTRIBUTING.md)。
 5. 跨会话接手时，读 [Doc/04 总交接](../../../Doc/04_任务记录/2026-10-20_项目开发与结构整理交接.md)。
 

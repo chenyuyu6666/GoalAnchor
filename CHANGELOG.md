@@ -43,7 +43,7 @@
 - v0.8 严格运行时本地候选：内容绑定基线、可信签名事件、证据快照、逐项异议处置、结构化问题、持久化一次性授权、受限 scope、回执及验收观察；既有辅助 API 保留。
 - `python -m goalanchor workflow` 提供 synthetic `demo`、`capabilities`、离线 DELETE journal 的零写入 `status` / `audit`，以及允许 WAL 的显式写入 `recover`；恢复不重发操作。
 - Codex App Server 控制器绑定精确 callback；0.162.1 已取得真实模型命令、问答 fixture、拒绝/取消与固定命令批准闭环证据。批准闭环使用 synthetic review 和 explicit test approval，未证明人类 UI 或独立多模型审核。
-- [严格运行时使用与兼容说明](docs/workflow-v0.8.md)：可信密钥/数据库边界、cwd 非沙箱、UNKNOWN 处理和宿主证据分层。
+- 严格运行时使用与兼容说明（现已移至项目文档中心，不再随代码分发）：可信密钥/数据库边界、cwd 非沙箱、UNKNOWN 处理和宿主证据分层。
 
 - v0.8.0 首批：`ReviewContext.evidence_digests` 可选绑定全部证据引用的 SHA-256；校验格式和覆盖范围、冻结输入、规范化顺序，并随上下文序列化传递。无摘要的旧调用保留原指纹及 JSON 形态。
 
