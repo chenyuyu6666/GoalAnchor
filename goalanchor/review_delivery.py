@@ -31,7 +31,12 @@ _PROMPTS = {
 def build_packets(
     context: ReviewContext, bundle: dict[str, Any], prior_rounds: list[dict[str, Any]]
 ) -> dict[str, dict[str, Any]]:
-    """Build expected complete input objects without signing, persistence or dispatch."""
+    skill_digest = bundle.get("skill_digest")
+    if skill_digest is not None:
+        if not isinstance(skill_digest, str) or len(skill_digest) != 64 or any(
+            char not in "0123456789abcdef" for char in skill_digest
+        ):
+            raise ContractValidationError("skill_digest must be a lowercase SHA-256 digest")
     if ReviewContext.from_dict(bundle["context"]) != context:
         raise ContractValidationError("review packet context mismatch")
     reviewers = bundle["reviewer_results"]
@@ -42,18 +47,19 @@ def build_packets(
     packets = {}
     for name, role in roles:
         text(name, "agent_id")
-        packets[name] = deepcopy(
-            {
-                "role": role,
-                "round_number": bundle["round_number"],
-                "prompt": _PROMPTS[role],
-                "context": context.to_dict(),
-                "reviewer_results": [] if role == "reviewer" else reviewers,
-                "arbiter": bundle["arbiter"] if role == "meta_reviewer" else None,
-                "prior_rounds": prior_rounds,
-                "dispositions": bundle["dispositions"],
-            }
-        )
+        packet = {
+            "role": role,
+            "round_number": bundle["round_number"],
+            "prompt": _PROMPTS[role],
+            "context": context.to_dict(),
+            "reviewer_results": [] if role == "reviewer" else reviewers,
+            "arbiter": bundle["arbiter"] if role == "meta_reviewer" else None,
+            "prior_rounds": prior_rounds,
+            "dispositions": bundle["dispositions"],
+        }
+        if skill_digest is not None:
+            packet["skill_digest"] = skill_digest
+        packets[name] = deepcopy(packet)
     return packets
 
 

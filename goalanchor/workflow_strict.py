@@ -1460,7 +1460,8 @@ class StrictWorkflow(Workflow):
             "context", "risk", "round_number", "max_rounds", "reviewer_results", "arbiter",
             "meta_review", "dispositions", "bindings", "delivery_receipts",
         }
-        if set(bundle) != required:
+        allowed = required | {"skill_digest"}
+        if not required <= set(bundle) or set(bundle) - allowed:
             raise self._strict_error("UNTRUSTED", "Strict review bundle schema is invalid")
         try:
             submitted_context = ReviewContext.from_dict(bundle["context"])
