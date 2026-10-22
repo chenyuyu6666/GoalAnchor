@@ -56,7 +56,7 @@ GoalAnchor provides a Skill, a Python library, a CLI, and a PI-Desktop plugin. I
 | Core scenarios | 58/58 `PASS` |
 | Native hosts | 58/58 `NOT_RUN` |
 
-GoalAnchor provides two paths over the same contract and evidence model: legacy `Workflow` for existing calls and auxiliary checks, and `StrictWorkflow` for trusted-controller baselines, evidence, review contexts, and restricted operations. Strict review, questions, authorization, execution, reconcile, and closure still return `UNAVAILABLE`; P2b–P7 is incomplete. See [CHANGELOG](CHANGELOG.md) for release history.
+- `StrictWorkflow` now covers the offline core chain for review, authorization questions, one-time grants, restricted execution, UNKNOWN/reconcile, observations, and closure. Native hosts remain classified by evidence as `NOT_RUN`, `LIMITED`, `ADVISORY`, or `UNAVAILABLE`; host acceptance, efficiency governance, and the remaining P2b–P7 delivery work are incomplete. See [CHANGELOG](CHANGELOG.md) for release history.
 
 ## Requirements
 

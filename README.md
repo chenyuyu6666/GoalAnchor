@@ -56,7 +56,7 @@ GoalAnchor 提供 Skill、Python 库、命令行工具和 PI-Desktop 插件。�
 | 核心场景 | 58/58 `PASS` |
 | 原生宿主 | 58/58 `NOT_RUN` |
 
-GoalAnchor 以同一套契约与证据模型提供 legacy `Workflow` 和 `StrictWorkflow` 两条路径：legacy 路径保留既有调用与辅助检查；Strict 路径用于可信控制侧绑定基线、证据、审核上下文和受限操作。Strict 审核、问答、授权、执行、reconcile 与关闭仍返回 `UNAVAILABLE`；P2b–P7 尚未完成。版本历史见 [CHANGELOG](CHANGELOG.md)。
+- `StrictWorkflow` 的离线核心链已覆盖审核、授权问题、一次性 grant、受限执行、UNKNOWN/reconcile、观察和关闭；原生宿主仍按具体版本和模式记录 `NOT_RUN`、`LIMITED`、`ADVISORY` 或 `UNAVAILABLE`。P2b–P7 的宿主验收、效率治理和完整交付仍未完成。版本历史见 [CHANGELOG](CHANGELOG.md)。
 
 ## 运行环境
 

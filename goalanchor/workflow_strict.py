@@ -18,8 +18,15 @@ from typing import Any, NoReturn, TypeGuard
 
 from .core import ContractValidationError
 from .host_contract import validate_host_binding
-from .questions import Question, QuestionRecord
-from .review_service import ReviewContext
+from .questions import Question, QuestionAnswer, QuestionOption, QuestionRecord
+from .review_delivery import build_packets, validate_receipts
+from .review_service import (
+    ArbiterResult,
+    MetaReviewResult,
+    ReviewContext,
+    ReviewerResult,
+    evaluate_review_cycle,
+)
 from .workflow_contracts import (
     Payload,
     StrictWorkflowError,
@@ -1425,10 +1432,183 @@ class StrictWorkflow(Workflow):
             raise self._strict_error("STALE", "Strict Baseline proof expired")
 
     def review_packets(self, goal_id: str, bundle: Payload) -> dict[str, Payload]:
-        self._not_implemented("review packet")
+        context = self.review_context(goal_id)
+        previous = self.store.get("strict_review_record", goal_id)
+        prior = previous["history"] if previous and previous.get("context_fingerprint") == context.fingerprint else []
+        try:
+            return build_packets(context, bundle, prior)
+        except (KeyError, TypeError, ContractValidationError) as exc:
+            raise self._strict_error("UNTRUSTED", "Strict review packet is malformed") from exc
 
     def submit_review(self, goal_id: str, bundle: Payload, event: SignedEvent) -> Payload:
-        self._not_implemented("review submission")
+        existing = self.store.get("strict_review_record", goal_id)
+        if existing is not None and existing.get("source_event_id") == event.event_id:
+            if existing.get("history", [{}])[-1] != bundle:
+                raise self._strict_error("CONFLICT", "Strict review event ID payload changed")
+            return existing
+        context = self.review_context(goal_id)
+        payload = self._local_event_payload(
+            self.observer_authority,
+            event,
+            kind="observer.review",
+            subject=context.fingerprint,
+            expected_payload=bundle,
+        )
+        if self.store.same_json(payload, bundle) is False:
+            raise self._strict_error("UNTRUSTED", "Strict review event payload mismatch")
+        required = {
+            "context", "risk", "round_number", "max_rounds", "reviewer_results", "arbiter",
+            "meta_review", "dispositions", "bindings", "delivery_receipts",
+        }
+        if set(bundle) != required:
+            raise self._strict_error("UNTRUSTED", "Strict review bundle schema is invalid")
+        try:
+            submitted_context = ReviewContext.from_dict(bundle["context"])
+        except (KeyError, TypeError, ContractValidationError) as exc:
+            raise self._strict_error("UNTRUSTED", "Strict review context is malformed") from exc
+        if submitted_context != context:
+            raise self._strict_error("STALE", "Strict review context is stale")
+        if self._trusted_review_verifier is not None:
+            try:
+                review_proof = self._trusted_review_verifier.verify(
+                    bundle,
+                    expected_policy_digest=self.policy.fingerprint,
+                    expected_context=context,
+                    expected_host_binding=self.policy.host_binding,
+                )
+            except (TrustedProofUnavailable, TimeoutError, ConnectionError) as exc:
+                raise self._strict_error("UNAVAILABLE", "Trusted review proof provider is unavailable") from exc
+            except TrustedProofRejected as exc:
+                raise self._strict_error("UNTRUSTED", "Trusted review proof was rejected") from exc
+            except Exception as exc:
+                raise self._strict_error("UNAVAILABLE", "Trusted review proof verification failed") from exc
+            if not isinstance(review_proof, dict):
+                raise self._strict_error("UNTRUSTED", "Trusted review proof is missing")
+        previous = self.store.get("strict_review_record", goal_id)
+        try:
+            validate_receipts(bundle, self.review_packets(goal_id, bundle))
+            reviewers = tuple(ReviewerResult.from_dict(item) for item in bundle["reviewer_results"])
+            arbiter = ArbiterResult.from_dict(bundle["arbiter"])
+            meta = MetaReviewResult.from_dict(bundle["meta_review"])
+        except (KeyError, TypeError, ContractValidationError) as exc:
+            raise self._strict_error("UNTRUSTED", "Strict review results are malformed") from exc
+        if previous is not None and previous.get("context_fingerprint") != context.fingerprint:
+            raise self._strict_error("STALE", "Strict review context changed without a new Baseline")
+        prior_round = previous.get("round_number", 0) if previous is not None else 0
+        if bundle["round_number"] != prior_round + 1 or bundle["round_number"] > 2:
+            raise self._strict_error("CONFLICT", "Strict review round is invalid or exhausted")
+        bindings = bundle["bindings"]
+        if not isinstance(bindings, list):
+            raise self._strict_error("UNTRUSTED", "Strict review bindings are required")
+        role_ids = {item.reviewer_id for item in reviewers} | {arbiter.arbiter_id, meta.reviewer_id}
+        if len(role_ids) != len(reviewers) + 2 or {item.get("agent_id") for item in bindings} != role_ids:
+            raise self._strict_error("UNTRUSTED", "Strict review roles are not independent")
+        sessions = [item.get("session_id") for item in bindings]
+        models = [item.get("model") for item in bindings]
+        if any(not isinstance(item, str) or not item for item in sessions + models):
+            raise self._strict_error("UNTRUSTED", "Strict review identity is incomplete")
+        if len(set(sessions)) != len(sessions) or len(set(models)) != 1:
+            raise self._strict_error("CONFLICT", "Strict review isolation or model binding failed")
+        history = list(previous["history"]) if previous is not None else []
+        if history and set(sessions) & {item["session_id"] for old in history for item in old["bindings"]}:
+            raise self._strict_error("CONFLICT", "Strict review rounds require fresh sessions")
+        try:
+            result = evaluate_review_cycle(
+                context,
+                bundle["risk"],
+                reviewers,
+                arbiter,
+                meta,
+                round_number=bundle["round_number"],
+                max_rounds=bundle["max_rounds"],
+            )
+        except ContractValidationError as exc:
+            raise self._strict_error("UNTRUSTED", "Strict review cycle is invalid") from exc
+        history.append(bundle)
+        findings: dict[str, Payload] = {}
+        for old in history:
+            for report in old["reviewer_results"]:
+                for finding in report["findings"]:
+                    finding_id = finding["finding_id"]
+                    if finding_id in findings and findings[finding_id] != finding:
+                        raise self._strict_error("CONFLICT", "Strict finding identity changed")
+                    findings[finding_id] = finding
+        dispositions = bundle["dispositions"]
+        if not isinstance(dispositions, dict) or set(dispositions) - set(findings):
+            raise self._strict_error("UNTRUSTED", "Strict finding disposition is invalid")
+        evidence_ids = set(context.evidence_refs)
+        unresolved: list[str] = []
+        for finding_id in findings:
+            disposition = dispositions.get(finding_id, {})
+            refs = disposition.get("evidence_refs", []) if isinstance(disposition, dict) else []
+            status = disposition.get("status") if isinstance(disposition, dict) else None
+            if status in ("FIXED", "REFUTED") and refs and set(refs) <= evidence_ids:
+                if status == "REFUTED" and bundle["round_number"] < 2:
+                    unresolved.append(finding_id)
+            else:
+                unresolved.append(finding_id)
+        if result.outcome.value == "PASS" and not unresolved:
+            status = "PASSED"
+        elif bundle["round_number"] >= bundle["max_rounds"] or result.outcome.value == "STOPPED":
+            status = "STOPPED"
+        else:
+            status = "REVIEW_REQUIRED"
+        goal = self.store.get("goal", goal_id)
+        if goal is None:
+            raise self._strict_error("UNTRUSTED", "Strict goal record is unavailable")
+        record = {
+            "goal_id": goal_id,
+            "baseline_digest": goal.get("baseline_digest"),
+            "context_fingerprint": context.fingerprint,
+            "round_number": bundle["round_number"],
+            "status": status,
+            "history": history,
+            "unresolved": unresolved,
+            "result": result.to_dict(),
+            "source_event_id": event.event_id,
+        }
+        chain_key = f"{goal_id}:{bundle['round_number']}"
+        chain_record = {
+            "goal_id": goal_id,
+            "round_number": bundle["round_number"],
+            "context_fingerprint": context.fingerprint,
+            "bundle": bundle,
+            "result": result.to_dict(),
+            "status": status,
+            "source_event_id": event.event_id,
+        }
+        head_key = goal_id
+        old_head = self.store.get("strict_review_head", head_key)
+        head = {
+            "goal_id": goal_id,
+            "round_number": bundle["round_number"],
+            "context_fingerprint": context.fingerprint,
+            "chain_key": chain_key,
+            "source_event_id": event.event_id,
+            "status": status,
+        }
+        expected = {
+            ("strict_review_record", goal_id): None if previous is None else self.store.fingerprint(previous),
+            ("strict_review_chain", chain_key): None,
+            ("strict_review_head", head_key): self.store.fingerprint(old_head) if old_head is not None else None,
+        }
+        try:
+            self.store.commit(
+                [
+                    ("strict_review_record", goal_id, record),
+                    ("strict_review_chain", chain_key, chain_record),
+                    ("strict_review_head", head_key, head),
+                ],
+                expected,
+                event.event_id,
+                event.to_dict(),
+            )
+        except ContractValidationError as exc:
+            current = self.store.get("strict_review_record", goal_id)
+            if current is not None and current.get("source_event_id") == event.event_id:
+                return current
+            raise self._strict_error("STALE", "Strict review commit lost a concurrent update") from exc
+        return record
 
     def request_question(self, question: Question) -> QuestionRecord:
         if not isinstance(question, Question):
@@ -1572,10 +1752,133 @@ class StrictWorkflow(Workflow):
         raise self._strict_error("STALE", "Strict question creation lost a concurrent Baseline update") from original
 
     def request_authorization(self, operation_id: str) -> QuestionRecord:
-        self._not_implemented("authorization question")
+        raw_operation = self.store.get("strict_operation", operation_id)
+        if raw_operation is None:
+            raise self._strict_error("UNTRUSTED", "Strict operation is unavailable")
+        operation = Operation.from_dict(raw_operation.get("operation", raw_operation))
+        snapshot, goal, baseline, proof, binding = self._read_verified_question_context(operation.goal_id)
+        if operation.baseline_digest != baseline.fingerprint:
+            raise self._strict_error("STALE", "Authorization operation is not on the active Baseline")
+        self._validate_strict_operation_record(raw_operation, operation, baseline)
+        review = self.store.get("strict_review_record", operation.goal_id)
+        context = self.review_context(operation.goal_id)
+        if (
+            review is None
+            or review.get("status") != "PASSED"
+            or review.get("baseline_digest") != baseline.fingerprint
+            or review.get("context_fingerprint") != context.fingerprint
+        ):
+            raise self._strict_error("UNAVAILABLE", "A verified Strict review is required before authorization")
+        question_id = "auth-" + operation.fingerprint
+        existing = self.store.get("strict_auth_question", question_id)
+        if existing is not None:
+            return QuestionRecord.from_dict(existing["record"])
+        question = Question(
+            question_id,
+            operation.goal_id,
+            baseline.revision,
+            "Approve exact operation",
+            canonical(operation.to_dict()),
+            (QuestionOption("approve", "Allow once"), QuestionOption("deny", "Reject")),
+            allow_custom=False,
+            blocking_items=(operation.work_item_id,),
+            kind="AUTHORIZATION",
+            operation_digest=operation.fingerprint,
+            approval_option_id="approve",
+            baseline_digest=baseline.fingerprint,
+            trigger_reason="The operation changes the controlled project state.",
+            expires_at=self._deadline(proof["expires_at"]),
+            authorization_context_digest=fingerprint({
+                "operation": operation.to_dict(),
+                "review": review["context_fingerprint"],
+                "runtime_binding": binding["binding_digest"],
+            }),
+        )
+        record = QuestionRecord(question, "WAITING", None)
+        payload = {
+            "goal_id": operation.goal_id,
+            "baseline_digest": baseline.fingerprint,
+            "operation_digest": operation.fingerprint,
+            "context_fingerprint": context.fingerprint,
+            "runtime_binding_digest": binding["binding_digest"],
+            "record": record.to_dict(),
+        }
+        event = self.observer_authority.sign(
+            "controller.authorization.created", question.fingerprint, payload, at=self.clock()
+        )
+        self.store.commit(
+            [("strict_auth_question", question_id, payload)],
+            {("strict_auth_question", question_id): None},
+            event.event_id,
+            event.to_dict(),
+        )
+        return record
 
     def answer(self, question_id: str, event: SignedEvent) -> QuestionRecord:
-        self._not_implemented("question answer")
+        stored = self.store.get("strict_auth_question", question_id)
+        if stored is None:
+            raise self._strict_error("UNTRUSTED", "Strict authorization question is unavailable")
+        try:
+            record = QuestionRecord.from_dict(stored["record"])
+            question = record.question
+            payload = self._verify(self.user_authority, event, "user.answer", question.fingerprint)
+        except ContractValidationError as exc:
+            raise self._strict_error("UNTRUSTED", "Strict answer event is invalid") from exc
+        if set(payload) != {"answer_id", "selected", "custom"}:
+            raise self._strict_error("UNTRUSTED", "Strict answer payload is malformed")
+        if record.answer is not None or record.state != "WAITING":
+            if stored.get("answer_event_id") == event.event_id:
+                return record
+            raise self._strict_error("CONFLICT", "Strict question has already been answered")
+        answer = QuestionAnswer(
+            payload["answer_id"], question.question_id, question.fingerprint,
+            selected=payload["selected"], custom=payload["custom"], source_event_id=event.event_id,
+        )
+        try:
+            updated = record.receive(answer)
+        except ContractValidationError as exc:
+            raise self._strict_error("UNTRUSTED", "Strict answer does not satisfy the question") from exc
+        changes = [("strict_auth_question", question_id, {
+            **stored, "record": updated.to_dict(), "answer_event_id": event.event_id,
+        })]
+        grant: Payload | None = None
+        if updated.decision == "APPROVE":
+            operation_record = next(
+                (
+                    item for item in self.store.list("strict_operation", question.goal_id)
+                    if item.get("operation_digest") == question.operation_digest
+                ),
+                None,
+            )
+            if operation_record is None:
+                raise self._strict_error("UNTRUSTED", "Strict authorization operation is unavailable")
+            operation = Operation.from_dict(operation_record["operation"])
+            context = self.review_context(question.goal_id)
+            grant = {
+                "authorization_id": "grant-" + event.event_id,
+                "goal_id": question.goal_id,
+                "baseline_digest": question.baseline_digest,
+                "operation_digest": operation.fingerprint,
+                "state": "ACTIVE",
+                "kind": "ONE_TIME",
+                "expires_at": question.expires_at,
+                "source_event_id": event.event_id,
+                "source_question_id": question_id,
+                "review_context_fingerprint": context.fingerprint,
+            }
+            changes.append(("strict_grant", grant["authorization_id"], grant))
+        expected: dict[tuple[str, str], str | None] = {
+            ("strict_auth_question", question_id): self.store.fingerprint(stored)
+        }
+        if grant is not None:
+            expected[("strict_grant", grant["authorization_id"])] = None
+        self.store.commit(
+            changes,
+            expected,
+            event.event_id,
+            event.to_dict(),
+        )
+        return updated
 
     def transition_question(self, question_id: str, state: str, event: SignedEvent) -> QuestionRecord:
         self._not_implemented("question transition")
@@ -1917,16 +2220,182 @@ class StrictWorkflow(Workflow):
         self._not_implemented("grant revocation")
 
     def cancel(self, goal_id: str, event: SignedEvent) -> Payload:
-        self._not_implemented("cancellation")
+        payload = self._local_event_payload(
+            self.user_authority,
+            event,
+            kind="user.cancel",
+            subject=goal_id,
+            expected_payload={
+                "goal_id": goal_id,
+                "reason": event.payload.get("reason") if isinstance(event.payload, Mapping) else None,
+            },
+        )
+        if set(payload) != {"goal_id", "reason"} or payload["goal_id"] != goal_id:
+            raise self._strict_error("UNTRUSTED", "Strict cancellation payload is malformed")
+        receipts = [item for item in self.store.list("strict_receipt", goal_id) if item.get("dispatch_right")]
+        if not receipts:
+            return {"goal_id": goal_id, "state": "CANCELLED", "reason": payload["reason"]}
+        changes = []
+        expected: dict[tuple[str, str], str | None] = {}
+        for receipt in receipts:
+            updated = {**receipt, "state": "CANCELLED", "dispatch_right": False, "cancel_event_id": event.event_id,
+                       "updated_at": event.created_at}
+            changes.append(("strict_receipt", receipt["attempt_id"], updated))
+            expected[("strict_receipt", receipt["attempt_id"])] = self.store.fingerprint(receipt)
+        try:
+            self.store.commit(changes, expected, event.event_id, event.to_dict())
+        except ContractValidationError as exc:
+            raise self._strict_error("STALE", "Strict cancellation lost a concurrent update") from exc
+        return {"goal_id": goal_id, "state": "CANCELLED", "reason": payload["reason"], "receipt_count": len(receipts)}
 
     def reconcile(self, attempt_id: str, event: SignedEvent) -> Payload:
-        self._not_implemented("reconciliation")
+        receipt = self.store.get("strict_receipt", attempt_id)
+        if receipt is None:
+            raise self._strict_error("UNTRUSTED", "Strict attempt receipt is unavailable")
+        if receipt.get("state") != "UNKNOWN":
+            if receipt.get("reconcile_event_id") == event.event_id:
+                return receipt
+            raise self._strict_error("CONFLICT", "Only UNKNOWN Strict attempts can be reconciled")
+        try:
+            payload = self._verify(self.observer_authority, event, "observer.reconcile", attempt_id)
+        except ContractValidationError as exc:
+            raise self._strict_error("UNTRUSTED", "Strict reconcile event is invalid") from exc
+        if set(payload) != {"attempt_id", "operation_digest", "outcome", "result"}:
+            raise self._strict_error("UNTRUSTED", "Strict reconcile payload is malformed")
+        if (
+            payload["attempt_id"] != attempt_id
+            or payload["operation_digest"] != receipt.get("operation_digest")
+            or payload["outcome"] not in {"SUCCEEDED", "FAILED"}
+            or not isinstance(payload["result"], dict)
+        ):
+            raise self._strict_error("UNTRUSTED", "Strict reconcile result does not match the receipt")
+        completed = {
+            **receipt,
+            "state": payload["outcome"],
+            "dispatch_right": False,
+            "result": payload["result"],
+            "reconcile_event_id": event.event_id,
+            "updated_at": event.created_at,
+        }
+        try:
+            self.store.commit(
+                [("strict_receipt", attempt_id, completed)],
+                {("strict_receipt", attempt_id): self.store.fingerprint(receipt)},
+                event.event_id,
+                event.to_dict(),
+            )
+        except ContractValidationError as exc:
+            current = self.store.get("strict_receipt", attempt_id)
+            if current is not None and current.get("reconcile_event_id") == event.event_id:
+                return current
+            raise self._strict_error("STALE", "Strict reconcile lost a concurrent update") from exc
+        return completed
 
     def accept_risk(self, goal_id: str, finding_id: str, event: SignedEvent) -> Payload:
         self._not_implemented("risk acceptance")
 
     def execute(self, operation_id: str, attempt_id: str, executor: Callable[[Operation], Payload]) -> Payload:
-        self._not_implemented("execution")
+        if (
+            not isinstance(operation_id, str)
+            or not operation_id.strip()
+            or not isinstance(attempt_id, str)
+            or not attempt_id.strip()
+        ):
+            raise self._strict_error("UNTRUSTED", "Strict execution identifiers are required")
+        operation_record = self.store.get("strict_operation", operation_id)
+        if operation_record is None:
+            raise self._strict_error("UNTRUSTED", "Strict operation is unavailable")
+        try:
+            operation = Operation.from_dict(operation_record["operation"])
+        except (KeyError, TypeError, ContractValidationError) as exc:
+            raise self._strict_error("UNTRUSTED", "Strict operation record is malformed") from exc
+        if operation.operation_id != operation_id:
+            raise self._strict_error("UNTRUSTED", "Strict operation identity does not match its key")
+        existing = self.store.get("strict_receipt", attempt_id)
+        if existing is not None:
+            if existing.get("operation_digest") != operation.fingerprint:
+                raise self._strict_error("CONFLICT", "Strict attempt ID belongs to another operation")
+            return existing
+        snapshot = self.store.read_strict_snapshot(operation.goal_id)
+        goal, baseline = self._load_baseline(snapshot, operation.goal_id)
+        if operation.baseline_digest != baseline.fingerprint:
+            raise self._strict_error("STALE", "Strict operation baseline is stale")
+        self._validate_strict_operation_record(operation_record, operation, baseline)
+        self._validate_operation_scope(operation)
+        context = self.review_context(operation.goal_id)
+        review = self.store.get("strict_review_record", operation.goal_id)
+        if (
+            review is None
+            or review.get("status") != "PASSED"
+            or review.get("context_fingerprint") != context.fingerprint
+            or review.get("baseline_digest") != baseline.fingerprint
+        ):
+            raise self._strict_error("STALE", "Strict review is stale or unavailable")
+        now = parse_time(self.clock())
+        grant = next(
+            (
+                item for item in self.store.list("strict_grant", operation.goal_id)
+                if item.get("operation_digest") == operation.fingerprint
+                and item.get("baseline_digest") == baseline.fingerprint
+                and item.get("state") == "ACTIVE"
+            ),
+            None,
+        )
+        if grant is None:
+            raise self._strict_error("UNTRUSTED", "No active Strict one-time grant permits this operation")
+        if parse_time(grant["expires_at"]) <= now:
+            raise self._strict_error("STALE", "Strict one-time grant expired")
+        consumed = {**grant, "state": "CONSUMED", "attempt_id": attempt_id, "consumed_at": self.clock()}
+        receipt = {
+            "attempt_id": attempt_id,
+            "goal_id": operation.goal_id,
+            "operation_digest": operation.fingerprint,
+            "authorization_id": grant["authorization_id"],
+            "state": "RUNNING",
+            "dispatch_right": True,
+            "created_at": self.clock(),
+        }
+        consume_event = self.observer_authority.sign(
+            "controller.strict.grant.consume", attempt_id,
+            {
+                "grant_id": grant["authorization_id"],
+                "attempt_id": attempt_id,
+                "operation_digest": operation.fingerprint,
+            },
+            at=self.clock(),
+        )
+        try:
+            self.store.commit(
+                [("strict_grant", grant["authorization_id"], consumed), ("strict_receipt", attempt_id, receipt)],
+                {
+                    ("strict_grant", grant["authorization_id"]): self.store.fingerprint(grant),
+                    ("strict_receipt", attempt_id): None,
+                },
+                consume_event.event_id,
+                consume_event.to_dict(),
+            )
+        except ContractValidationError as exc:
+            raise self._strict_error("CONFLICT", "Strict grant was consumed concurrently") from exc
+        try:
+            result = executor(operation)
+            if not isinstance(result, dict):
+                raise ContractValidationError("Strict executor result must be an object")
+            canonical(result)
+            state = "SUCCEEDED"
+        except Exception as exc:
+            result = {"error_type": type(exc).__name__}
+            state = "UNKNOWN"
+        completed = {**receipt, "state": state, "dispatch_right": False, "result": result, "updated_at": self.clock()}
+        result_event = self.observer_authority.sign(
+            "controller.strict.receipt.result", attempt_id, completed, at=self.clock()
+        )
+        self.store.commit(
+            [("strict_receipt", attempt_id, completed)],
+            {("strict_receipt", attempt_id): self.store.fingerprint(receipt)},
+            result_event.event_id,
+            result_event.to_dict(),
+        )
+        return completed
 
     def resume_transport(
         self,
@@ -1938,10 +2407,106 @@ class StrictWorkflow(Workflow):
         self._not_implemented("transport recovery")
 
     def observe(self, goal_id: str, event: SignedEvent) -> Payload:
-        self._not_implemented("acceptance observation")
+        snapshot = self.store.read_strict_snapshot(goal_id)
+        goal, baseline = self._load_baseline(snapshot, goal_id)
+        payload = self._local_event_payload(
+            self.observer_authority,
+            event,
+            kind="observer.observation",
+            subject=baseline.fingerprint,
+            expected_payload=event.payload,
+        )
+        required = {"goal_id", "baseline_digest", "criterion_id", "object_ref", "actual", "attempt_id"}
+        if set(payload) - required or not required <= set(payload):
+            raise self._strict_error("UNTRUSTED", "Strict observation payload is malformed")
+        if payload["goal_id"] != goal_id or payload["baseline_digest"] != baseline.fingerprint:
+            raise self._strict_error("STALE", "Strict observation baseline is stale")
+        criterion = next((item for item in baseline.criteria if item.criterion_id == payload["criterion_id"]), None)
+        if criterion is None or criterion.object_ref != payload["object_ref"]:
+            raise self._strict_error("UNTRUSTED", "Strict observation criterion is unknown")
+        receipt = self.store.get("strict_receipt", payload["attempt_id"])
+        if receipt is None or receipt.get("goal_id") != goal_id or receipt.get("state") != "SUCCEEDED":
+            raise self._strict_error("UNTRUSTED", "Strict observation requires a successful receipt")
+        if receipt.get("operation_digest") not in {
+            item.get("operation_digest") for item in self.store.list("strict_operation", goal_id)
+        }:
+            raise self._strict_error("UNTRUSTED", "Strict observation receipt is not registered")
+        actual = payload["actual"]
+        object_digest = hashlib.sha256(
+            actual.encode("utf-8") if isinstance(actual, str) else canonical(actual).encode("utf-8")
+        ).hexdigest()
+        key = baseline.fingerprint + ":" + criterion.criterion_id
+        record = {
+            **payload,
+            "status": "PASS" if canonical(actual) == criterion.expected_json else "FAIL",
+            "object_digest": object_digest,
+            "source_event_id": event.event_id,
+            "observed_at": event.created_at,
+        }
+        old = self.store.get("strict_observation", key)
+        if old is not None:
+            if old == record:
+                return old
+            raise self._strict_error("CONFLICT", "Strict observation identity changed")
+        self.store.commit(
+            [("strict_observation", key, record)],
+            {("strict_observation", key): None},
+            event.event_id,
+            event.to_dict(),
+        )
+        return record
 
     def reuse_observation(self, goal_id: str, event: SignedEvent) -> Payload:
         self._not_implemented("observation reuse")
 
     def close(self, goal_id: str) -> Payload:
-        self._not_implemented("closure")
+        snapshot = self.store.read_strict_snapshot(goal_id)
+        goal, baseline = self._load_baseline(snapshot, goal_id)
+        context = self.review_context(goal_id)
+        review = self.store.get("strict_review_record", goal_id)
+        if (
+            review is None
+            or review.get("status") != "PASSED"
+            or review.get("baseline_digest") != baseline.fingerprint
+            or review.get("context_fingerprint") != context.fingerprint
+        ):
+            raise self._strict_error("STALE", "Strict review is stale or unavailable")
+        existing = self.store.get("strict_closure", baseline.fingerprint)
+        if existing is not None:
+            return existing
+        receipts = self.store.list("strict_receipt", goal_id)
+        if any(item.get("state") in {"RUNNING", "UNKNOWN"} for item in receipts):
+            raise self._strict_error("STALE", "Strict closure is blocked by an unresolved receipt")
+        for operation_id in baseline.required_operations:
+            operation_record = self.store.get("strict_operation", operation_id)
+            if operation_record is None:
+                raise self._strict_error("UNTRUSTED", "Required Strict operation is missing")
+            operation = Operation.from_dict(operation_record["operation"])
+            if not any(
+                item.get("operation_digest") == operation.fingerprint
+                and item.get("state") == "SUCCEEDED"
+                for item in receipts
+            ):
+                raise self._strict_error("STALE", "Required Strict operation has no successful receipt")
+        for criterion in baseline.criteria:
+            observation = self.store.get("strict_observation", baseline.fingerprint + ":" + criterion.criterion_id)
+            if observation is None or observation.get("status") != "PASS":
+                raise self._strict_error("STALE", "Required Strict observation is missing or failed")
+        closure = {
+            "goal_id": goal_id,
+            "baseline_digest": baseline.fingerprint,
+            "context_fingerprint": context.fingerprint,
+            "state": "CLOSED",
+            "review_digest": self.store.fingerprint(review),
+            "receipt_ids": sorted(item["attempt_id"] for item in receipts if item.get("state") == "SUCCEEDED"),
+            "closed_at": self.clock(),
+        }
+        event = self.observer_authority.sign("controller.strict.close", baseline.fingerprint, closure, at=self.clock())
+        closure["source_event_id"] = event.event_id
+        self.store.commit(
+            [("strict_closure", baseline.fingerprint, closure)],
+            {("strict_closure", baseline.fingerprint): None},
+            event.event_id,
+            event.to_dict(),
+        )
+        return closure

@@ -1,6 +1,6 @@
 # v0.8/v0.9 严格运行时使用与兼容说明
 
-本文描述 GoalAnchor v0.8.0 引入、v0.9.1 扩展的严格运行时。58 项核心场景映射均通过，58 项原生宿主状态均为 `NOT_RUN`；宿主 fixture 和受控回调证据按各自层级解释。既有 `ReviewContext`、审核周期和 Skill API 保留，属于辅助检查路径；只有接入 `Workflow` / `StrictWorkflow`、可信事件、持久账本和受控 executor 的执行才具备这里描述的门控。
+本文描述 GoalAnchor v0.8.0 引入、v0.9.1 扩展的严格运行时。核心离线链已覆盖 Baseline、Evidence、Review、授权、一次性 grant、执行、UNKNOWN/reconcile、观察和关闭，并由回归测试验证；原生宿主仍按具体版本和模式记录 `NOT_RUN`、`LIMITED`、`ADVISORY` 或 `UNAVAILABLE`。宿主 fixture 和受控回调证据按各自层级解释。既有 `ReviewContext`、审核周期和 Skill API 保留，属于辅助检查路径；接入 `StrictWorkflow`、可信事件、持久账本和受控 executor 后才具备这里描述的门控。
 
 ## 信任边界与接入顺序
 
@@ -52,7 +52,7 @@ python -m goalanchor workflow audit --database .\workflow-demo-v08\state.db
 
 ## Strict baseline 与证据来源
 
-`StrictWorkflow` 是与旧 `Workflow` 并列的增量 API。旧 `Workflow` 的对象、JSON、历史空证据行为保持兼容；旧记录不会因此变成 Strict 证明。当前严格路径支持创建目标基线、添加证据快照、构造审核上下文和注册受限 Strict 操作。Strict 审核、问答、授权、执行、reconcile 与关闭仍返回 `UNAVAILABLE`；不能把旧审核、旧 grant、legacy `CLOSED` 或 legacy `VerificationResult` 当作严格授权或完成证明。
+`StrictWorkflow` 是与旧 `Workflow` 并列的增量 API。旧 `Workflow` 的对象、JSON、历史空证据行为保持兼容；旧记录不会因此变成 Strict 证明。当前严格路径支持创建目标基线、添加证据快照、构造审核上下文、审核、授权、一次性 grant、受限执行、UNKNOWN/reconcile、观察和关闭。不能把旧审核、旧 grant、legacy `CLOSED` 或 legacy `VerificationResult` 当作严格授权或完成证明。
 
 构造 Strict 路径时，控制侧必须注入 `trusted_runtime_binding_provider` 和 `trusted_event_verifier`。前者由可信 composition root / 宿主 Adapter 提供当前规范化的 host facts、principal、account、session 和递增 generation，并提供 `acquire_lease(expected_digest)` 上下文管理器。租约持有期间，这些绑定事实不得轮换。租约能力缺失、不可用或与预期摘要不符时，操作分别 fail closed 为 `UNAVAILABLE` 或 `STALE`。模型或 Agent 不得提供这些事实，也不得自行声明用户身份。
 
