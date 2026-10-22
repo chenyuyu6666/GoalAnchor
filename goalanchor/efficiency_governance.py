@@ -1,0 +1,98 @@
+"""Small, fail-closed efficiency governance primitives."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+
+@dataclass(frozen=True)
+class ComplexityResult:
+    score: int
+    level: str
+    signals: dict[str, int]
+
+
+class TaskComplexityEngine:
+    def assess(
+        self, *, dependency_count: int, risk: str, blocking_uncertainty: bool, evidence_change_count: int
+    ) -> ComplexityResult:
+        if type(dependency_count) is not int or dependency_count < 0:
+            raise ValueError("dependency_count must be a non-negative integer")
+        if type(evidence_change_count) is not int or evidence_change_count < 0:
+            raise ValueError("evidence_change_count must be a non-negative integer")
+        risk_score = {"LOW": 0, "MEDIUM": 1, "HIGH": 3, "CRITICAL": 4}.get(risk)
+        if risk_score is None:
+            raise ValueError("risk must be LOW, MEDIUM, HIGH, or CRITICAL")
+        signals = {
+            "dependencies": min(dependency_count, 3),
+            "risk": risk_score,
+            "blocking_uncertainty": int(blocking_uncertainty),
+            "evidence_changes": min(evidence_change_count, 1),
+        }
+        score = sum(signals.values())
+        level = "LOW" if score <= 2 else "MEDIUM" if score <= 5 else "HIGH"
+        return ComplexityResult(score, level, signals)
+
+
+@dataclass
+class BudgetGovernor:
+    token_budget: int
+    time_budget_seconds: float
+    reason: str = field(default="", init=False)
+
+    def __post_init__(self) -> None:
+        if type(self.token_budget) is not int or self.token_budget < 1:
+            raise ValueError("token_budget must be positive")
+        if not isinstance(self.time_budget_seconds, (int, float)) or self.time_budget_seconds <= 0:
+            raise ValueError("time_budget_seconds must be positive")
+
+    def allow(self, *, tokens_used: int | None, elapsed_seconds: float) -> bool:
+        if tokens_used is None:
+            self.reason = "UNKNOWN_USAGE"
+            return False
+        if tokens_used > self.token_budget:
+            self.reason = "TOKEN_BUDGET_EXCEEDED"
+            return False
+        if elapsed_seconds > self.time_budget_seconds:
+            self.reason = "TIME_BUDGET_EXCEEDED"
+            return False
+        self.reason = "WITHIN_BUDGET"
+        return True
+
+
+@dataclass
+class ProgressWatchdog:
+    repeat_threshold: int = 3
+    _counts: dict[tuple[str, str], int] = field(default_factory=dict, init=False)
+    reason: str = field(default="", init=False)
+
+    def __post_init__(self) -> None:
+        if type(self.repeat_threshold) is not int or self.repeat_threshold < 1:
+            raise ValueError("repeat_threshold must be positive")
+
+    def observe(self, operation: str, fingerprint: str) -> bool:
+        key = (operation, fingerprint)
+        count = self._counts.get(key, 0) + 1
+        self._counts[key] = count
+        if count > self.repeat_threshold:
+            self.reason = "REPEATED_OPERATION"
+            return True
+        self.reason = "PROGRESS_OBSERVED"
+        return False
+
+
+@dataclass
+class PromptOptimizer:
+    _cache: dict[str, tuple[str, int]] = field(default_factory=dict, init=False)
+
+    def remember(self, context_fingerprint: str, response: str, *, token_saving: int) -> None:
+        if not context_fingerprint or not response or type(token_saving) is not int or token_saving < 0:
+            raise ValueError("context, response, and non-negative token_saving are required")
+        self._cache[context_fingerprint] = (response, token_saving)
+
+    def reuse(self, context_fingerprint: str) -> str | None:
+        entry = self._cache.get(context_fingerprint)
+        return None if entry is None else entry[0]
+
+
+__all__ = ["BudgetGovernor", "ComplexityResult", "ProgressWatchdog", "PromptOptimizer", "TaskComplexityEngine"]
