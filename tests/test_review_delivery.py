@@ -74,6 +74,15 @@ def test_packets_contain_raw_material_and_same_reviewer_input(tmp_path):
     assert packets["arbiter"]["reviewer_results"] == bundle["reviewer_results"]
     assert submit(runtime, observer, bundle)["status"] == "PASSED"
 
+def test_optional_skill_digest_is_bound_into_every_packet(tmp_path):
+    runtime, _, _, _ = setup_workflow(tmp_path)
+    bundle = delivery_bundle(runtime)
+    bundle["skill_digest"] = "a" * 64
+    packets = runtime.review_packets("G1", bundle)
+    assert {packet["skill_digest"] for packet in packets.values()} == {"a" * 64}
+    legacy_packets = runtime.review_packets("G1", delivery_bundle(runtime))
+    assert all("skill_digest" not in packet for packet in legacy_packets.values())
+
 
 @pytest.mark.parametrize(
     "mutation",
