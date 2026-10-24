@@ -49,10 +49,10 @@ GoalAnchor 提供 Skill、Python 库、命令行工具和 PI-Desktop 插件。�
 
 | 项目 | 值 |
 |---|---|
-| 当前版本 | `0.9.1` |
-| 发布日期 | 2026-10-20 |
-| GitHub Release | [v0.9.1](https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.9.1) |
-| 发布提交 | `dfafe47` |
+| 当前版本 | `0.9.2` |
+| 发布日期 | 2026-10-24 |
+| GitHub Release | [v0.9.2](https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.9.2) |
+| 发布提交 | 见 `delivery/v0.9.2/release-manifest.json` |
 | 核心场景 | 58/58 `PASS` |
 | 原生宿主 | 58/58 `NOT_RUN` |
 
@@ -99,7 +99,7 @@ python -c "import goalanchor; print(goalanchor.__version__)"
 也可以从 [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases) 下载 wheel：
 
 ```sh
-python -m pip install goalanchor-0.9.1-py3-none-any.whl
+python -m pip install goalanchor-0.9.2-py3-none-any.whl
 ```
 
 ### 安装 GoalAnchor Skill

@@ -49,10 +49,10 @@ GoalAnchor provides a Skill, a Python library, a CLI, and a PI-Desktop plugin. I
 
 | Item | Value |
 |---|---|
-| Version | `0.9.1` |
-| Release date | 2026-10-20 |
-| GitHub Release | [v0.9.1](https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.9.1) |
-| Release commit | `dfafe47` |
+| Version | `0.9.2` |
+| Release date | 2026-10-24 |
+| GitHub Release | [v0.9.2](https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.9.2) |
+| Release commit | See `delivery/v0.9.2/release-manifest.json` |
 | Core scenarios | 58/58 `PASS` |
 | Native hosts | 58/58 `NOT_RUN` |
 
@@ -99,7 +99,7 @@ python -c "import goalanchor; print(goalanchor.__version__)"
 You can also install a wheel from [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases):
 
 ```sh
-python -m pip install goalanchor-0.9.1-py3-none-any.whl
+python -m pip install goalanchor-0.9.2-py3-none-any.whl
 ```
 
 ### Install the GoalAnchor Skill
