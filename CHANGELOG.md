@@ -5,12 +5,18 @@
 
 ## [未发布]
 
+## [0.9.2] - 2026-10-24
+
 ### Changed
 
 - StrictWorkflow 离线核心链已接通审核、授权问题、一次性 grant、受限执行、UNKNOWN/reconcile、取消、观察和关闭；legacy Workflow 保持兼容。
 - legacy `ONE_TIME` 在无显式消费 ledger 时 fail-closed，返回 `LEGACY_UNVERIFIED`；显式 `OneTimeAuthorizationLedger` 仅提供进程内一次性消费，跨进程可信消费继续使用 Strict Workflow。
-- 效率治理输入和 review delivery binding 继续采用 fail-closed 校验；这些本地能力尚未代表真实 runtime 或宿主闭环。
-- 原生宿主验收和效率治理继续按宿主矩阵与实测证据推进，不把离线 fixture 计作原生完成。
+- 效率治理输入和 review delivery binding 采用 fail-closed 校验；这些本地能力尚未代表真实 runtime 或宿主闭环。
+
+### Notes
+
+- 这是兼容性修复版本；旧 `AUTONOMY_GRANT`、自动动作和序列化格式保持兼容。
+- 原生宿主验收、真实效率 runtime 和完整 P2b–P7 交付仍按矩阵保持 `PARTIAL/BOUNDED`，不把离线 fixture 计作原生完成。
 
 ## [0.9.1] - 2026-10-20
 
