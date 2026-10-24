@@ -180,3 +180,36 @@ def test_pure_receipt_check_requires_exact_signed_controller_material(tmp_path):
     bundle["delivery_receipts"][-1]["summary_only"] = True
     with pytest.raises(ContractValidationError):
         validate_receipts(bundle, packets)
+
+
+@pytest.mark.parametrize(
+    "binding",
+    [{}, None, {"agent_id": "A"}, {"agent_id": "", "session_id": "s"},
+     {"agent_id": "A", "session_id": ""}, {"agent_id": 1, "session_id": "s"}],
+)
+def test_receipt_check_rejects_malformed_bindings(tmp_path, binding):
+    runtime, _, _, _ = setup_workflow(tmp_path)
+    bundle = delivery_bundle(runtime)
+    packets = build_packets(runtime.review_context("G1"), bundle, [])
+    bundle["bindings"] = [binding]
+    bundle["delivery_receipts"] = []
+    with pytest.raises(ContractValidationError):
+        validate_receipts(bundle, packets)
+
+
+def test_receipt_check_rejects_duplicate_binding_agents_or_sessions(tmp_path):
+    runtime, _, _, _ = setup_workflow(tmp_path)
+    bundle = delivery_bundle(runtime)
+    packets = build_packets(runtime.review_context("G1"), bundle, [])
+    bundle["bindings"] = [
+        {"agent_id": "A", "session_id": "same"},
+        {"agent_id": "A", "session_id": "other"},
+    ]
+    with pytest.raises(ContractValidationError):
+        validate_receipts(bundle, packets)
+    bundle["bindings"] = [
+        {"agent_id": "A", "session_id": "same"},
+        {"agent_id": "B", "session_id": "same"},
+    ]
+    with pytest.raises(ContractValidationError):
+        validate_receipts(bundle, packets)

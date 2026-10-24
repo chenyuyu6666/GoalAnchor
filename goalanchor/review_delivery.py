@@ -69,7 +69,16 @@ def validate_receipts(bundle: dict[str, Any], packets: dict[str, dict[str, Any]]
     bindings = bundle.get("bindings")
     if not isinstance(receipts, list) or not isinstance(bindings, list):
         raise ContractValidationError("review delivery receipts and bindings required")
-    expected = {item["agent_id"]: item["session_id"] for item in bindings}
+    expected: dict[str, str] = {}
+    sessions: set[str] = set()
+    for raw in bindings:
+        binding = shape(raw, {"agent_id", "session_id"}, {"model"})
+        agent_id = text(binding["agent_id"], "agent_id")
+        session_id = text(binding["session_id"], "session_id")
+        if agent_id in expected or session_id in sessions:
+            raise ContractValidationError("delivery bindings must use unique agents and sessions")
+        expected[agent_id] = session_id
+        sessions.add(session_id)
     if len(expected) != len(bindings) or set(expected) != set(packets) or len(receipts) != len(expected):
         raise ContractValidationError("delivery bindings must cover all roles exactly")
     seen_agents: set[str] = set()

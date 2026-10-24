@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 
 
@@ -20,6 +21,8 @@ class TaskComplexityEngine:
             raise ValueError("dependency_count must be a non-negative integer")
         if type(evidence_change_count) is not int or evidence_change_count < 0:
             raise ValueError("evidence_change_count must be a non-negative integer")
+        if type(blocking_uncertainty) is not bool:
+            raise ValueError("blocking_uncertainty must be a boolean")
         risk_score = {"LOW": 0, "MEDIUM": 1, "HIGH": 3, "CRITICAL": 4}.get(risk)
         if risk_score is None:
             raise ValueError("risk must be LOW, MEDIUM, HIGH, or CRITICAL")
@@ -43,12 +46,26 @@ class BudgetGovernor:
     def __post_init__(self) -> None:
         if type(self.token_budget) is not int or self.token_budget < 1:
             raise ValueError("token_budget must be positive")
-        if not isinstance(self.time_budget_seconds, (int, float)) or self.time_budget_seconds <= 0:
+        if (
+            type(self.time_budget_seconds) not in (int, float)
+            or not math.isfinite(float(self.time_budget_seconds))
+            or self.time_budget_seconds <= 0
+        ):
             raise ValueError("time_budget_seconds must be positive")
 
     def allow(self, *, tokens_used: int | None, elapsed_seconds: float) -> bool:
         if tokens_used is None:
             self.reason = "UNKNOWN_USAGE"
+            return False
+        if type(tokens_used) is not int or tokens_used < 0:
+            self.reason = "INVALID_USAGE"
+            return False
+        if (
+            type(elapsed_seconds) not in (int, float)
+            or not math.isfinite(float(elapsed_seconds))
+            or elapsed_seconds < 0
+        ):
+            self.reason = "INVALID_USAGE"
             return False
         if tokens_used > self.token_budget:
             self.reason = "TOKEN_BUDGET_EXCEEDED"
@@ -71,6 +88,10 @@ class ProgressWatchdog:
             raise ValueError("repeat_threshold must be positive")
 
     def observe(self, operation: str, fingerprint: str) -> bool:
+        if not isinstance(operation, str) or not operation.strip():
+            raise ValueError("operation must be a non-empty string")
+        if not isinstance(fingerprint, str) or not fingerprint.strip():
+            raise ValueError("fingerprint must be a non-empty string")
         key = (operation, fingerprint)
         count = self._counts.get(key, 0) + 1
         self._counts[key] = count
@@ -86,13 +107,20 @@ class PromptOptimizer:
     _cache: dict[str, tuple[str, int]] = field(default_factory=dict, init=False)
 
     def remember(self, context_fingerprint: str, response: str, *, token_saving: int) -> None:
-        if not context_fingerprint or not response or type(token_saving) is not int or token_saving < 0:
-            raise ValueError("context, response, and non-negative token_saving are required")
+        if (
+            not isinstance(context_fingerprint, str)
+            or not context_fingerprint.strip()
+            or not isinstance(response, str)
+            or not response.strip()
+            or type(token_saving) is not int
+            or token_saving <= 0
+        ):
+            raise ValueError("context, response, and positive token_saving are required")
         self._cache[context_fingerprint] = (response, token_saving)
 
     def reuse(self, context_fingerprint: str) -> str | None:
         entry = self._cache.get(context_fingerprint)
-        return None if entry is None else entry[0]
+        return None if entry is None or entry[1] <= 0 else entry[0]
 
 
 __all__ = ["BudgetGovernor", "ComplexityResult", "ProgressWatchdog", "PromptOptimizer", "TaskComplexityEngine"]
