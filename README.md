@@ -184,6 +184,8 @@ context = ReviewContext(
 
 旧 `Workflow` 的对象、JSON 和历史空证据行为保持兼容；旧审核、旧 grant、legacy `CLOSED` 和 legacy `VerificationResult` 不会变成 Strict 证明。
 
+legacy `ONE_TIME` 授权必须经过显式消费入口：无 `OneTimeAuthorizationLedger` 时，`check_action_authorization()` 返回 `LEGACY_UNVERIFIED`；进程内 ledger 只保证同一进程的一次性消费，跨进程或可信持久化场景请使用 Strict Workflow。
+
 ### 审核请求与输出
 
 多 Agent 审核命令 `goalanchor review-cycle --request request.json --config config.json` 的请求文件包含以下字段：
@@ -314,7 +316,7 @@ python scripts/sync_skill_bundle.py --check
 | 溯源链 | 嵌入式交付物链：`Source → Object → ELF → BIN/FW → Flashed Artifact → Device Under Test`，每级对应产物类型与验证动作。 |
 | ReviewContext | 一次审核的固定上下文：目标、要求、约束、证据引用与被审方案；可选携带 `evidence_digests` 绑定证据内容。 |
 | 审核三角色 | Reviewer 独立审 → Arbiter 汇总 → Meta Reviewer 复核仲裁；一轮未收敛可进入下一轮，受 `max_rounds` 约束。 |
-| Strict / Legacy | 同一契约与证据模型下的两条路径：`Workflow`（legacy，保持既有行为）与 `StrictWorkflow`（可信控制侧绑定基线、证据、审核与授权）。 |
+| Strict / Legacy | 同一契约与证据模型下的两条路径：`Workflow`（legacy；`ONE_TIME` 需显式消费入口）与 `StrictWorkflow`（可信控制侧绑定基线、证据、审核与授权）。 |
 | 审核包 packet | 派发给某个角色的完整输入：角色提示词、上下文、既往轮次与收据；收据校验防止结果被替换。 |
 
 以上术语在测试与源码中都有对应实现（`gates.py`、`evidence.py`、`closure.py`、`review_service.py`），以代码为准。
