@@ -1,0 +1,67 @@
+{
+  "task_id": "GA-V092-PUBLISH",
+  "state": "PUBLISHED_AND_PUBLIC_DOWNLOADS_VERIFIED",
+  "version": "0.9.2",
+  "release_date": "2026-10-24",
+  "repository": "chenyuyu6666/GoalAnchor",
+  "base_tag": "v0.9.1",
+  "base_commit": "f8a94f74e5557ff70b1a71349d844d5d3e03d679",
+  "release_commit": "151738a47cc88f5b4cd96c1d25519c38e9005a79",
+  "tag_name": "v0.9.2",
+  "tag_message": "v0.9.2",
+  "release_title": "v0.9.2",
+  "release_notes_file": "delivery\\v0.9.2\\release-notes.md",
+  "assets": [
+    {
+      "name": "goalanchor-0.9.2-py3-none-any.whl",
+      "size_bytes": 206987,
+      "sha256": "b2c514bfd2bb611fa7471d9b119b2bb429cedaed4baeed8d0378922089f5d36e"
+    },
+    {
+      "name": "goalanchor-0.9.2.tar.gz",
+      "size_bytes": 570347,
+      "sha256": "96dab1af24fbd401473f6da43b72bf4e267fda75d53d77b24971f06ff5564280"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size_bytes": 192,
+      "sha256": "8ea44587d873c62aa5e07265af6b6f7c6a6d2a82d2aae79fca84cc1d904031ae"
+    }
+  ],
+  "expected_release_state": {
+    "draft": false,
+    "prerelease": false,
+    "published_at_required": true
+  },
+  "tag_object_sha": "683dc001a46ca65b7538198cb407ec9f7781ce27",
+  "tag_pushed": true,
+  "release_id": 422487618,
+  "release_url": "https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.9.2",
+  "published_at": "2026-10-24T03:20:44Z",
+  "draft": false,
+  "prerelease": false,
+  "immutable": false,
+  "public_unauthenticated_download_verified": true,
+  "gitee_mirror": {
+    "repository_url": "https://gitee.com/chen-yuyu6666/goal-anchor.git",
+    "direction": "github-to-gitee",
+    "status": "PENDING",
+    "tag_name": "v0.9.2",
+    "tag_object_sha": "683dc001a46ca65b7538198cb407ec9f7781ce27",
+    "peeled_commit_sha": "151738a47cc88f5b4cd96c1d25519c38e9005a79",
+    "assets_uploaded": false
+  },
+  "task_status": "COMPLETE_GITHUB_RELEASE_PUBLIC_DOWNLOADS_VERIFIED; GITEE_MIRROR_PENDING",
+  "verification": {
+    "pytest": "PASS",
+    "ruff": "PASS",
+    "mypy": "PASS_39_FILES",
+    "skill_bundle": "IN_SYNC",
+    "pi_desktop_node": "PASS_13_OF_13",
+    "wheel_metadata": "PASS_0.9.2",
+    "sdist_metadata": "PASS_0.9.2",
+    "public_wheel_sha256": "MATCH",
+    "public_sdist_sha256": "MATCH",
+    "public_sha256sums_sha256": "MATCH"
+  }
+}
