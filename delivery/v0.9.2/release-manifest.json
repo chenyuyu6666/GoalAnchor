@@ -45,13 +45,16 @@
   "gitee_mirror": {
     "repository_url": "https://gitee.com/chen-yuyu6666/goal-anchor.git",
     "direction": "github-to-gitee",
-    "status": "PENDING",
+    "status": "TAG_SYNCED_MASTER_SYNCED",
     "tag_name": "v0.9.2",
     "tag_object_sha": "683dc001a46ca65b7538198cb407ec9f7781ce27",
     "peeled_commit_sha": "151738a47cc88f5b4cd96c1d25519c38e9005a79",
-    "assets_uploaded": false
+    "assets_uploaded": false,
+    "master_sha": "d512c72e5f05af854f60a46732c973a0d614d20b",
+    "push_exit_code": 0,
+    "readback_verified": true
   },
-  "task_status": "COMPLETE_GITHUB_RELEASE_PUBLIC_DOWNLOADS_VERIFIED; GITEE_MIRROR_PENDING",
+  "task_status": "COMPLETE_GITHUB_RELEASE_PUBLIC_DOWNLOADS_VERIFIED_AND_GITEE_MIRROR_SYNCED",
   "verification": {
     "pytest": "PASS",
     "ruff": "PASS",
