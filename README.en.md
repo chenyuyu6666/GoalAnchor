@@ -184,6 +184,8 @@ Nonempty digests must cover every evidence reference exactly once and be 64-char
 
 Legacy `Workflow` objects, JSON, and historical empty-evidence behavior remain compatible. Legacy reviews, grants, `CLOSED`, and `VerificationResult` do not become Strict proof.
 
+Legacy `ONE_TIME` authorization requires an explicit consumption entry point: without a `OneTimeAuthorizationLedger`, `check_action_authorization()` returns `LEGACY_UNVERIFIED`. The in-process ledger only guarantees one-time use within one process; use Strict Workflow for trusted durable or cross-process consumption.
+
 ### Review request and output
 
 The multi-Agent review command `goalanchor review-cycle --request request.json --config config.json` takes a request file with these fields:
@@ -314,7 +316,7 @@ python scripts/sync_skill_bundle.py --check
 | Provenance chain | Embedded-delivery chain: `Source → Object → ELF → BIN/FW → Flashed Artifact → Device Under Test`. |
 | ReviewContext | The frozen context of one review: goal, prompt, constraints, evidence refs, and the candidate; optionally binds evidence content via `evidence_digests`. |
 | Review roles | Reviewer → Arbiter → Meta Reviewer per round; unresolved rounds continue until `max_rounds`. |
-| Strict / Legacy | Two paths over the same contract and evidence model: `Workflow` (legacy, unchanged behavior) and `StrictWorkflow` (trusted-controller binding of baselines, evidence, review, and authorization). |
+| Strict / Legacy | Two paths over the same contract and evidence model: `Workflow` (legacy; `ONE_TIME` requires explicit consumption) and `StrictWorkflow` (trusted-controller binding of baselines, evidence, review, and authorization). |
 | Review packet | The full input handed to one role: role prompt, context, prior rounds, and receipts; receipt validation prevents result substitution. |
 
 All of these terms have concrete implementations in `gates.py`, `evidence.py`, `closure.py`, and `review_service.py`; the code is authoritative.
@@ -434,7 +436,7 @@ Beyond the built-in dispatchers, any command that reads one JSON line from stdin
 
 - Versions follow [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`.
 - The current `0.9.x` line provides both legacy `Workflow` and `StrictWorkflow`; legacy objects, JSON, and historical empty-evidence behavior remain compatible.
-- Legacy `ONE_TIME` authorization has known limits and must not be used as strict authorization or closure proof; use `Workflow` / `workflow` for trusted gating.
+- Legacy `ONE_TIME` authorization is fail-closed without an explicit consumption ledger and must not be used as strict authorization or closure proof; use the explicit in-process ledger or Strict Workflow for trusted gating.
 - Native host claims require per-host testing. Fixtures, controlled callbacks, and shared TextHostAdapter tests do not replace native acceptance.
 - See [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases) and [CHANGELOG](CHANGELOG.md) for published versions and assets.
 

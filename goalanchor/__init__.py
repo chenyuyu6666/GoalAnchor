@@ -70,6 +70,7 @@ from .decision import (
     AuthorizationScope,
     DecisionActor,
     DecisionRecord,
+    OneTimeAuthorizationLedger,
     check_action_authorization,
 )
 from .evidence import (
@@ -255,6 +256,7 @@ __all__ = [
     "AuthorizationScope",
     "DecisionActor",
     "DecisionRecord",
+    "OneTimeAuthorizationLedger",
     "check_action_authorization",
     "VerificationOutcome",
     "VerificationResult",

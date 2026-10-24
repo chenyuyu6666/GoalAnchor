@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import pytest
 
 from goalanchor.efficiency_governance import (
@@ -24,6 +26,14 @@ def test_complexity_engine_is_explainable_and_bounded() -> None:
     }
 
 
+@pytest.mark.parametrize("value", [0, 1, "false", None, []])
+def test_complexity_engine_rejects_non_boolean_uncertainty(value: object) -> None:
+    with pytest.raises(ValueError, match="blocking_uncertainty"):
+        TaskComplexityEngine().assess(
+            dependency_count=0, risk="LOW", blocking_uncertainty=value, evidence_change_count=0
+        )
+
+
 def test_budget_governor_unknown_usage_fails_closed() -> None:
     governor = BudgetGovernor(token_budget=100, time_budget_seconds=5)
     assert governor.allow(tokens_used=None, elapsed_seconds=1) is False
@@ -31,6 +41,16 @@ def test_budget_governor_unknown_usage_fails_closed() -> None:
     assert governor.allow(tokens_used=50, elapsed_seconds=1) is True
     assert governor.allow(tokens_used=101, elapsed_seconds=1) is False
     assert governor.reason == "TOKEN_BUDGET_EXCEEDED"
+
+
+@pytest.mark.parametrize(
+    ("tokens_used", "elapsed_seconds"),
+    [(-1, 1), (True, 1), (0, -1), (0, "1"), (0, math.nan)],
+)
+def test_budget_governor_rejects_invalid_usage(tokens_used: object, elapsed_seconds: object) -> None:
+    governor = BudgetGovernor(token_budget=100, time_budget_seconds=5)
+    assert governor.allow(tokens_used=tokens_used, elapsed_seconds=elapsed_seconds) is False  # type: ignore[arg-type]
+    assert governor.reason == "INVALID_USAGE"
 
 
 def test_progress_watchdog_detects_repeated_operations() -> None:
@@ -41,6 +61,12 @@ def test_progress_watchdog_detects_repeated_operations() -> None:
     assert watchdog.reason == "REPEATED_OPERATION"
 
 
+@pytest.mark.parametrize("operation,fingerprint", [("", "a"), (" ", "a"), ("read", ""), ("read", " "), ([], {})])
+def test_progress_watchdog_rejects_invalid_observations(operation: object, fingerprint: object) -> None:
+    with pytest.raises(ValueError):
+        ProgressWatchdog().observe(operation, fingerprint)  # type: ignore[arg-type]
+
+
 def test_prompt_optimizer_reuses_only_matching_context() -> None:
     optimizer = PromptOptimizer()
     optimizer.remember("ctx-1", "answer-1", token_saving=10)
@@ -48,3 +74,5 @@ def test_prompt_optimizer_reuses_only_matching_context() -> None:
     assert optimizer.reuse("ctx-2") is None
     with pytest.raises(ValueError):
         optimizer.remember("ctx-1", "answer-2", token_saving=-1)
+    with pytest.raises(ValueError):
+        optimizer.remember("ctx-1", "answer-2", token_saving=0)

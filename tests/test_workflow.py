@@ -157,6 +157,19 @@ def test_strict_chain_executes_once_and_closes_only_with_observation(tmp_path: P
     assert runtime.close("G1")["state"] == "CLOSED"
 
 
+def test_one_time_grant_cannot_dispatch_a_second_attempt(tmp_path: Path) -> None:
+    runtime, base, user, observer = setup_workflow(tmp_path)
+    assert review(runtime, observer)["status"] == "PASSED"
+    approve(runtime, operation(tmp_path, base), user)
+    calls = []
+
+    first = runtime.execute("O1", "attempt-1", lambda actual: calls.append(actual.fingerprint) or {"exit_code": 0})
+    assert first["state"] == "SUCCEEDED"
+    with pytest.raises(ContractValidationError):
+        runtime.execute("O1", "attempt-2", lambda actual: calls.append(actual.fingerprint) or {"exit_code": 0})
+    assert len(calls) == 1
+
+
 def test_forged_answer_cannot_issue_grant(tmp_path: Path) -> None:
     runtime, base, user, observer = setup_workflow(tmp_path)
     review(runtime, observer)
