@@ -6,6 +6,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from threading import Lock
 from typing import Any, TypeVar
 
 from .core import ContractValidationError, LifecycleState
@@ -240,25 +241,61 @@ def check_action_authorization(
     scope_ref: str,
     at: str,
     authorizations: Sequence[Authorization] = (),
+    one_time_ledger: OneTimeAuthorizationLedger | None = None,
 ) -> GateResult:
-    """Apply the default action policy and any explicit scoped grants."""
+    """Apply policy and explicit grants, fail-closed for legacy one-time grants."""
 
     requested_action = _enum(action, ActionType, "action")
     requested_scope = _enum(scope, AuthorizationScope, "scope")
     requested_ref = _text(scope_ref, "scope_ref")
     _instant(at, "at")
+    if one_time_ledger is not None and not isinstance(one_time_ledger, OneTimeAuthorizationLedger):
+        raise ContractValidationError("one_time_ledger must be a OneTimeAuthorizationLedger")
     if requested_action in _AUTO_ACTIONS:
         return GateResult(gate_id=GateId.EXECUTE, passed=True)
+    legacy_unverified: GateResult | None = None
+    one_time_failure: GateResult | None = None
     for authorization in tuple(authorizations):
         if not isinstance(authorization, Authorization):
             raise ContractValidationError("authorizations must contain Authorization values")
-        if authorization.is_valid_for(
+        if not authorization.is_valid_for(
             requested_action,
             requested_scope,
             requested_ref,
             at=at,
         ):
-            return GateResult(gate_id=GateId.EXECUTE, passed=True)
+            continue
+        if authorization.kind is AuthorizationKind.ONE_TIME:
+            if one_time_ledger is None:
+                legacy_unverified = GateResult(
+                    gate_id=GateId.EXECUTE,
+                    passed=False,
+                    findings=(
+                        GateFinding(
+                            code="LEGACY_UNVERIFIED",
+                            message="legacy ONE_TIME authorization requires an explicit consumption ledger",
+                            field="authorization",
+                        ),
+                    ),
+                    next_state=LifecycleState.HUMAN_DECISION_REQUIRED,
+                )
+                continue
+            one_time_result = one_time_ledger.consume(
+                authorization,
+                requested_action,
+                requested_scope,
+                requested_ref,
+                at=at,
+            )
+            if one_time_result.passed:
+                return one_time_result
+            one_time_failure = one_time_result
+            continue
+        return GateResult(gate_id=GateId.EXECUTE, passed=True)
+    if one_time_failure is not None:
+        return one_time_failure
+    if legacy_unverified is not None:
+        return legacy_unverified
     code = (
         "EXPLICIT_CONFIRMATION_REQUIRED"
         if requested_action in _EXPLICIT_ACTIONS
@@ -278,6 +315,72 @@ def check_action_authorization(
     )
 
 
+class OneTimeAuthorizationLedger:
+    """Explicit, in-process consumption guard for legacy one-time grants.
+
+    ``Authorization.is_valid_for`` remains a compatibility-only eligibility
+    check.  Callers that need one-time behavior in the legacy API must use
+    this ledger, or use the persistent Strict Workflow grant path instead.
+    This ledger is intentionally not a cross-process trust boundary.
+    """
+
+    def __init__(self) -> None:
+        self._consumed: set[str] = set()
+        self._lock = Lock()
+
+    def is_consumed(self, authorization_id: str) -> bool:
+        """Return whether an authorization ID has been consumed by this ledger."""
+
+        normalized_id = _text(authorization_id, "authorization_id")
+        with self._lock:
+            return normalized_id in self._consumed
+
+    def consume(
+        self,
+        authorization: Authorization,
+        action: ActionType,
+        scope: AuthorizationScope,
+        scope_ref: str,
+        *,
+        at: str,
+    ) -> GateResult:
+        """Atomically validate and consume one legacy ``ONE_TIME`` grant."""
+
+        if not isinstance(authorization, Authorization):
+            raise ContractValidationError("authorization must be an Authorization")
+        if authorization.kind is not AuthorizationKind.ONE_TIME:
+            raise ContractValidationError("consume requires a ONE_TIME authorization")
+        with self._lock:
+            if authorization.authorization_id in self._consumed:
+                return GateResult(
+                    gate_id=GateId.EXECUTE,
+                    passed=False,
+                    findings=(
+                        GateFinding(
+                            code="AUTHORIZATION_ALREADY_CONSUMED",
+                            message="the one-time authorization has already been consumed",
+                            field="authorization",
+                        ),
+                    ),
+                    next_state=LifecycleState.HUMAN_DECISION_REQUIRED,
+                )
+            if not authorization.is_valid_for(action, scope, scope_ref, at=at):
+                return GateResult(
+                    gate_id=GateId.EXECUTE,
+                    passed=False,
+                    findings=(
+                        GateFinding(
+                            code="AUTHORIZATION_REQUIRED",
+                            message="the one-time authorization is not valid for this action",
+                            field="authorization",
+                        ),
+                    ),
+                    next_state=LifecycleState.HUMAN_DECISION_REQUIRED,
+                )
+            self._consumed.add(authorization.authorization_id)
+            return GateResult(gate_id=GateId.EXECUTE, passed=True)
+
+
 __all__ = [
     "ActionType",
     "Authorization",
@@ -285,5 +388,6 @@ __all__ = [
     "AuthorizationScope",
     "DecisionActor",
     "DecisionRecord",
+    "OneTimeAuthorizationLedger",
     "check_action_authorization",
 ]
