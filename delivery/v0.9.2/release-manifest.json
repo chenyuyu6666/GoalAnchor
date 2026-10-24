@@ -45,16 +45,23 @@
   "gitee_mirror": {
     "repository_url": "https://gitee.com/chen-yuyu6666/goal-anchor.git",
     "direction": "github-to-gitee",
-    "status": "TAG_SYNCED_MASTER_SYNCED",
+    "status": "RELEASE_AND_ASSETS_VERIFIED",
     "tag_name": "v0.9.2",
     "tag_object_sha": "683dc001a46ca65b7538198cb407ec9f7781ce27",
     "peeled_commit_sha": "151738a47cc88f5b4cd96c1d25519c38e9005a79",
-    "assets_uploaded": false,
+    "assets_uploaded": true,
+    "release_id": 1236013,
+    "release_url": "https://gitee.com/chen-yuyu6666/goal-anchor/releases/tag/v0.9.2",
+    "asset_names": [
+      "goalanchor-0.9.2-py3-none-any.whl",
+      "goalanchor-0.9.2.tar.gz",
+      "SHA256SUMS.txt"
+    ],
     "master_sha": "03411c17db2980ea5d798dd7f2562a95042edabb",
     "push_exit_code": 0,
     "readback_verified": true
   },
-  "task_status": "COMPLETE_GITHUB_RELEASE_PUBLIC_DOWNLOADS_VERIFIED_AND_GITEE_MIRROR_SYNCED",
+  "task_status": "COMPLETE_GITHUB_AND_GITEE_RELEASES_PUBLIC_DOWNLOADS_VERIFIED",
   "verification": {
     "pytest": "PASS",
     "ruff": "PASS",
