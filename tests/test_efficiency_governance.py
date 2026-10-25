@@ -126,3 +126,64 @@ def test_efficiency_runtime_fails_closed_on_unknown_usage_and_repeats() -> None:
         elapsed_seconds=0,
     )
     assert repeated.allowed is False and repeated.reason == "REPEATED_OPERATION"
+
+
+class _FixedProvider:
+    def __init__(self, observation) -> None:
+        self._observation = observation
+
+    def latest(self):
+        return self._observation
+
+
+def _observation(**overrides):
+    from goalanchor.efficiency_governance import EfficiencyObservation
+
+    fields = {
+        "dependency_count": 0,
+        "risk": "LOW",
+        "blocking_uncertainty": False,
+        "evidence_change_count": 0,
+        "operation": "review",
+        "operation_fingerprint": "ctx-fixed",
+        "tokens_used": 10,
+        "elapsed_seconds": 1.0,
+    }
+    fields.update(overrides)
+    return EfficiencyObservation(**fields)
+
+
+def test_admit_observation_matches_direct_admit_for_measured_usage() -> None:
+    runtime = EfficiencyRuntime(budget=BudgetGovernor(token_budget=100, time_budget_seconds=10))
+    decision = runtime.admit_observation(_FixedProvider(_observation()))
+    assert decision is not None
+    assert decision.allowed is True
+    assert decision.reason == "WITHIN_BUDGET"
+    assert decision.token_status == "MEASURED"
+    assert decision.tokens_used == 10
+
+
+def test_admit_observation_keeps_missing_usage_unknown_and_fail_closed() -> None:
+    runtime = EfficiencyRuntime(budget=BudgetGovernor(token_budget=100, time_budget_seconds=10))
+    decision = runtime.admit_observation(
+        _FixedProvider(_observation(tokens_used=None, operation_fingerprint="ctx-unknown"))
+    )
+    assert decision is not None
+    assert decision.allowed is False
+    assert decision.reason == "UNKNOWN_USAGE"
+    assert decision.token_status == "UNKNOWN"
+
+
+def test_admit_observation_returns_none_without_observation() -> None:
+    runtime = EfficiencyRuntime(budget=BudgetGovernor(token_budget=100, time_budget_seconds=10))
+    assert runtime.admit_observation(_FixedProvider(None)) is None
+
+
+def test_admit_observation_flags_repeated_operation_from_provider() -> None:
+    runtime = EfficiencyRuntime(budget=BudgetGovernor(token_budget=100, time_budget_seconds=10))
+    runtime.watchdog.repeat_threshold = 1
+    first = runtime.admit_observation(_FixedProvider(_observation()))
+    second = runtime.admit_observation(_FixedProvider(_observation()))
+    assert first is not None and first.allowed is True
+    assert second is not None
+    assert second.allowed is False and second.reason == "REPEATED_OPERATION"

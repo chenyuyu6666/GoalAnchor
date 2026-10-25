@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from typing import Protocol
 
 
 @dataclass(frozen=True)
@@ -134,6 +135,30 @@ class EfficiencyDecision:
     token_status: str
 
 
+@dataclass(frozen=True)
+class EfficiencyObservation:
+    """One measured workflow-boundary observation supplied by a host provider."""
+
+    dependency_count: int
+    risk: str
+    blocking_uncertainty: bool
+    evidence_change_count: int
+    operation: str
+    operation_fingerprint: str
+    tokens_used: int | None
+    elapsed_seconds: float
+
+
+class EfficiencyObservationProvider(Protocol):
+    """Host-neutral supplier of the latest measured efficiency observation.
+
+    ``latest`` returns None while the host has no measured usage yet; a missing
+    token count stays UNKNOWN and blocks budget admission.
+    """
+
+    def latest(self) -> EfficiencyObservation | None: ...
+
+
 @dataclass
 class EfficiencyRuntime:
     """Fail-closed runtime facade for measured efficiency governance.
@@ -181,6 +206,21 @@ class EfficiencyRuntime:
             True, "WITHIN_BUDGET", complexity, tokens_used, elapsed_seconds, False, token_status
         )
 
+    def admit_observation(self, provider: EfficiencyObservationProvider) -> EfficiencyDecision | None:
+        observation = provider.latest()
+        if observation is None:
+            return None
+        return self.admit(
+            dependency_count=observation.dependency_count,
+            risk=observation.risk,
+            blocking_uncertainty=observation.blocking_uncertainty,
+            evidence_change_count=observation.evidence_change_count,
+            operation=observation.operation,
+            operation_fingerprint=observation.operation_fingerprint,
+            tokens_used=observation.tokens_used,
+            elapsed_seconds=observation.elapsed_seconds,
+        )
+
     def reuse_prompt(self, context_fingerprint: str) -> str | None:
         return self.optimizer.reuse(context_fingerprint)
 
@@ -189,6 +229,8 @@ __all__ = [
     "BudgetGovernor",
     "ComplexityResult",
     "EfficiencyDecision",
+    "EfficiencyObservation",
+    "EfficiencyObservationProvider",
     "EfficiencyRuntime",
     "ProgressWatchdog",
     "PromptOptimizer",
