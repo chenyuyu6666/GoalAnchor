@@ -59,12 +59,17 @@ def file_digest(path: Path) -> str:
     return digest.hexdigest()
 
 
+STRICT_ROW_SQL = (
+    "SELECT * FROM records ORDER BY 1,2",
+    "SELECT * FROM events ORDER BY 1,2",
+    "SELECT * FROM strict_proofs ORDER BY 1,2",
+    "SELECT * FROM strict_heads ORDER BY 1,2",
+)
+
+
 def strict_rows(path: Path):
     with sqlite3.connect(path) as db:
-        return tuple(
-            tuple(db.execute(f"SELECT * FROM {table} ORDER BY 1,2").fetchall())
-            for table in ("records", "events", "strict_proofs", "strict_heads")
-        )
+        return tuple(tuple(db.execute(sql).fetchall()) for sql in STRICT_ROW_SQL)
 
 
 def baseline_data():
@@ -620,22 +625,32 @@ def test_strict_snapshot_rejects_json_metadata_with_wrong_numeric_type(tmp_path,
 
 
 @pytest.mark.parametrize(
-    ("table", "column", "trigger", "lookup", "value"),
+    ("table", "column"),
     [
-        ("strict_proofs", "source_seq", "strict_proofs_no_update", "proof_id", 1.5),
-        ("strict_proofs", "lease_generation", "strict_proofs_no_update", "proof_id", 1.5),
-        ("strict_heads", "source_seq", "strict_heads_monotonic", "proof_id", 1.5),
-        ("strict_heads", "generation", "strict_heads_monotonic", "proof_id", 1.5),
+        ("strict_proofs", "source_seq"),
+        ("strict_proofs", "lease_generation"),
+        ("strict_heads", "source_seq"),
+        ("strict_heads", "generation"),
     ],
 )
-def test_strict_snapshot_rejects_sql_numeric_type_corruption(tmp_path, table, column, trigger, lookup, value):
+def test_strict_snapshot_rejects_sql_numeric_type_corruption(tmp_path, table, column):
     path = tmp_path / f"wrong-sql-type-{table}-{column}.db"
     store = WorkflowStore(path)
     proof_id = seed_v2_proof(path)
     with sqlite3.connect(path) as db:
         db.execute("PRAGMA foreign_keys=OFF")
-        db.execute(f"DROP TRIGGER {trigger}")
-        db.execute(f"UPDATE {table} SET {column}=? WHERE {lookup}=?", (value, proof_id))
+        if table == "strict_proofs" and column == "source_seq":
+            db.execute("DROP TRIGGER strict_proofs_no_update")
+            db.execute("UPDATE strict_proofs SET source_seq=? WHERE proof_id=?", (1.5, proof_id))
+        elif table == "strict_proofs" and column == "lease_generation":
+            db.execute("DROP TRIGGER strict_proofs_no_update")
+            db.execute("UPDATE strict_proofs SET lease_generation=? WHERE proof_id=?", (1.5, proof_id))
+        elif table == "strict_heads" and column == "source_seq":
+            db.execute("DROP TRIGGER strict_heads_monotonic")
+            db.execute("UPDATE strict_heads SET source_seq=? WHERE proof_id=?", (1.5, proof_id))
+        else:
+            db.execute("DROP TRIGGER strict_heads_monotonic")
+            db.execute("UPDATE strict_heads SET generation=? WHERE proof_id=?", (1.5, proof_id))
 
     with pytest.raises(WorkflowStoreConflict) as captured:
         store.read_strict_snapshot("goal-1")

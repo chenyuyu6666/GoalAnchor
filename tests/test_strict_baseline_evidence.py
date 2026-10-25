@@ -736,8 +736,12 @@ def test_strict_snapshot_keeps_one_view_during_concurrent_evidence_advance(tmp_p
         runtime, baseline, observer, provider, evidence_id="shared-evidence"
     )
     before = runtime.store.read_strict_snapshot(baseline.goal_id)
+    journal_mode_pragma = {
+        "DELETE": "PRAGMA journal_mode=DELETE",
+        "WAL": "PRAGMA journal_mode=WAL",
+    }[journal_mode_value]
     with sqlite3.connect(runtime.store.path) as db:
-        actual_mode = db.execute(f"PRAGMA journal_mode={journal_mode_value}").fetchone()[0].upper()
+        actual_mode = db.execute(journal_mode_pragma).fetchone()[0].upper()
     assert actual_mode == journal_mode_value
 
     new_snapshot = EvidenceSnapshot.capture(
@@ -1045,11 +1049,18 @@ def test_sqlite_commit_failure_after_writes_rolls_back_and_maps_unavailable(monk
     before_records = generic_snapshot(runtime)
     before_audit = runtime.store.audit()
 
+    snapshot_table_sql = (
+        ("events", "SELECT * FROM events"),
+        ("records", "SELECT * FROM records"),
+        ("strict_proofs", "SELECT * FROM strict_proofs"),
+        ("strict_heads", "SELECT * FROM strict_heads"),
+    )
+
     def database_rows():
         with sqlite3.connect(runtime.store.path) as db:
             return tuple(
-                (table, tuple(sorted(db.execute(f"SELECT * FROM {table}").fetchall(), key=repr)))
-                for table in ("events", "records", "strict_proofs", "strict_heads")
+                (table, tuple(sorted(db.execute(sql).fetchall(), key=repr)))
+                for table, sql in snapshot_table_sql
             )
 
     before_database = database_rows()
