@@ -49,6 +49,17 @@ class TrustedBindingStale(Exception):
     """The requested runtime binding no longer matches the live host identity."""
 
 class TrustedReviewProofProvider(Protocol):
+    """Authenticate host review sources and return goalanchor.review-proof/v1.
+
+    The composition root supplies this service; it is never a model-facing
+    validator. It authenticates the embedded host.review.completed sources,
+    their actual packet/result transport, independent sessions and live
+    principal/account provenance. normalize_review_proof only checks binding
+    and cannot substitute for that authentication. Return None or reject when
+    provenance is absent. Persisted claims, including expiry, stay immutable;
+    subsequent verification must not mint a longer-lived replacement proof.
+    """
+
     def verify(
         self,
         review: dict[str, Any],

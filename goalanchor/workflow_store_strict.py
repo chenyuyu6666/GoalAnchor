@@ -25,6 +25,12 @@ from .workflow_store_core import (
     _key_component,
     _time,
 )
+from .workflow_store_review import (
+    _require_schema,
+    commit_review_bound,
+    initialize_review_schema,
+    read_review_attestation,
+)
 
 _LOGGER = logging.getLogger("goalanchor.workflow_store")
 _STRICT_EVENT_HISTORY_MAX_ROWS = 100_000
@@ -44,6 +50,53 @@ class WorkflowStore(WorkflowStoreCore):
         ] = OrderedDict()
         self._strict_event_decode_cache_bytes = 0
         self._strict_event_decode_cache_lock = RLock()
+        initialize_review_schema(self)
+
+    def get_review_attestation(self, goal_id: str, round_number: int) -> Payload | None:
+        return read_review_attestation(self, goal_id, round_number)
+
+    def commit_review_bound(
+        self, changes: Sequence[tuple[str, str, Payload]], expected: Expected,
+        events: Sequence[tuple[str, Payload]], *, valid_until: str, clock: Callable[[], str],
+        lease_factory: Callable[[str], Any], expected_runtime_digest: str, expected_lease_generation: int,
+        attestation: Payload | None = None,
+    ) -> bool:
+        return commit_review_bound(
+            self, changes, expected, events, valid_until=valid_until, clock=clock,
+            lease_factory=lease_factory, expected_runtime_digest=expected_runtime_digest,
+            expected_lease_generation=expected_lease_generation, attestation=attestation,
+        )
+
+    def dispatch_review_bound(
+        self, expected: Expected, *, valid_until: str, clock: Callable[[], str],
+        lease_factory: Callable[[str], Any], expected_runtime_digest: str,
+        expected_lease_generation: int, dispatch: Callable[[], Payload],
+    ) -> Payload:
+        """Linearize admission under the writer lock, retain identity through dispatch.
+
+        Consumption is already durable. Release the SQLite writer before calling
+        external code; no provider callbacks run inside this final admission.
+        """
+        with self._strict_transaction(lease_factory, expected_runtime_digest,
+                                      expected_lease_generation, valid_until, clock) as (db, _lease):
+            _require_schema(db)
+            self._strict_check(db, expected)
+            for (raw,) in db.execute("SELECT payload FROM events ORDER BY seq"):
+                source = strict_loads(raw)
+                if source.get("kind") == "user.cancel" and ("goal", source.get("subject")) in expected:
+                    raise WorkflowStoreConflict("Strict goal has been cancelled", "STALE")
+            # Revocation events cannot be erased by resetting a scope projection.
+            for (kind, key), _digest in expected.items():
+                if kind != "strict_grant":
+                    continue
+                for (raw,) in db.execute("SELECT payload FROM events ORDER BY seq"):
+                    event = strict_loads(raw)
+                    if event.get("kind") == "user.revoke" and event.get("payload", {}).get("grant_id") == key:
+                        raise WorkflowStoreConflict("Strict dispatch grant was revoked", "STALE")
+            db.commit()
+            if _time(clock()) >= _time(valid_until):
+                raise WorkflowStoreConflict("Strict proof expired at dispatch boundary", "STALE")
+            return dispatch()
 
     def _cached_strict_source_event(
         self, seq: int, event_id: str, payload_digest: str
@@ -1385,7 +1438,6 @@ class WorkflowStore(WorkflowStoreCore):
         committed = False
         db = sqlite3.connect(self.path, timeout=self.timeout, isolation_level=None)
         try:
-            db.execute('PRAGMA busy_timeout=' + str(min(2147483647, max(1, int(self.timeout * 1000)))))
             db.execute('PRAGMA foreign_keys=ON')
             if db.execute('PRAGMA foreign_keys').fetchone()[0] != 1:
                 raise ContractValidationError('SQLite foreign-key enforcement is unavailable')

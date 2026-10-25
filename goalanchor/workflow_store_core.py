@@ -25,7 +25,7 @@ Expected = Mapping[tuple[str, str], str | None]
 _GOAL_GENERATION_RECORD_KINDS = frozenset({
     'goal', 'baseline', 'evidence', 'strict_evidence', 'strict_operation', 'question', 'observation', 'risk',
     'strict_review', 'strict_question',
-    'strict_scope', 'strict_recovery', 'strict_risk',
+    'strict_scope',
 })
 class WorkflowStoreConflict(ContractValidationError):
     """A strict store conflict with a stable fail-closed outcome."""
@@ -226,7 +226,6 @@ class WorkflowStoreCore:
             raise ContractValidationError('Unsupported workflow schema')
         db = sqlite3.connect(self.path, timeout=self.timeout, isolation_level=None)
         try:
-            db.execute('PRAGMA busy_timeout=' + str(min(2147483647, max(1, int(self.timeout * 1000)))))
             db.execute('PRAGMA foreign_keys=ON')
             if db.execute('PRAGMA foreign_keys').fetchone()[0] != 1:
                 raise ContractValidationError('SQLite foreign-key enforcement is unavailable')
@@ -261,7 +260,6 @@ class WorkflowStoreCore:
     def _transaction(self) -> Iterator[sqlite3.Connection]:
         db = sqlite3.connect(self.path, timeout=self.timeout, isolation_level=None)
         try:
-            db.execute('PRAGMA busy_timeout=' + str(min(2147483647, max(1, int(self.timeout * 1000)))))
             db.execute('PRAGMA foreign_keys=ON')
             if db.execute('PRAGMA foreign_keys').fetchone()[0] != 1:
                 raise ContractValidationError('SQLite foreign-key enforcement is unavailable')
@@ -291,7 +289,6 @@ class WorkflowStoreCore:
         uri = Path(self.path).resolve().as_uri() + '?mode=ro'
         db = sqlite3.connect(uri, uri=True, timeout=self.timeout, isolation_level=None)
         try:
-            db.execute('PRAGMA busy_timeout=' + str(min(2147483647, max(1, int(self.timeout * 1000)))))
             db.execute('PRAGMA query_only=ON')
             db.execute('BEGIN')
             yield db
@@ -403,6 +400,7 @@ class WorkflowStoreCore:
             if any(existing):
                 raise ContractValidationError('Partial event batch replay')
             self._check(db, expected)
+            self._check_strict_grant_lifecycle(db, changes)
             seen = set()
             affected_goals = set()
             for kind, key, payload in changes:
@@ -423,10 +421,53 @@ class WorkflowStoreCore:
                     raise ContractValidationError('Workflow dependency expired before commit')
             return True
 
+    @staticmethod
+    def _check_strict_grant_lifecycle(db: sqlite3.Connection,
+                                      changes: Sequence[tuple[str, str, Payload]]) -> None:
+        """Immutable events, rather than mutable state, fence Strict grant reuse."""
+        grants = [value for kind, _key, value in changes
+                  if kind == "strict_grant" and value.get("state") in ("ACTIVE", "CONSUMED")]
+        if not grants:
+            return
+        for (raw,) in db.execute('SELECT payload FROM events ORDER BY seq'):
+            event = json.loads(raw)
+            if event.get("kind") == "user.cancel" and any(
+                grant.get("goal_id") == event.get("subject") for grant in grants
+            ):
+                raise WorkflowStoreConflict('Strict goal has been cancelled', 'STALE')
+            payload = event.get("payload", {})
+            if not isinstance(payload, dict):
+                raise WorkflowStoreConflict('Malformed immutable grant history', 'UNTRUSTED')
+            for grant in grants:
+                identity = grant.get("authorization_id")
+                if event.get("kind") == "controller.strict.grant.consume" and payload.get("grant_id") == identity:
+                    raise WorkflowStoreConflict('Strict grant has already been consumed', 'CONFLICT')
+                if event.get("kind") == "user.revoke" and payload.get("grant_id") in (
+                    identity, grant.get("parent_id") or identity,
+                ):
+                    raise WorkflowStoreConflict('Strict grant or parent has been revoked', 'STALE')
+
     def audit(self) -> tuple[Payload, ...]:
         with self._transaction() as db:
             return tuple(dict(seq=r[0], event_id=r[1], payload=json.loads(r[2]))
                          for r in db.execute('SELECT seq,event_id,payload FROM events ORDER BY seq'))
+
+    def read_events(self, *, kind: str | None = None, subject: str | None = None) -> tuple[Payload, ...]:
+        """Read the immutable event journal without acquiring a writer or changing journal mode."""
+        try:
+            with self._read_transaction() as db:
+                rows = tuple(json.loads(row[0]) for row in db.execute('SELECT payload FROM events ORDER BY seq'))
+        except sqlite3.DatabaseError as exc:
+            raise WorkflowStoreConflict('Immutable event history is unavailable', 'UNAVAILABLE') from exc
+        except (TypeError, ValueError) as exc:
+            raise WorkflowStoreConflict('Immutable event history is malformed', 'UNTRUSTED') from exc
+        if any(not isinstance(event, dict) for event in rows):
+            raise WorkflowStoreConflict('Immutable event entry must be an object', 'UNTRUSTED')
+        return tuple(
+            event for event in rows
+            if (kind is None or event.get('kind') == kind)
+            and (subject is None or event.get('subject') == subject)
+        )
 
     def get_event(self, event_id: str) -> Payload | None:
         with self._transaction() as db:
