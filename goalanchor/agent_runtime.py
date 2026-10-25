@@ -14,7 +14,7 @@ import os
 import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field, fields, replace
 from enum import Enum
 from threading import Lock
 from typing import Any, Protocol, TypeVar
@@ -43,10 +43,14 @@ def _parse_result(
     agent_id: str,
     parse: Callable[[Mapping[str, Any]], _ResultT],
     payload: Any,
+    *,
+    allowed_fields: frozenset[str] | None = None,
 ) -> _ResultT:
     """Parse one adapter payload, mapping schema mismatches to a clean error."""
 
     try:
+        if isinstance(payload, Mapping) and allowed_fields is not None:
+            payload = {key: value for key, value in payload.items() if key in allowed_fields}
         return parse(payload)
     except (TypeError, ValueError) as exc:
         snippet = json.dumps(payload, ensure_ascii=False)[:200] if isinstance(payload, Mapping) else repr(payload)[:200]
@@ -563,7 +567,10 @@ def run_review_cycle_with_adapter(
             dispute_packet=dispute,
         )
         return _parse_result(
-            reviewer_id, ReviewerResult.from_dict, adapter.invoke(request)
+            reviewer_id,
+            ReviewerResult.from_dict,
+            adapter.invoke(request),
+            allowed_fields=frozenset(field.name for field in fields(ReviewerResult)),
         )
 
     def reviewer_batch_call(
@@ -598,7 +605,10 @@ def run_review_cycle_with_adapter(
             reviewer_results=results,
         )
         return _parse_result(
-            "arbiter", ArbiterResult.from_dict, adapter.invoke(request)
+            "arbiter",
+            ArbiterResult.from_dict,
+            adapter.invoke(request),
+            allowed_fields=frozenset(field.name for field in fields(ArbiterResult)),
         )
 
     def meta_review_call(
@@ -617,7 +627,10 @@ def run_review_cycle_with_adapter(
             reviewer_results=reviewer_results,
         )
         return _parse_result(
-            "meta-reviewer", MetaReviewResult.from_dict, adapter.invoke(request)
+            "meta-reviewer",
+            MetaReviewResult.from_dict,
+            adapter.invoke(request),
+            allowed_fields=frozenset(field.name for field in fields(MetaReviewResult)),
         )
 
     result = run_review_cycle(
