@@ -299,5 +299,28 @@
       "tokens_used": null
     }
   ],
+  "real_host_samples": [
+    {
+      "boundary": "opportunistic real dispatch, not the fixed-task baseline matrix; recorded without new model calls",
+      "date": "2026-10-24",
+      "host": "codex",
+      "model": "gpt-6-astra",
+      "roles": "reviewer-1, reviewer-2, arbiter, meta_reviewer",
+      "tokens_used_total": 29991,
+      "outcome": "WARN",
+      "source": "audit/real-codex-review-v1.0.json"
+    },
+    {
+      "boundary": "host-reported single-turn measurement on app-server protocol probe",
+      "date": "2026-10-25",
+      "host": "zcode",
+      "model": "ark-code-latest",
+      "roles": "single fixed-prompt turn",
+      "tokens_used_total": 3140,
+      "elapsed_seconds": 17.4,
+      "tool_calls": 0,
+      "source": "audit/zcode-protocol-final-20261025.json"
+    }
+  ],
   "schema": "goalanchor.efficiency-baseline/v1"
 }

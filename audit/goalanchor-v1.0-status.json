@@ -9,12 +9,12 @@
   "status_rule": "Release delivery and controlled-core PASS do not imply native-host or real-model completion.",
   "phases": {
     "P0_baseline_and_matrix": "PARTIAL/BOUNDED",
-    "P1_strict_append_only_review": "PARTIAL/BOUNDED",
-    "P2_strict_lifecycle": "PARTIAL/BOUNDED",
-    "P3_host_neutral_protocol": "PARTIAL/BOUNDED",
+    "P1_strict_append_only_review": "IMPLEMENTED_AND_VERIFIED (offline storage boundary; native provenance remains unverified)",
+    "P2_strict_lifecycle": "PARTIAL/BOUNDED (offline semantics complete; real principal/account/session binding awaits native hosts)",
+    "P3_host_neutral_protocol": "IMPLEMENTED_AND_VERIFIED (all five public interfaces exist incl. EfficiencyObservationProvider; native bindings remain PARTIAL)",
     "P4_native_hosts": "PARTIAL/BOUNDED",
-    "P5_efficiency_baseline": "PARTIAL/BOUNDED",
-    "P6_efficiency_components": "PARTIAL/BOUNDED",
+    "P5_efficiency_baseline": "PARTIAL/BOUNDED (offline baseline + opportunistic real samples recorded; fixed-task real baseline pending)",
+    "P6_efficiency_components": "PARTIAL/BOUNDED (five components, reuse rule and admission facade done; before/after optimization experiments await real runtime)",
     "P7_final_release": "DEFERRED"
   },
   "implemented_and_verified": [
@@ -23,6 +23,7 @@
     "AgentRuntime tolerates non-critical future result fields by role-level projection",
     "Per-round strict_review_chain append records and strict_review_head CAS projection",
     "Strict review chain/head corruption is detected fail-closed",
+    "Strict review proof/head append-only storage with atomic attestation, replay, competing-writer serialization, two-process single-commit and crash-rollback regressions",
     "Strict authorization question and one-time grant",
     "Strict scope grant and revocation",
     "Strict accepted-risk record and second-round disposition",
@@ -32,19 +33,20 @@
     "Strict question transition and presentation proof",
     "Strict resume transport is bound and leaves recovery pending reconcile",
     "Strict observation reuse requires unchanged criterion and signed source",
+    "Host-neutral public interfaces: host capability descriptor, TrustedRuntimeBindingProvider, TrustedReviewProofProvider, review delivery proof, EfficiencyObservationProvider",
+    "EfficiencyRuntime fail-closed admission facade with UNKNOWN token handling and provider-fed observations",
     "Legacy Workflow compatibility regression suite",
-    "Offline efficiency governance primitives and deterministic baseline",
-    "EfficiencyRuntime fail-closed admission facade with UNKNOWN token handling"
+    "Offline efficiency governance primitives and deterministic baseline"
   ],
   "verification": {
-    "pytest": "PASS",
+    "pytest": "PASS (1298 passed, exit 0; re-verified after Mimosa remediation and efficiency provider slice)",
     "ruff": "PASS",
-    "mypy": "PASS",
+    "mypy": "PASS (42 source files)",
     "skill_sync": "PASS",
     "phase6_offline_benchmark": "5/5 aligned",
     "native_host_matrix": "Codex review dispatch and bounded ZCode desktop/App Server tests verified; native Strict full-loop closure still NOT_RUN",
-    "efficiency_token_usage": "29,991 measured Codex review tokens; broader runtime baseline remains pending",
-    "efficiency_baseline_artifact": "audit/efficiency-baseline-v1.0.json (20 local samples, no external model)",
+    "efficiency_token_usage": "29,991 measured Codex review tokens plus 3,140 host-reported ZCode app-server tokens recorded as opportunistic real samples; broader fixed-task baseline remains pending",
+    "efficiency_baseline_artifact": "audit/efficiency-baseline-v1.0.json (20 local samples + 2 opportunistic real-host samples, no new model calls)",
     "graphify": "PARTIAL: scoped ZCode AST + cited document semantics available in audit/zcode-graphify-20261025; full-project semantic rebuild remains pending after earlier Ollama 502"
   },
   "host_matrix": {
@@ -67,10 +69,10 @@
     "pi_desktop": {"status": "PLUGIN_TESTED_STRICT_NATIVE_NOT_RUN"}
   },
   "remaining": [
-    "Cross-process crash and concurrent review proof/head tests",
-    "Real strict full-loop validation for Codex, Claude, DSH, Zcode and PI-Desktop",
-    "Real-model efficiency baseline with token and latency attribution",
-    "Independent double-reviewer, main-arbiter and Meta review of the current diff",
+    "Full-project Graphify semantic rebuild (blocked by unavailable local LLM; scoped AST scan retained)",
+    "Real strict full-loop validation for Codex, Claude, DSH, Zcode and PI-Desktop (external account/environment/token budget required)",
+    "Fixed-task real-model efficiency baseline with token and latency attribution (requires authorized real model spend)",
+    "Before/after optimization experiments for PromptOptimizer against the real baseline",
     "Final packaging, release manifest and publication after all in-scope evidence is IMPLEMENTED_AND_VERIFIED"
   ]
 }
