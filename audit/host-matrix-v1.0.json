@@ -1,7 +1,7 @@
 {
   "schema": "goalanchor.host-matrix/v1",
   "baseline": "v0.9.2 / 8a04e9f",
-  "updated_at": "2026-10-25",
+  "updated_at": "2026-10-26",
   "evidence_rule": "CLI presence, fixtures, protocol simulations and package tests do not prove a native Strict full loop.",
   "hosts": [
     {
@@ -10,11 +10,11 @@
       "os": "Windows",
       "mode": "app-server",
       "capability": "LIMITED",
-      "status": "PARTIAL/VERIFIED_REVIEW_DISPATCH",
+      "status": "PARTIAL/VERIFIED_REVIEW_DISPATCH_AND_APPSERVER_CALLBACKS",
       "execution_path": "scripts/verify_codex_workflow_host.py",
-      "evidence": "Built-in probe returned probe=ok; real four-role Codex review dispatch with gpt-6-astra completed WARN, 29,991 tokens; App Server Strict full-loop smoke still failed before closure proof.",
+      "evidence": "Built-in probe returned probe=ok; real four-role Codex review dispatch with gpt-6-astra completed WARN, 29,991 tokens; on 2026-10-26 all five App Server scenarios (smoke, question, cancel, decline, accept) completed on gpt-6-luna with real model turns: signed-core question callback answered, interrupt confirmed, escalated-command approval declined and accepted (fixture SUCCEEDED, 1 approved request). Earlier failure root-caused to model routing: gpt-6-astra and codex-family models return HTTP 400 'not supported when using Codex with a ChatGPT account' through the current CC Switch proxy; gpt-6-luna is the supported channel (see audit/codex-appserver-smoke-20261026.json).",
       "mapped_tests": ["tests/test_codex_host.py", "tests/test_codex_controller.py"],
-      "limitations": "No current evidence for full native Strict question/approval/reconcile/closure loop."
+      "limitations": "Review dispatch evidence uses gpt-6-astra (2026-10-24 channel); one-shot grant consumption, UNKNOWN/reconcile and Strict observation/closure through App Server remain NOT_RUN."
     },
     {
       "host": "claude",

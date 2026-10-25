@@ -51,9 +51,9 @@
   },
   "host_matrix": {
     "codex": {
-      "status": "LIMITED/NOT_RUN_FOR_STRICT_FULL_LOOP",
+      "status": "PARTIAL/VERIFIED_REVIEW_DISPATCH_AND_APPSERVER_CALLBACKS",
       "installed_version": "0.163.0",
-      "evidence": "Built-in probe and real four-role codex review dispatch with gpt-6-astra completed WARN, 29,991 measured tokens; App Server Strict full-loop smoke still failed before closure proof."
+      "evidence": "Real four-role review dispatch (gpt-6-astra, 29,991 tokens, WARN) plus 2026-10-26 App Server callbacks: all five scenarios (smoke/question/cancel/decline/accept) completed on gpt-6-luna with signed-core question answering and escalated-command approval fixture SUCCEEDED. Root cause of the earlier failure was model routing (ChatGPT account channel supports gpt-6-luna only). One-shot grant consumption, UNKNOWN/reconcile and observation/closure through App Server remain NOT_RUN."
     },
     "claude": {
       "status": "PARTIAL/BOUNDED",

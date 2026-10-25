@@ -8,6 +8,7 @@ import shutil
 import tempfile
 import time
 from pathlib import Path
+from typing import Any
 
 from goalanchor.codex_host import CodexClient
 
@@ -123,14 +124,23 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--scenario", choices=("smoke", "question", "cancel", "decline", "accept"), default="smoke")
+    parser.add_argument("--model", default=None,
+                        help="override the Codex config default model for this subprocess only")
     args = parser.parse_args()
+    import shutil
+    argv = None
+    if args.model:
+        executable = shutil.which("codex")
+        if not executable:
+            raise SystemExit("codex executable not found")
+        argv = [executable, "-c", "model=" + args.model, "app-server"]
     record: dict[str, object] = {"level": "real-host-model-smoke", "scenario": args.scenario,
                                  "approval_provider": "fixture" if args.scenario == "question" else "none",
                                  "native_ui_verified": False, "approved_requests": 0}
     with tempfile.TemporaryDirectory(prefix="goalanchor-codex-smoke-") as root:
         directory = str(Path(root) / "workspace")
         Path(directory).mkdir()
-        with CodexClient(cwd=directory, timeout=30) as client:
+        with CodexClient(argv=argv, cwd=directory, timeout=30) as client:
             initialized = client.initialize()
             record["platform"] = initialized.get("platformOs")
             thread = client.request("thread/start", {"cwd": directory, "ephemeral": True,
@@ -163,11 +173,14 @@ def main() -> None:
                 client.request("turn/interrupt", {"threadId": thread_id, "turnId": record["turn_id"]})
                 record["interrupt_sent"] = True
             methods: list[str] = []
+            diagnostics: list[dict[str, Any]] = []
             deadline = time.monotonic() + 90
             while time.monotonic() < deadline:
                 event = client.next_event(timeout=min(30, max(.1, deadline - time.monotonic())))
                 method = event.get("method", "")
                 methods.append(method)
+                if method in ("error", "warning") or method.startswith("item/"):
+                    diagnostics.append({"method": method, "params": event.get("params", {})})
                 if "id" in event:
                     if args.scenario == "accept" and method == "item/commandExecution/requestApproval":
                         record.update(approve_fixture(client, event, directory, host_binding))
@@ -188,6 +201,7 @@ def main() -> None:
                 client.request("turn/interrupt", {"threadId": thread_id, "turnId": record["turn_id"]})
                 record["turn_status"] = "TIMEOUT"
             record["methods"] = methods
+            record["diagnostics"] = diagnostics
     args.output.write_text(json.dumps(record, indent=2), encoding="utf-8")
     print(json.dumps(record, indent=2))
 

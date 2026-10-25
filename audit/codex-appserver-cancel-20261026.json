@@ -1,0 +1,86 @@
+{
+  "level": "real-host-model-smoke",
+  "scenario": "cancel",
+  "approval_provider": "none",
+  "native_ui_verified": false,
+  "approved_requests": 0,
+  "platform": "windows",
+  "model": "gpt-6-luna",
+  "host_binding": {
+    "host": "codex",
+    "user_agent": "goalanchor/0.163.0 (Windows 10.0.26300; x86_64) xterm-256color (goalanchor; 0.9.2)",
+    "model": "gpt-6-luna",
+    "mode": "app-server-command-approval",
+    "hook_enabled": true,
+    "hook_trust": "controller-owned"
+  },
+  "turn_id": "01a1744c-7cfe-7ba0-ac58-d6657c8ebe16",
+  "interrupt_sent": true,
+  "turn_status": "interrupted",
+  "methods": [
+    "remoteControl/status/changed",
+    "thread/started",
+    "warning",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "account/updated",
+    "thread/status/changed",
+    "turn/started",
+    "item/started",
+    "item/completed",
+    "thread/status/changed",
+    "turn/completed"
+  ],
+  "diagnostics": [
+    {
+      "method": "warning",
+      "params": {
+        "threadId": "01a1744c-7a5d-7d50-be75-4cfb1a63b9f5",
+        "message": "Under-development features enabled: local_thread_store_compression. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in C:\\Users\\chen\\.codex\\config.toml."
+      }
+    },
+    {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a1744c-7e9c-7a81-8225-c53732030547",
+          "clientId": null,
+          "content": [
+            {
+              "type": "text",
+              "text": "Do not call tools. Reply exactly GOALANCHOR_HOST_OK.",
+              "text_elements": []
+            }
+          ]
+        },
+        "threadId": "01a1744c-7a5d-7d50-be75-4cfb1a63b9f5",
+        "turnId": "01a1744c-7cfe-7ba0-ac58-d6657c8ebe16",
+        "startedAtMs": 1792952532637
+      }
+    },
+    {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a1744c-7e9c-7a81-8225-c53732030547",
+          "clientId": null,
+          "content": [
+            {
+              "type": "text",
+              "text": "Do not call tools. Reply exactly GOALANCHOR_HOST_OK.",
+              "text_elements": []
+            }
+          ]
+        },
+        "threadId": "01a1744c-7a5d-7d50-be75-4cfb1a63b9f5",
+        "turnId": "01a1744c-7cfe-7ba0-ac58-d6657c8ebe16",
+        "completedAtMs": 1792952532637
+      }
+    }
+  ]
+}
