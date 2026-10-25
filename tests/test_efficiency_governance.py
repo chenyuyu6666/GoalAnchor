@@ -6,6 +6,7 @@ import pytest
 
 from goalanchor.efficiency_governance import (
     BudgetGovernor,
+    EfficiencyRuntime,
     ProgressWatchdog,
     PromptOptimizer,
     TaskComplexityEngine,
@@ -76,3 +77,52 @@ def test_prompt_optimizer_reuses_only_matching_context() -> None:
         optimizer.remember("ctx-1", "answer-2", token_saving=-1)
     with pytest.raises(ValueError):
         optimizer.remember("ctx-1", "answer-2", token_saving=0)
+
+
+def test_efficiency_runtime_fails_closed_on_unknown_usage_and_repeats() -> None:
+    runtime = EfficiencyRuntime(BudgetGovernor(token_budget=100, time_budget_seconds=5))
+    unknown = runtime.admit(
+        dependency_count=1,
+        risk="MEDIUM",
+        blocking_uncertainty=False,
+        evidence_change_count=0,
+        operation="review",
+        operation_fingerprint="ctx-1",
+        tokens_used=None,
+        elapsed_seconds=1,
+    )
+    assert unknown.allowed is False
+    assert unknown.reason == "UNKNOWN_USAGE"
+    measured = runtime.admit(
+        dependency_count=1,
+        risk="MEDIUM",
+        blocking_uncertainty=False,
+        evidence_change_count=0,
+        operation="review",
+        operation_fingerprint="ctx-2",
+        tokens_used=10,
+        elapsed_seconds=1,
+    )
+    assert measured.allowed is True and measured.token_status == "MEASURED"
+    runtime.watchdog.repeat_threshold = 1
+    runtime.admit(
+        dependency_count=0,
+        risk="LOW",
+        blocking_uncertainty=False,
+        evidence_change_count=0,
+        operation="review",
+        operation_fingerprint="same",
+        tokens_used=1,
+        elapsed_seconds=0,
+    )
+    repeated = runtime.admit(
+        dependency_count=0,
+        risk="LOW",
+        blocking_uncertainty=False,
+        evidence_change_count=0,
+        operation="review",
+        operation_fingerprint="same",
+        tokens_used=1,
+        elapsed_seconds=0,
+    )
+    assert repeated.allowed is False and repeated.reason == "REPEATED_OPERATION"
