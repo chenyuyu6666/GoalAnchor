@@ -1,0 +1,76 @@
+{
+  "schema": "goalanchor.v1.0-status/v1",
+  "baseline": {
+    "version": "0.9.2",
+    "commit": "8a04e9f",
+    "branch": "feature/goalanchor-v1-complete",
+    "release": "v0.9.2"
+  },
+  "status_rule": "Release delivery and controlled-core PASS do not imply native-host or real-model completion.",
+  "phases": {
+    "P0_baseline_and_matrix": "PARTIAL/BOUNDED",
+    "P1_strict_append_only_review": "PARTIAL/BOUNDED",
+    "P2_strict_lifecycle": "PARTIAL/BOUNDED",
+    "P3_host_neutral_protocol": "PARTIAL/BOUNDED",
+    "P4_native_hosts": "PARTIAL/BOUNDED",
+    "P5_efficiency_baseline": "PARTIAL/BOUNDED",
+    "P6_efficiency_components": "PARTIAL/BOUNDED",
+    "P7_final_release": "DEFERRED"
+  },
+  "implemented_and_verified": [
+    "Strict baseline and evidence proof binding",
+    "Strict review packet, Reviewer/Arbiter/Meta validation and bounded STOP",
+    "AgentRuntime tolerates non-critical future result fields by role-level projection",
+    "Per-round strict_review_chain append records and strict_review_head CAS projection",
+    "Strict review chain/head corruption is detected fail-closed",
+    "Strict authorization question and one-time grant",
+    "Strict scope grant and revocation",
+    "Strict accepted-risk record and second-round disposition",
+    "Strict execution receipt, one-time consumption, idempotent attempt",
+    "Strict UNKNOWN and observer reconcile",
+    "Strict cancellation, observation and closure",
+    "Strict question transition and presentation proof",
+    "Strict resume transport is bound and leaves recovery pending reconcile",
+    "Strict observation reuse requires unchanged criterion and signed source",
+    "Legacy Workflow compatibility regression suite",
+    "Offline efficiency governance primitives and deterministic baseline",
+    "EfficiencyRuntime fail-closed admission facade with UNKNOWN token handling"
+  ],
+  "verification": {
+    "pytest": "PASS",
+    "ruff": "PASS",
+    "mypy": "PASS",
+    "skill_sync": "PASS",
+    "phase6_offline_benchmark": "5/5 aligned",
+    "native_host_matrix": "Codex review dispatch and bounded ZCode desktop/App Server tests verified; native Strict full-loop closure still NOT_RUN",
+    "efficiency_token_usage": "29,991 measured Codex review tokens; broader runtime baseline remains pending",
+    "efficiency_baseline_artifact": "audit/efficiency-baseline-v1.0.json (20 local samples, no external model)",
+    "graphify": "PARTIAL: scoped ZCode AST + cited document semantics available in audit/zcode-graphify-20261025; full-project semantic rebuild remains pending after earlier Ollama 502"
+  },
+  "host_matrix": {
+    "codex": {
+      "status": "LIMITED/NOT_RUN_FOR_STRICT_FULL_LOOP",
+      "installed_version": "0.163.0",
+      "evidence": "Built-in probe and real four-role codex review dispatch with gpt-6-astra completed WARN, 29,991 measured tokens; App Server Strict full-loop smoke still failed before closure proof."
+    },
+    "claude": {
+      "status": "PARTIAL/BOUNDED",
+      "installed_version": "2.1.309",
+      "evidence": "Fixed no-tool smoke succeeded; sonnet probe returned API Error 402 Insufficient Balance; Strict full-loop dispatch rejected configured gpt-6-luna as unrecognized_model."
+    },
+    "dsh": {"status": "PARTIAL/BOUNDED", "installed_version": "0.2.1.0 desktop", "evidence": "Executable and running native window observed; Strict integration NOT_RUN"},
+    "zcode": {
+      "status": "PARTIAL/BOUNDED",
+      "installed_version": "3.16.3 desktop; embedded CLI 0.17.0",
+      "evidence": "Desktop GLM-5.3-Flash smoke and real four-role missing-evidence rejection succeeded. App-server ark-code-latest/low produced correlated turn.completed/resultType=success, zero tool calls, tokenCount=3140 and verified session close. Prior missing-event evidence was corrected: old parser read the wrong field. Native Strict full-loop proof remains pending."
+    },
+    "pi_desktop": {"status": "PLUGIN_TESTED_STRICT_NATIVE_NOT_RUN"}
+  },
+  "remaining": [
+    "Cross-process crash and concurrent review proof/head tests",
+    "Real strict full-loop validation for Codex, Claude, DSH, Zcode and PI-Desktop",
+    "Real-model efficiency baseline with token and latency attribution",
+    "Independent double-reviewer, main-arbiter and Meta review of the current diff",
+    "Final packaging, release manifest and publication after all in-scope evidence is IMPLEMENTED_AND_VERIFIED"
+  ]
+}

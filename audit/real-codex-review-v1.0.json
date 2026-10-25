@@ -1,0 +1,22 @@
+{
+  "schema": "goalanchor.real-host-review/v1",
+  "host": "codex",
+  "version": "0.163.0",
+  "os": "Windows",
+  "model": "gpt-6-astra",
+  "mode": "CLI codex exec",
+  "request": "examples/multi-platform-review/request-risk-medium.json",
+  "config": "temporary codex-only four-profile dispatch",
+  "status": "PASS_WITH_WARN",
+  "outcome": "WARN",
+  "round_number": 1,
+  "reviewers": [
+    {"agent_id": "reviewer-1", "profile_id": "real-codex-reviewer-1", "tokens_used": 2012},
+    {"agent_id": "reviewer-2", "profile_id": "real-codex-reviewer-2", "tokens_used": 2198},
+    {"agent_id": "arbiter", "profile_id": "real-codex-arbiter", "tokens_used": 2705},
+    {"agent_id": "meta-reviewer", "profile_id": "real-codex-meta", "tokens_used": 23076}
+  ],
+  "usage_summary": {"calls": 4, "tokens_used_total": 29991, "models_used": ["gpt-6-astra"]},
+  "evidence_boundary": "This proves a real Codex CLI review dispatch and model/account response. It does not prove native Strict question, approval, execution or closure enforcement.",
+  "review_outcome_boundary": "WARN is retained as the model review result; no PASS is inferred from transport success."
+}

@@ -1,0 +1,70 @@
+{
+  "schema": "goalanchor.host-matrix/v1",
+  "baseline": "v0.9.2 / 8a04e9f",
+  "updated_at": "2026-10-25",
+  "evidence_rule": "CLI presence, fixtures, protocol simulations and package tests do not prove a native Strict full loop.",
+  "hosts": [
+    {
+      "host": "codex",
+      "version": "0.163.0",
+      "os": "Windows",
+      "mode": "app-server",
+      "capability": "LIMITED",
+      "status": "PARTIAL/VERIFIED_REVIEW_DISPATCH",
+      "execution_path": "scripts/verify_codex_workflow_host.py",
+      "evidence": "Built-in probe returned probe=ok; real four-role Codex review dispatch with gpt-6-astra completed WARN, 29,991 tokens; App Server Strict full-loop smoke still failed before closure proof.",
+      "mapped_tests": ["tests/test_codex_host.py", "tests/test_codex_controller.py"],
+      "limitations": "No current evidence for full native Strict question/approval/reconcile/closure loop."
+    },
+    {
+      "host": "claude",
+      "version": "2.1.309",
+      "os": "Windows",
+      "mode": "CLI",
+      "capability": "ADVISORY",
+      "status": "PARTIAL/BOUNDED",
+      "execution_path": "claude -p fixed-text smoke",
+      "evidence": "Executable/version probe and fixed-text no-tool smoke succeeded; sonnet probe returned API Error 402 Insufficient Balance; multi-platform dispatch with configured gpt-6-luna was rejected as unrecognized_model.",
+      "mapped_tests": ["tests/test_platforms.py"],
+      "limitations": "No authenticated native Strict full-loop run recorded."
+    },
+    {
+      "host": "dsh",
+      "version": "0.2.1.0 (desktop file ProductVersion)",
+      "os": "Windows",
+      "mode": "skill-only",
+      "capability": "ADVISORY",
+      "status": "PARTIAL/BOUNDED",
+      "execution_path": "D:\\AIWorkspace\\Tools\\Deepseek Harness\\DeepSeek Harness.exe",
+      "evidence": "Corrected 2026-10-25: native window inventory shows DeepSeek Harness running; installed executable ProductVersion reads 0.2.1.0. No native GoalAnchor workflow test has been performed here.",
+      "mapped_tests": ["tests/test_host_contract.py"],
+      "limitations": "Protocol support is not native runtime validation."
+    },
+    {
+      "host": "zcode",
+      "version": "3.16.3 (desktop); embedded CLI 0.17.0",
+      "os": "Windows",
+      "mode": "desktop + embedded-cli",
+      "capability": "LIMITED",
+      "status": "PARTIAL/BOUNDED",
+      "execution_path": "Native desktop UI plus scripts/zcode_protocol_probe.py -> installed resources/glm/zcode.cjs app-server",
+      "evidence": "Desktop GLM-5.3-Flash returned the fixed smoke marker and real responses from two fresh Reviewers, Arbiter and Meta Reviewer; all rejected the synthetic missing-evidence case. App-server Coding Plan ark-code-latest/low completed one correlated no-tool turn, tokenCount=3140, observed elapsed=17.406s, and closed the test session. See audit/zcode-desktop-review-20261025.json and audit/zcode-protocol-plan-state-20261025.json with event projections.",
+      "mapped_tests": ["tests/test_host_contract.py", "tests/test_zcode_goalanchor_bridge.py", "tests/test_zcode_protocol_probe.py"],
+      "final_protocol_trace": "audit/zcode-protocol-final-20261025.json",
+      "final_protocol_observation": "Second independently created no-tool session succeeded; complete input/session/turn and v4 subscription correlations retained; tokenCount=3185, elapsed_seconds=13.937; closed=true.",
+      "limitations": "These are bounded real-host tests with synthetic input, not full native Strict acceptance. UI task/workspace labels are not signed runtime identities; provider/account/server-model provenance and Strict question/authorization/reconcile/closure remain unverified. The one-shot bridge is advisory and rejects Strict requests."
+    },
+    {
+      "host": "pi-desktop",
+      "version": null,
+      "os": "Windows",
+      "mode": "plugin",
+      "capability": "ADVISORY",
+      "status": "PARTIAL/BOUNDED",
+      "execution_path": "tests/js/test_pi_desktop.cjs",
+      "evidence": "13/13 portable Node and plugin contract tests passed.",
+      "mapped_tests": ["tests/test_pi_desktop.py", "tests/js/test_pi_desktop.cjs"],
+      "limitations": "Current real desktop Strict full-loop installation/model/approval evidence is not part of this checkout."
+    }
+  ]
+}
