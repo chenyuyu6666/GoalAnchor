@@ -736,12 +736,11 @@ def test_strict_snapshot_keeps_one_view_during_concurrent_evidence_advance(tmp_p
         runtime, baseline, observer, provider, evidence_id="shared-evidence"
     )
     before = runtime.store.read_strict_snapshot(baseline.goal_id)
-    journal_mode_pragma = {
-        "DELETE": "PRAGMA journal_mode=DELETE",
-        "WAL": "PRAGMA journal_mode=WAL",
-    }[journal_mode_value]
     with sqlite3.connect(runtime.store.path) as db:
-        actual_mode = db.execute(journal_mode_pragma).fetchone()[0].upper()
+        if journal_mode_value == "DELETE":
+            actual_mode = db.execute("PRAGMA journal_mode=DELETE").fetchone()[0].upper()
+        else:
+            actual_mode = db.execute("PRAGMA journal_mode=WAL").fetchone()[0].upper()
     assert actual_mode == journal_mode_value
 
     new_snapshot = EvidenceSnapshot.capture(
