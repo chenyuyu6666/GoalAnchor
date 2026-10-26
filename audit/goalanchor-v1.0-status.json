@@ -53,7 +53,7 @@
     "codex": {
       "status": "PARTIAL/VERIFIED_DEEP_LOOP",
       "installed_version": "0.163.0",
-      "evidence": "2026-10-26 deep loop: real four-role review (gpt-6-luna, 128,832 tokens) -> signed approval -> dispatch -> receipt -> observation -> closure=CLOSED with one-shot consumption blocked; UNKNOWN receipt reconciled to SUCCEEDED via observer proof (post-reconcile closure blocked by evidence-freeze semantics, recorded); P6 before/after experiment accepted compact prompt on MEDIUM tier only. All on App Server plus codex exec. Native UI/account provenance remain unverified."
+      "evidence": "2026-10-26 deep loop: real four-role review (gpt-6-luna, 128,832 tokens) -> signed approval -> dispatch -> receipt -> observation -> closure=CLOSED with one-shot consumption blocked; UNKNOWN receipt reconciled to SUCCEEDED via observer proof; reconcile->close gap (post-review recovery evidence invalidated live review context) fixed same day via frozen-context validation, real scenario now reaches CLOSED; P6 before/after experiment accepted compact prompt on MEDIUM tier only. All on App Server plus codex exec. Native UI/account provenance remain unverified."
     },
     "claude": {
       "status": "PARTIAL/BOUNDED",
