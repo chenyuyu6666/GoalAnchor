@@ -1,0 +1,578 @@
+{
+  "level": "real-host-model-smoke",
+  "scenario": "reconcile",
+  "approval_provider": "explicit-test-fixture",
+  "native_ui_verified": false,
+  "approved_requests": 1,
+  "platform": "windows",
+  "model": "gpt-6-luna",
+  "host_binding": {
+    "host": "codex",
+    "user_agent": "goalanchor/0.163.0 (Windows 10.0.26300; x86_64) xterm-256color (goalanchor; 0.9.2)",
+    "model": "gpt-6-luna",
+    "mode": "app-server-command-approval",
+    "hook_enabled": true,
+    "hook_trust": "controller-owned"
+  },
+  "turn_id": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+  "unknown_receipt_state": "UNKNOWN",
+  "approval_outcome": "SENT",
+  "reconciled_state": "SUCCEEDED",
+  "closure": "BLOCKED:ContractValidationError",
+  "closure_boundary": "reconcile evidence is collected after review; close re-verifies the live review context, so reconciled goals cannot close under the current evidence-freeze semantics",
+  "turn_status": "completed",
+  "methods": [
+    "remoteControl/status/changed",
+    "account/updated",
+    "thread/started",
+    "warning",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "thread/status/changed",
+    "turn/started",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "item/started",
+    "item/completed",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "item/started",
+    "item/completed",
+    "item/started",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/completed",
+    "turn/moderationMetadata",
+    "thread/status/changed",
+    "item/started",
+    "item/commandExecution/requestApproval",
+    "thread/tokenUsage/updated",
+    "account/rateLimits/updated",
+    "item/started",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "turn/moderationMetadata",
+    "item/completed",
+    "thread/tokenUsage/updated",
+    "account/rateLimits/updated",
+    "thread/status/changed",
+    "turn/completed"
+  ],
+  "diagnostics": [
+    {
+      "method": "warning",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "message": "Under-development features enabled: local_thread_store_compression. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in C:\\Users\\chen\\.codex\\config.toml."
+      }
+    },
+    {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a175b6-3be5-7b02-8e51-fb934c21312a",
+          "clientId": null,
+          "content": [
+            {
+              "type": "text",
+              "text": "Test an approval callback only. Request an escalated shell command with sandbox_permissions=require_escalated and command exactly Write-Output GOALANCHOR_APPROVAL_TEST. Omit prefix_rule. Do not run anything else or modify files. If denied, stop without retry.",
+              "text_elements": []
+            }
+          ]
+        },
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "startedAtMs": 1792976239589
+      }
+    },
+    {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a175b6-3be5-7b02-8e51-fb934c21312a",
+          "clientId": null,
+          "content": [
+            {
+              "type": "text",
+              "text": "Test an approval callback only. Request an escalated shell command with sandbox_permissions=require_escalated and command exactly Write-Output GOALANCHOR_APPROVAL_TEST. Omit prefix_rule. Do not run anything else or modify files. If denied, stop without retry.",
+              "text_elements": []
+            }
+          ]
+        },
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "completedAtMs": 1792976239589
+      }
+    },
+    {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "reasoning",
+          "id": "rs_0256deee1ddc94f8016adea571d8bc8191b81ad454a822627b",
+          "summary": [],
+          "content": []
+        },
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "startedAtMs": 1792976241239
+      }
+    },
+    {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "reasoning",
+          "id": "rs_0256deee1ddc94f8016adea571d8bc8191b81ad454a822627b",
+          "summary": [],
+          "content": []
+        },
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "completedAtMs": 1792976241239
+      }
+    },
+    {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "id": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+          "text": "",
+          "phase": "commentary",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null
+        },
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "startedAtMs": 1792976241354
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+        "delta": "I"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+        "delta": "\u2019ll"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+        "delta": " submit"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+        "delta": " the"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+        "delta": " exact"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+        "delta": " command"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+        "delta": " for"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+        "delta": " approval"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+        "delta": " and"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+        "delta": " stop"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+        "delta": " if"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+        "delta": " it"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+        "delta": "\u2019s"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+        "delta": " denied"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+        "delta": "."
+      }
+    },
+    {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "id": "msg_0256deee1ddc94f8016adea571e9dc8191b715b493ff7c7629",
+          "text": "I\u2019ll submit the exact command for approval and stop if it\u2019s denied.",
+          "phase": "commentary",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null
+        },
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "completedAtMs": 1792976241511
+      }
+    },
+    {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "commandExecution",
+          "id": "exec-67eef81d-bde1-48bd-a16d-290255a7194e",
+          "pluginId": null,
+          "scriptPath": null,
+          "command": "\"C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe\" -Command 'Write-Output GOALANCHOR_APPROVAL_TEST'",
+          "cwd": "C:\\Users\\chen\\AppData\\Local\\Temp\\goalanchor-codex-smoke-ohcuawww\\workspace",
+          "processId": null,
+          "source": "agent",
+          "status": "inProgress",
+          "commandActions": [
+            {
+              "type": "unknown",
+              "command": "Write-Output GOALANCHOR_APPROVAL_TEST"
+            }
+          ],
+          "aggregatedOutput": null,
+          "exitCode": null,
+          "durationMs": null
+        },
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "startedAtMs": 1792976242029
+      }
+    },
+    {
+      "method": "item/commandExecution/requestApproval",
+      "params": {
+        "kind": "command",
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "exec-67eef81d-bde1-48bd-a16d-290255a7194e",
+        "startedAtMs": 1792976242027,
+        "environmentId": "local",
+        "reason": "Run the requested approval callback test.",
+        "command": "\"C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe\" -Command 'Write-Output GOALANCHOR_APPROVAL_TEST'",
+        "cwd": "C:\\Users\\chen\\AppData\\Local\\Temp\\goalanchor-codex-smoke-ohcuawww\\workspace",
+        "commandActions": [
+          {
+            "type": "unknown",
+            "command": "Write-Output GOALANCHOR_APPROVAL_TEST"
+          }
+        ],
+        "proposedExecpolicyAmendment": [
+          "Write-Output",
+          "GOALANCHOR_APPROVAL_TEST"
+        ],
+        "availableDecisions": [
+          "accept",
+          {
+            "acceptWithExecpolicyAmendment": {
+              "execpolicy_amendment": [
+                "Write-Output",
+                "GOALANCHOR_APPROVAL_TEST"
+              ]
+            }
+          },
+          "cancel"
+        ]
+      }
+    },
+    {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "id": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+          "text": "",
+          "phase": "final_answer",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null
+        },
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "startedAtMs": 1792976245152
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": "The"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": " approval"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": " callback"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": " succeeded"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": "."
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": " Output"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": ":"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": " `"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": "GO"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": "AL"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": "ANCH"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": "OR"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": "_APPRO"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": "VAL"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": "_TEST"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "itemId": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+        "delta": "`."
+      }
+    },
+    {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "id": "msg_0256deee1ddc94f8016adea575927c8191b0ca11645b103559",
+          "text": "The approval callback succeeded. Output: `GOALANCHOR_APPROVAL_TEST`.",
+          "phase": "final_answer",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null
+        },
+        "threadId": "01a175b6-36af-71f1-842f-59c4b6a6c981",
+        "turnId": "01a175b6-38d2-7c82-a0fa-1ae2b6c4e9ee",
+        "completedAtMs": 1792976245213
+      }
+    }
+  ]
+}
