@@ -13,7 +13,7 @@
     "P2_strict_lifecycle": "PARTIAL/BOUNDED (offline semantics complete; real principal/account/session binding awaits native hosts)",
     "P3_host_neutral_protocol": "IMPLEMENTED_AND_VERIFIED (all five public interfaces exist incl. EfficiencyObservationProvider; native bindings remain PARTIAL)",
     "P4_native_hosts": "PARTIAL/BOUNDED",
-    "P5_efficiency_baseline": "PARTIAL/BOUNDED (offline baseline + opportunistic real samples recorded; fixed-task real baseline pending)",
+    "P5_efficiency_baseline": "PARTIAL/BOUNDED (offline baseline + opportunistic samples + 2026-10-26 fixed-task LOW/MEDIUM/HIGH real samples on gpt-6-luna all correct; UNKNOWN/reconcile tier NOT_RUN pending reconcile harness)",
     "P6_efficiency_components": "PARTIAL/BOUNDED (five components, reuse rule and admission facade done; before/after optimization experiments await real runtime)",
     "P7_final_release": "DEFERRED"
   },
@@ -46,7 +46,7 @@
     "phase6_offline_benchmark": "5/5 aligned",
     "native_host_matrix": "Codex review dispatch and bounded ZCode desktop/App Server tests verified; native Strict full-loop closure still NOT_RUN",
     "efficiency_token_usage": "29,991 measured Codex review tokens plus 3,140 host-reported ZCode app-server tokens recorded as opportunistic real samples; broader fixed-task baseline remains pending",
-    "efficiency_baseline_artifact": "audit/efficiency-baseline-v1.0.json (20 local samples + 2 opportunistic real-host samples, no new model calls)",
+    "efficiency_baseline_artifact": "audit/efficiency-baseline-v1.0.json (20 local samples + 2 opportunistic real-host samples) and audit/real-efficiency-samples-20261026.json (3 fixed-task real samples, gpt-6-luna, 3/3 correct, tokens/elapsed measured)",
     "graphify": "PARTIAL: scoped ZCode AST + cited document semantics available in audit/zcode-graphify-20261025; full-project semantic rebuild remains pending after earlier Ollama 502"
   },
   "host_matrix": {
