@@ -117,6 +117,11 @@ def approve_fixture(client: CodexClient, request: dict, directory: str, host_bin
             "goal_id": base.goal_id, "baseline_digest": base.fingerprint, "criterion_id": "exit",
             "object_ref": "host-command", "actual": receipt["result"]["exit_code"], "attempt_id": "host-attempt"}))
         result["closure"] = runtime.close(base.goal_id)["state"]
+    try:
+        controller.dispatch(request["id"], runtime, operation.operation_id, "host-attempt-2", timeout=60)
+        result["second_attempt_without_new_approval"] = "DISPATCHED_VIOLATION"
+    except Exception as exc:  # noqa: BLE001 - fixture records the blocking exception type only
+        result["second_attempt_without_new_approval"] = "BLOCKED:" + type(exc).__name__
     return result
 
 

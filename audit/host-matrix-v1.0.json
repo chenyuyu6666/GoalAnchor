@@ -14,7 +14,7 @@
       "execution_path": "scripts/verify_codex_workflow_host.py",
       "evidence": "Built-in probe returned probe=ok; real four-role Codex review dispatch with gpt-6-astra completed WARN, 29,991 tokens; on 2026-10-26 all five App Server scenarios (smoke, question, cancel, decline, accept) completed on gpt-6-luna with real model turns: signed-core question callback answered, interrupt confirmed, escalated-command approval declined and accepted (fixture SUCCEEDED, 1 approved request). Earlier failure root-caused to model routing: gpt-6-astra and codex-family models return HTTP 400 'not supported when using Codex with a ChatGPT account' through the current CC Switch proxy; gpt-6-luna is the supported channel (see audit/codex-appserver-smoke-20261026.json).",
       "mapped_tests": ["tests/test_codex_host.py", "tests/test_codex_controller.py"],
-      "limitations": "Review dispatch evidence uses gpt-6-astra (2026-10-24 channel); one-shot grant consumption, UNKNOWN/reconcile and Strict observation/closure through App Server remain NOT_RUN."
+      "limitations": "Deep loop verified 2026-10-26 (audit/codex-appserver-accept-20261026b.json): real gpt-6-luna turn completed question/approval/dispatch/receipt/observation/closure (closure=CLOSED) and one-shot consumption (second dispatch without new approval BLOCKED:ContractValidationError). Boundary: review results inside the loop are a synthetic fixture (real model review dispatch evidenced separately on 2026-10-24); UNKNOWN/reconcile through App Server remains NOT_RUN."
     },
     {
       "host": "claude",
