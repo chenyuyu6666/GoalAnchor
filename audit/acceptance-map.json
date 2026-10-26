@@ -1247,5 +1247,10 @@
     "errors": 0,
     "native_host_claim": "No native-host PASS is inferred from this run."
   },
-  "remaining_gaps": []
+  "remaining_gaps": [],
+  "v1_0_phase_reference": {
+    "note": "The 58 cases above reflect their own recorded run against the v0.1 spec. Phase-level status for the GoalAnchor v1.0 plan (P0-P7) is tracked authoritatively in audit/goalanchor-v1.0-status.json.",
+    "status_matrix": "audit/goalanchor-v1.0-status.json",
+    "host_matrix": "audit/host-matrix-v1.0.json"
+  }
 }

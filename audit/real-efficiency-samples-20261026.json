@@ -1,0 +1,38 @@
+{
+  "schema": "goalanchor.real-efficiency-samples/v1",
+  "date": "2026-10-26",
+  "boundary": "bounded single-turn fixed tasks; no tools; UNKNOWN/reconcile tier NOT_RUN (requires reconcile harness); token totals as reported by codex exec JSON",
+  "samples": [
+    {
+      "scenario_id": "low-read-only",
+      "model": "gpt-6-luna",
+      "exit_code": 0,
+      "tokens_used": 29212,
+      "token_status": "MEASURED",
+      "elapsed_seconds": 9.657,
+      "correct": true,
+      "host": "codex"
+    },
+    {
+      "scenario_id": "medium-two-reviewer",
+      "model": "gpt-6-luna",
+      "exit_code": 0,
+      "tokens_used": 27776,
+      "token_status": "MEASURED",
+      "elapsed_seconds": 6.734,
+      "correct": true,
+      "host": "codex"
+    },
+    {
+      "scenario_id": "high-dispute-review",
+      "model": "gpt-6-luna",
+      "exit_code": 0,
+      "tokens_used": 29259,
+      "token_status": "MEASURED",
+      "elapsed_seconds": 9.375,
+      "correct": true,
+      "host": "codex"
+    }
+  ],
+  "unknown_reconcile_tier": "NOT_RUN"
+}

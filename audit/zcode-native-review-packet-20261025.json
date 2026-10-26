@@ -1,0 +1,27 @@
+{
+  "schema": "goalanchor.zcode-native-review-test/v1",
+  "purpose": "Verify whether the candidate conclusion is supported by the frozen acceptance evidence.",
+  "prompt": "Independently review the candidate using only E-1 below. Do not use tools. Return one JSON object with verdict (PASS/WARN/FAIL), finding_id, evidence_refs, rationale and packet_digest. An unverified mandatory criterion must block acceptance. Do not claim product completion.",
+  "goal": "A test-only component may be accepted only when all four required criteria C-1, C-2, C-3, C-4 have passed.",
+  "evidence": {
+    "E-1": {
+      "required": [
+        "C-1",
+        "C-2",
+        "C-3",
+        "C-4"
+      ],
+      "passed": [
+        "C-1",
+        "C-2",
+        "C-3"
+      ],
+      "missing": [
+        "C-4"
+      ]
+    }
+  },
+  "candidate": "All required criteria passed; accept and close the test component.",
+  "expected_behavior": "FAIL with E-1 and missing C-4; do not authorize or close.",
+  "boundary": "Synthetic acceptance subject delivered to real ZCode models; not a native Strict execution/closure proof."
+}

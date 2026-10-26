@@ -1,0 +1,18 @@
+{
+  "scope": "Provider-backed Strict proof admission and downstream permission consumer hardening; native provenance remains unverified",
+  "review_model": "gpt-6.1-sol",
+  "sources": {
+    "goalanchor/review_proof.py": "f5e96795cb8003bac6642d64ff7384973bded9d52d969cdb4e3cff20af089cc0",
+    "goalanchor/workflow_review_proof.py": "f962ac1a71db5ee19a2a4f62c5b54a109682674a28b595cce1b7c027a31f6d19",
+    "goalanchor/workflow_store_review.py": "d3ccad2af75070dbec38c7be3fd41d12f538720e9445ed825dc0416245d25fbd",
+    "goalanchor/workflow_contracts.py": "5770baccaaeb10d13a9a619b17fe91768817b170ea39bec081227b774292f050",
+    "goalanchor/workflow_store_core.py": "f5335a023001df335f3e07b431b8d39cfb57f815ab0c813525d705a521fc5476",
+    "goalanchor/workflow_store_strict.py": "5ca4b6c878679f2fed8b9bf5d0f1d0a3e3cb8f1e9f3bfaa9901d6ade6cea1ed2",
+    "goalanchor/workflow_strict.py": "b847a867d191d5677240488b1b257eba52718013b3067cfe36e3ecb5173a2d43",
+    "tests/test_review_proof.py": "82e03de2ad558ff6a3218feb74cb19c3f8a775de31d52453087032a031655c03",
+    "tests/test_review_attestation_store.py": "c696cc6c588e0277de92b023e5ebed0c95f2121e9a4125fe42e2a019af3165dc",
+    "tests/test_strict_review_proofs.py": "6b08afb619fc82c5b5c170f34bedbd3ddfe6ea05d52e23412d23c90b3aee06c3",
+    "tests/test_strict_review_proof_consumers.py": "bf3a1d30a62e61d91c7e84e8575b0f33f39abed0de54dba47a79485749aad0f7",
+    "docs/strict-review-proof-contract.md": "654590f73889f7a046d467e96f9da6e775858ab48d447c6872b62cebc879d121"
+  }
+}

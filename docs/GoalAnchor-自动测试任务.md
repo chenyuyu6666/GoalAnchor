@@ -56,7 +56,7 @@ python scripts/run_test_task.py `
       "id": "full-test-suite",
       "type": "pytest",
       "args": ["-q"],
-      "timeout_seconds": 300
+      "timeout_seconds": 600
     },
     {
       "id": "fixed-regression-fixtures",

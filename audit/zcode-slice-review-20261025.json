@@ -1,0 +1,52 @@
+{
+  "schema": "goalanchor.zcode-slice-independent-review/v1",
+  "date": "2026-10-25",
+  "scope": "ZCode bounded native acceptance and probe/bridge changes only",
+  "status": "PARTIAL/BOUNDED",
+  "process_evidence_only": true,
+  "strict_product_proof": false,
+  "full_v1_goal_complete": false,
+  "sources": {
+    "scripts/zcode_protocol_probe.py": "dbfc5f05781b9a8e64246f3b29d02317b9b2e64321c8d8401e90d964bb783bae",
+    "scripts/zcode_goalanchor_bridge.py": "c7336bed9f5e5c2082567950d2165c5231415933cf9c40ac244aeaf745111278",
+    "tests/test_zcode_protocol_probe.py": "c15adaba7bcb5476b3d2d7dad0a06ec444d2f7caafc59d7ab200c1aff6c75c7b",
+    "tests/test_zcode_goalanchor_bridge.py": "4e47c76efcdac5adac5aa320935384f39de2ed53917b465601812acc532e4737",
+    "audit/zcode-protocol-final-20261025.json": "4691212a9377f7d12ac273b707b35e1b68b5c343338b538a2c2ab18f37b3d8cc",
+    "audit/zcode-protocol-final-20261025.events.jsonl": "cb56232266d809d08549fe63b3c15d1c8c61f92ae2992d7aa13699c11f7bbf67",
+    "audit/zcode-desktop-review-20261025.json": "85b855edad0017bed06dca6f008f83dcc71746aa21f5a735b9835b0c5f6737c6",
+    "audit/zcode-slice-final-regression-20261025.xml": "627d504f105b2412cd0bab78f29fbd28b884319a53e66aee2a631aa1d7446eaf"
+  },
+  "verification": {
+    "pytest": {
+      "tests": 1013,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit": "audit/zcode-slice-final-regression-20261025.xml"
+    },
+    "ruff": "PASS: goalanchor tests scripts",
+    "mypy": "PASS: goalanchor and both ZCode scripts, 41 files",
+    "skill_sync": "PASS",
+    "diff_check": "PASS"
+  },
+  "review_prompt": "有界复核修复 delta（只读，不调用模型/不写文件）：本轮同一目标/同一冻结输入为当前 scripts/zcode_protocol_probe.py 与 tests/test_zcode_protocol_probe.py。此前审查的2项P2已修：error_code只留整数；outbound send投影session/input/query，turn事件保留inputId，v4 ACK保留subscriptionId/mode/logEpoch。4条新增回归先RED再GREEN；ZCode定向113通过Ruff/Mypy通过。请仅确认这两修复是否解决、是否引入新的阻断，给文件SHA与裁定；旧events不倒填，新真实run写audit/zcode-protocol-final-20261025.*，若文件已存在可以核验input→turn真实绑定。保持PARTIAL/BOUNDED不声称Strict。",
+  "reviewers": [
+    {
+      "agent": "/root/review_zcode_bridge",
+      "verdict": "PASS_FOR_BOUNDED_SCOPE",
+      "final_text": "裁定：两项 P2 已解决，未发现本次 delta 引入新的阻断；维持 PARTIAL/BOUNDED。error_code 现在仅保留真正的整数，字符串、对象、数组和布尔值不会绕过安全投影。新记录保留了发送的 session/input/query、开始及终态的 inputId，以及 v4 订阅 ACK 身份。已核验新真实记录：send → turn.started → turn.completed 的 input、session、turn 完全一致；仅发送一次，ACK 已接纳，终态成功、工具数 0，关闭 ACK 为 true。两个 v4 snapshot 都关联到对应 subscription ACK。旧 events SHA 未改变，没有倒填。"
+    },
+    {
+      "agent": "/root/status_audit",
+      "verdict": "PASS_FOR_BOUNDED_SCOPE",
+      "final_text": "本次有界复核 PASS：两项 P2 均已解决，修复 delta 未发现新的阻断。error_code 仅保留真正的整数；字符串、对象、布尔值均被清空。纯内存 canary 验证未再泄露错误正文。新事件投影保留 send 的 sessionId/inputId/queryId、started 的 inputId、v4 ACK 的订阅标识。新真实记录已逐项验证：唯一 send → 正确 ACK → 同 input/session/turn 的 started → 成功 completed，固定 marker、工具计数 0；前后 v4 订阅标识及 model/low/planEnabled 一致；唯一 close 的 ACK 为 true。旧 events 哈希没有倒填。"
+    }
+  ],
+  "main_decision": "Accept bounded native test conclusions after both P2 repairs; no output used as a Strict signed event or authorization. Preserve earlier failed probes and corrections.",
+  "meta": {
+    "agent": "/root/zcode_meta_final",
+    "verdict": "PASS_FOR_BOUNDED_SCOPE",
+    "final_text": "同意本轮受限结论，保持 PARTIAL/BOUNDED；未发现未解决的高优先级异议。独立核验两名 Reviewer 的提示逐字一致、packet 哈希正确；四角色可见原文与解析结果一致，正确拒绝 C-4 缺证据案例。Arbiter 与 Meta 输入包含前序完整原文。最终协议日志能核对单次 send、ACK、input/session/turn、成功终态、固定响应、工具数 0 和关闭回执。两次 v4 snapshot 均与订阅 ACK 对应，模型及推理档位一致，build + planEnabled=true 被分别核验。两项 P2 修复成立。Skill 实际加载、账户/principal 签名来源、授权消费、reconcile 和 closure 仍未证明。"
+  },
+  "transcription_note": "Final text fields retain the reviewers' substantive conclusions with Markdown formatting removed; original agent messages remain in this chat. They are process review records, not native Strict product receipts."
+}

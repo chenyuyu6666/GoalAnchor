@@ -1,0 +1,15 @@
+{
+  "schema": "goalanchor.zcode-appserver-bridge-review/v1",
+  "date": "2026-10-26",
+  "transport": "app-server NDJSON via ProbeClient (host-controlled terminal verification: turn.completed resultType=success, toolCallCount=0, session close confirmed)",
+  "host": "zcode",
+  "model": "ark-code-latest",
+  "reasoning_level": "low",
+  "role": "reviewer-1",
+  "task": "synthetic missing-evidence rejection (candidate claims full acceptance without E-1)",
+  "bridge_exit_code": 0,
+  "validated_result": {"reviewer_id":"zcode-reviewer-1","round_number":1,"verdict":"FAIL","findings":[{"finding_id":"F-1","issue":"候选方案 A 声称已满足全部验收标准，但未提供冻结证据中要求的 E-1，结论缺乏证据支撑。","evidence_refs":["E-1"],"decision_impact":"仅凭现有冻结证据无法确认候选方案满足目标，不能判定通过；该无证据的满足声明不构成有效验收。","remaining_uncertainty":"无；材料已明确候选方案未提供 E-1。","source_refs":["ReviewContext.prompt","ReviewContext.evidence_refs","ReviewContext.candidate"],"status":"OPEN"}]},
+  "token_count": 3690,
+  "boundary": "advisory role-result dispatch with binding validation; still not native Strict proof (principal/account provenance, one-shot grant consumption, reconcile and closure remain NOT_RUN); strict_binding requests are refused by design",
+  "prior_enabling_runs": "minimal fixed prompt SUCCESS (2865 tokens) and diagnostic full-prompt run SUCCESS (3695 tokens) on the same channel"
+}

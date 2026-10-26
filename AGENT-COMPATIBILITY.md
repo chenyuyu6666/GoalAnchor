@@ -123,6 +123,33 @@ Zcode 使用 `--target zcode --destination <skill-root>` 安装 Skill。其 Agen
 Zcode 自己提供；只需把命名 Agent 映射到 `reviewer`、`arbiter` 和 `meta_reviewer` 三个逻辑
 角色，或提供符合 JSON-over-stdio 协议的桥接命令。
 
+Windows 桌面安装可能不注册 `zcode` PATH 命令。检测时应同时检查安装注册表、开始菜单和
+安装目录中的 `resources/glm/zcode.cjs`，不能把 `Get-Command zcode` 失败解释为未安装。
+本机 3.16.3 桌面版的 CLI 报告版本为 0.17.0；两者分别记录。
+
+`scripts/zcode_protocol_probe.py` 是仓库内的有界原生协议验收工具（不随 wheel 安装）。
+执行 `python scripts/zcode_protocol_probe.py --help` 查看参数：显式指定 CLI、隔离工作目录、
+Provider、模型和该模型支持的 reasoning level；Provider 配置只按路径交给宿主，不读写凭据。
+默认仅预检，`--send` 才发送一次固定短句；请求 ID、session/input/turn 和终态必须关联，
+`session/event.params.type` 是事件类型，`accepted: true` 只表示请求已接纳。
+只有 `turn.completed` 且 `payload.resultType == success`、结果匹配、无工具调用才记成功。
+超时保持 UNKNOWN，仅停止本次会话，不自动重发。若需 `--allow-workspace-mode-write`，
+只对显式指定的隔离测试目录使用；宿主可能持久化该测试目录的模式偏好。
+0.17.0 的计划状态与权限模式是两个字段：`mode=build` 可以同时 `planEnabled=true`。
+探测器读取并核验本会话的 v4 conversation snapshot；不凭 `setMode` ACK 猜测计划状态。
+创建时推理档位同时传入 `model.options.reasoningLevel` 和顶层 `thoughtLevel`，随后读回验证。
+较大或无法解析的分片 snapshot 目前明确拒绝，不能降级为通过。
+
+2026-10-25 本机记录：桌面 GLM-5.3-Flash 完成短句测试和四角色缺证据拒绝测试；
+App Server 的 Coding Plan `ark-code-latest/low` 完成一次关联终态、零工具调用的真实测试。
+详见 `audit/zcode-desktop-review-20261025.json` 与 `audit/zcode-protocol-plan-state-20261025.json`。
+
+`scripts/zcode_goalanchor_bridge.py` 目前是实验性的 legacy/advisory 适配器。
+它拒绝 Strict 输入、错误 envelope、多段 JSON 和不明确的终态；0.17.0 的 one-shot
+`type: result` 输出缺少本适配器所需的明确成功标记，不能据此出具可信审核证明。
+原生 UI 的真实模型答复另作证据，不能用离线 fake CLI 测试替代。
+Strict question、approval、reconcile 和 closure 强制能力仍需独立验收。
+
 ### 其他 Agent
 
 优先使用 `.agents/skills/goalanchor/SKILL.md` 或工具文档指定的等价目录。若宿主只支持自定义目录，使用 `--target custom --destination`，并保留 `SKILL.md` 文件名和 `name: goalanchor`。

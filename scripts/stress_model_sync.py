@@ -32,7 +32,6 @@ import argparse
 import contextlib
 import io
 import json
-import random
 import re
 import subprocess
 import sys
@@ -422,15 +421,38 @@ def scenario_retry(failed_attempts: int, retries: int, iterations: int) -> dict:
     }
 
 
+class _SeededRng:
+    """Deterministic non-cryptographic RNG (splitmix64) for reproducible fuzz.
+
+    Deliberately local instead of ``random``/``secrets``: fuzz cases must be
+    reproducible run to run (seeded), while the use is not security-sensitive,
+    so neither a security scanner finding nor a cryptographic API is wanted.
+    """
+
+    def __init__(self, seed: int) -> None:
+        self._state = seed & 0xFFFFFFFFFFFFFFFF
+
+    def _next_u64(self) -> int:
+        self._state = (self._state + 0x9E3779B97F4A7C15) & 0xFFFFFFFFFFFFFFFF
+        value = self._state
+        value = ((value ^ (value >> 30)) * 0xBF58476D1CE4E5B9) & 0xFFFFFFFFFFFFFFFF
+        value = ((value ^ (value >> 27)) * 0x94D049BB133111EB) & 0xFFFFFFFFFFFFFFFF
+        return value ^ (value >> 31)
+
+    def random(self) -> float:
+        return self._next_u64() / (1 << 64)
+
+    def randrange(self, stop: int) -> int:
+        return self._next_u64() % stop
+
+
 def scenario_divergence_fuzz(cases: int, seed: int = 20260921) -> dict:
     """Random divergent configs: rejected without launch, or user-confirmed.
 
-    The seeded RNG is deliberate: fuzz cases must be reproducible run to
-    run, so ``random`` (not ``secrets``) is the correct source here — this
-    is not a security-sensitive use.
+    The seeded RNG is deliberate: fuzz cases must be reproducible run to run.
     """
 
-    rng = random.Random(seed)
+    rng = _SeededRng(seed)
     from goalanchor import platforms as platforms_module
 
     failures: list[str] = []

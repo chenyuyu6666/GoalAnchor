@@ -1,0 +1,205 @@
+{
+  "level": "real-host-model-smoke",
+  "scenario": "question",
+  "approval_provider": "fixture",
+  "native_ui_verified": false,
+  "approved_requests": 0,
+  "platform": "windows",
+  "model": "gpt-6-luna",
+  "host_binding": {
+    "host": "codex",
+    "user_agent": "goalanchor/0.163.0 (Windows 10.0.26300; x86_64) xterm-256color (goalanchor; 0.9.2)",
+    "model": "gpt-6-luna",
+    "mode": "app-server-plan",
+    "hook_enabled": true,
+    "hook_trust": "controller-owned"
+  },
+  "turn_id": "01a1744c-5541-7340-8ed0-e54b2f85a206",
+  "question_callback_answered": true,
+  "question_answer_path": "signed-core-direction",
+  "question_created_grants": 0,
+  "turn_status": "completed",
+  "methods": [
+    "remoteControl/status/changed",
+    "thread/started",
+    "warning",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "account/updated",
+    "thread/settings/updated",
+    "thread/status/changed",
+    "turn/started",
+    "mcpServer/startupStatus/updated",
+    "item/started",
+    "item/completed",
+    "thread/status/changed",
+    "item/tool/requestUserInput",
+    "turn/moderationMetadata",
+    "serverRequest/resolved",
+    "thread/status/changed",
+    "thread/tokenUsage/updated",
+    "account/rateLimits/updated",
+    "item/started",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "turn/moderationMetadata",
+    "item/completed",
+    "thread/tokenUsage/updated",
+    "account/rateLimits/updated",
+    "thread/status/changed",
+    "turn/completed"
+  ],
+  "diagnostics": [
+    {
+      "method": "warning",
+      "params": {
+        "threadId": "01a1744c-52bc-7a32-9ba6-9fed45bb8585",
+        "message": "Under-development features enabled: local_thread_store_compression. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in C:\\Users\\chen\\.codex\\config.toml."
+      }
+    },
+    {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a1744c-5b00-7e03-b89b-2ec5839db29d",
+          "clientId": null,
+          "content": [
+            {
+              "type": "text",
+              "text": "Use request_user_input now to ask whether the artifact should be Alpha or Beta. Do not choose yourself. After my answer, repeat it and stop. Do not run commands.",
+              "text_elements": []
+            }
+          ]
+        },
+        "threadId": "01a1744c-52bc-7a32-9ba6-9fed45bb8585",
+        "turnId": "01a1744c-5541-7340-8ed0-e54b2f85a206",
+        "startedAtMs": 1792952523520
+      }
+    },
+    {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a1744c-5b00-7e03-b89b-2ec5839db29d",
+          "clientId": null,
+          "content": [
+            {
+              "type": "text",
+              "text": "Use request_user_input now to ask whether the artifact should be Alpha or Beta. Do not choose yourself. After my answer, repeat it and stop. Do not run commands.",
+              "text_elements": []
+            }
+          ]
+        },
+        "threadId": "01a1744c-52bc-7a32-9ba6-9fed45bb8585",
+        "turnId": "01a1744c-5541-7340-8ed0-e54b2f85a206",
+        "completedAtMs": 1792952523520
+      }
+    },
+    {
+      "method": "item/tool/requestUserInput",
+      "params": {
+        "threadId": "01a1744c-52bc-7a32-9ba6-9fed45bb8585",
+        "turnId": "01a1744c-5541-7340-8ed0-e54b2f85a206",
+        "itemId": "call_274788b146254fbda235d49081ad7480",
+        "questions": [
+          {
+            "id": "artifact",
+            "header": "Artifact",
+            "question": "Should the artifact be Alpha or Beta?",
+            "isOther": true,
+            "isSecret": false,
+            "options": [
+              {
+                "label": "Alpha",
+                "description": "Use Alpha as the artifact."
+              },
+              {
+                "label": "Beta",
+                "description": "Use Beta as the artifact."
+              }
+            ]
+          }
+        ],
+        "isBlocking": true,
+        "autoResolutionMs": null
+      }
+    },
+    {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "id": "msg_0851659cc64dc25e016ade48d057bc819196827c3b59d724cb",
+          "text": "",
+          "phase": "final_answer",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null
+        },
+        "threadId": "01a1744c-52bc-7a32-9ba6-9fed45bb8585",
+        "turnId": "01a1744c-5541-7340-8ed0-e54b2f85a206",
+        "startedAtMs": 1792952528183
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a1744c-52bc-7a32-9ba6-9fed45bb8585",
+        "turnId": "01a1744c-5541-7340-8ed0-e54b2f85a206",
+        "itemId": "msg_0851659cc64dc25e016ade48d057bc819196827c3b59d724cb",
+        "delta": "You"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a1744c-52bc-7a32-9ba6-9fed45bb8585",
+        "turnId": "01a1744c-5541-7340-8ed0-e54b2f85a206",
+        "itemId": "msg_0851659cc64dc25e016ade48d057bc819196827c3b59d724cb",
+        "delta": " chose"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a1744c-52bc-7a32-9ba6-9fed45bb8585",
+        "turnId": "01a1744c-5541-7340-8ed0-e54b2f85a206",
+        "itemId": "msg_0851659cc64dc25e016ade48d057bc819196827c3b59d724cb",
+        "delta": " Alpha"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a1744c-52bc-7a32-9ba6-9fed45bb8585",
+        "turnId": "01a1744c-5541-7340-8ed0-e54b2f85a206",
+        "itemId": "msg_0851659cc64dc25e016ade48d057bc819196827c3b59d724cb",
+        "delta": "."
+      }
+    },
+    {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "id": "msg_0851659cc64dc25e016ade48d057bc819196827c3b59d724cb",
+          "text": "You chose Alpha.",
+          "phase": "final_answer",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null
+        },
+        "threadId": "01a1744c-52bc-7a32-9ba6-9fed45bb8585",
+        "turnId": "01a1744c-5541-7340-8ed0-e54b2f85a206",
+        "completedAtMs": 1792952528562
+      }
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "schema": "goalanchor.zcode-protocol-probe/v1",
+  "status": "PARTIAL/BOUNDED",
+  "outcome": "SUCCESS",
+  "reason": null,
+  "failure": null,
+  "strict_proof": false,
+  "native_strict_loop_verified": false,
+  "session_id": "sess_a94d4c89-4c06-42b6-b28f-602dc11a36d0",
+  "input_id": "goalanchor-probe-1dc3b303-7530-4c17-858c-bd61d5dc17d7",
+  "turn_id": "turn_52f398b9-d60e-4196-808a-fdc3a283a6c5",
+  "requested_model": {
+    "providerId": "6dccdae9-11dc-40c7-a024-a0502e9751fd",
+    "modelId": "ark-code-latest",
+    "options": {
+      "reasoningLevel": "low"
+    }
+  },
+  "binding_verified": true,
+  "requested_mode": "plan",
+  "mode": "plan",
+  "permission_mode": "build",
+  "plan_enabled_observed": true,
+  "mode_update": {
+    "attempted": false,
+    "confirmed": false,
+    "may_persist_workspace_mode": false,
+    "scope": "isolated_probe_workspace"
+  },
+  "send_count": 1,
+  "automatic_retry": false,
+  "stop_sent": false,
+  "denied_interactions": 0,
+  "terminal": {
+    "outcome": "SUCCESS",
+    "result_type": "success",
+    "event_id": "13c4e9d4-1523-4eb4-86cd-7a3f970ec63a",
+    "tool_call_count": 0,
+    "token_count": 3185
+  },
+  "cleanup": {
+    "attempted": true,
+    "closed": true
+  },
+  "elapsed_seconds": 13.937,
+  "evidence_boundary": "Native transport observation only; no authorization or review proof issued.",
+  "cli_path": "D:\\AIWorkspace\\Tools\\ZCode\\resources\\glm\\zcode.cjs",
+  "cli_sha256": "97490d0f06a7a225d54d47817acf4b4859cdb268b59f2490caaeda982bef063a",
+  "provider_config_passed": true,
+  "event_projection_path": "D:\\Project\\GoalAnchor\\Project\\GoalAnchor\\audit\\zcode-protocol-final-20261025.events.jsonl"
+}

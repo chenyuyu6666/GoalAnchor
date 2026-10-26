@@ -1,0 +1,217 @@
+{
+  "level": "real-host-model-smoke",
+  "scenario": "smoke",
+  "approval_provider": "none",
+  "native_ui_verified": false,
+  "approved_requests": 0,
+  "platform": "windows",
+  "model": "gpt-6-luna",
+  "host_binding": {
+    "host": "codex",
+    "user_agent": "goalanchor/0.163.0 (Windows 10.0.26300; x86_64) xterm-256color (goalanchor; 0.9.2)",
+    "model": "gpt-6-luna",
+    "mode": "app-server-command-approval",
+    "hook_enabled": true,
+    "hook_trust": "controller-owned"
+  },
+  "turn_id": "01a1744c-38db-7ec3-90c5-a8a94085a324",
+  "turn_status": "completed",
+  "methods": [
+    "remoteControl/status/changed",
+    "thread/started",
+    "warning",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "account/updated",
+    "thread/status/changed",
+    "turn/started",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "item/started",
+    "item/completed",
+    "item/started",
+    "item/completed",
+    "item/started",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "turn/moderationMetadata",
+    "item/completed",
+    "thread/tokenUsage/updated",
+    "account/rateLimits/updated",
+    "thread/status/changed",
+    "turn/completed"
+  ],
+  "diagnostics": [
+    {
+      "method": "warning",
+      "params": {
+        "threadId": "01a1744c-36d6-7201-84d2-57d0a9f37b4a",
+        "message": "Under-development features enabled: local_thread_store_compression. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in C:\\Users\\chen\\.codex\\config.toml."
+      }
+    },
+    {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a1744c-3f20-7ab0-804d-2d5220dd861c",
+          "clientId": null,
+          "content": [
+            {
+              "type": "text",
+              "text": "Do not call tools. Reply exactly GOALANCHOR_HOST_OK.",
+              "text_elements": []
+            }
+          ]
+        },
+        "threadId": "01a1744c-36d6-7201-84d2-57d0a9f37b4a",
+        "turnId": "01a1744c-38db-7ec3-90c5-a8a94085a324",
+        "startedAtMs": 1792952516384
+      }
+    },
+    {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a1744c-3f20-7ab0-804d-2d5220dd861c",
+          "clientId": null,
+          "content": [
+            {
+              "type": "text",
+              "text": "Do not call tools. Reply exactly GOALANCHOR_HOST_OK.",
+              "text_elements": []
+            }
+          ]
+        },
+        "threadId": "01a1744c-36d6-7201-84d2-57d0a9f37b4a",
+        "turnId": "01a1744c-38db-7ec3-90c5-a8a94085a324",
+        "completedAtMs": 1792952516384
+      }
+    },
+    {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "reasoning",
+          "id": "rs_0ff46b864dc07e0f016ade48c6824c8191b0cc00bf97fab7ed",
+          "summary": [],
+          "content": []
+        },
+        "threadId": "01a1744c-36d6-7201-84d2-57d0a9f37b4a",
+        "turnId": "01a1744c-38db-7ec3-90c5-a8a94085a324",
+        "startedAtMs": 1792952518315
+      }
+    },
+    {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "reasoning",
+          "id": "rs_0ff46b864dc07e0f016ade48c6824c8191b0cc00bf97fab7ed",
+          "summary": [],
+          "content": []
+        },
+        "threadId": "01a1744c-36d6-7201-84d2-57d0a9f37b4a",
+        "turnId": "01a1744c-38db-7ec3-90c5-a8a94085a324",
+        "completedAtMs": 1792952518316
+      }
+    },
+    {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "id": "msg_0ff46b864dc07e0f016ade48c68cdc8191a3ea0b5ce37487e6",
+          "text": "",
+          "phase": "final_answer",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null
+        },
+        "threadId": "01a1744c-36d6-7201-84d2-57d0a9f37b4a",
+        "turnId": "01a1744c-38db-7ec3-90c5-a8a94085a324",
+        "startedAtMs": 1792952518358
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a1744c-36d6-7201-84d2-57d0a9f37b4a",
+        "turnId": "01a1744c-38db-7ec3-90c5-a8a94085a324",
+        "itemId": "msg_0ff46b864dc07e0f016ade48c68cdc8191a3ea0b5ce37487e6",
+        "delta": "GO"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a1744c-36d6-7201-84d2-57d0a9f37b4a",
+        "turnId": "01a1744c-38db-7ec3-90c5-a8a94085a324",
+        "itemId": "msg_0ff46b864dc07e0f016ade48c68cdc8191a3ea0b5ce37487e6",
+        "delta": "AL"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a1744c-36d6-7201-84d2-57d0a9f37b4a",
+        "turnId": "01a1744c-38db-7ec3-90c5-a8a94085a324",
+        "itemId": "msg_0ff46b864dc07e0f016ade48c68cdc8191a3ea0b5ce37487e6",
+        "delta": "ANCH"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a1744c-36d6-7201-84d2-57d0a9f37b4a",
+        "turnId": "01a1744c-38db-7ec3-90c5-a8a94085a324",
+        "itemId": "msg_0ff46b864dc07e0f016ade48c68cdc8191a3ea0b5ce37487e6",
+        "delta": "OR"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a1744c-36d6-7201-84d2-57d0a9f37b4a",
+        "turnId": "01a1744c-38db-7ec3-90c5-a8a94085a324",
+        "itemId": "msg_0ff46b864dc07e0f016ade48c68cdc8191a3ea0b5ce37487e6",
+        "delta": "_HOST"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a1744c-36d6-7201-84d2-57d0a9f37b4a",
+        "turnId": "01a1744c-38db-7ec3-90c5-a8a94085a324",
+        "itemId": "msg_0ff46b864dc07e0f016ade48c68cdc8191a3ea0b5ce37487e6",
+        "delta": "_OK"
+      }
+    },
+    {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "id": "msg_0ff46b864dc07e0f016ade48c68cdc8191a3ea0b5ce37487e6",
+          "text": "GOALANCHOR_HOST_OK",
+          "phase": "final_answer",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null
+        },
+        "threadId": "01a1744c-36d6-7201-84d2-57d0a9f37b4a",
+        "turnId": "01a1744c-38db-7ec3-90c5-a8a94085a324",
+        "completedAtMs": 1792952518505
+      }
+    }
+  ]
+}

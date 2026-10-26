@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from typing import Protocol
 
 
 @dataclass(frozen=True)
@@ -123,4 +124,115 @@ class PromptOptimizer:
         return None if entry is None or entry[1] <= 0 else entry[0]
 
 
-__all__ = ["BudgetGovernor", "ComplexityResult", "ProgressWatchdog", "PromptOptimizer", "TaskComplexityEngine"]
+@dataclass(frozen=True)
+class EfficiencyDecision:
+    allowed: bool
+    reason: str
+    complexity: ComplexityResult
+    tokens_used: int | None
+    elapsed_seconds: float
+    progress_alert: bool
+    token_status: str
+
+
+@dataclass(frozen=True)
+class EfficiencyObservation:
+    """One measured workflow-boundary observation supplied by a host provider."""
+
+    dependency_count: int
+    risk: str
+    blocking_uncertainty: bool
+    evidence_change_count: int
+    operation: str
+    operation_fingerprint: str
+    tokens_used: int | None
+    elapsed_seconds: float
+
+
+class EfficiencyObservationProvider(Protocol):
+    """Host-neutral supplier of the latest measured efficiency observation.
+
+    ``latest`` returns None while the host has no measured usage yet; a missing
+    token count stays UNKNOWN and blocks budget admission.
+    """
+
+    def latest(self) -> EfficiencyObservation | None: ...
+
+
+@dataclass
+class EfficiencyRuntime:
+    """Fail-closed runtime facade for measured efficiency governance.
+
+    This class observes a workflow boundary without changing the underlying
+    GoalAnchor decision. Missing model usage remains UNKNOWN and blocks budget
+    admission until the caller supplies a measured token count.
+    """
+
+    budget: BudgetGovernor
+    complexity_engine: TaskComplexityEngine = field(default_factory=TaskComplexityEngine)
+    watchdog: ProgressWatchdog = field(default_factory=ProgressWatchdog)
+    optimizer: PromptOptimizer = field(default_factory=PromptOptimizer)
+
+    def admit(
+        self,
+        *,
+        dependency_count: int,
+        risk: str,
+        blocking_uncertainty: bool,
+        evidence_change_count: int,
+        operation: str,
+        operation_fingerprint: str,
+        tokens_used: int | None,
+        elapsed_seconds: float,
+    ) -> EfficiencyDecision:
+        complexity = self.complexity_engine.assess(
+            dependency_count=dependency_count,
+            risk=risk,
+            blocking_uncertainty=blocking_uncertainty,
+            evidence_change_count=evidence_change_count,
+        )
+        progress_alert = self.watchdog.observe(operation, operation_fingerprint)
+        budget_allowed = self.budget.allow(tokens_used=tokens_used, elapsed_seconds=elapsed_seconds)
+        token_status = "MEASURED" if tokens_used is not None else "UNKNOWN"
+        if progress_alert:
+            return EfficiencyDecision(
+                False, "REPEATED_OPERATION", complexity, tokens_used, elapsed_seconds, True, token_status
+            )
+        if not budget_allowed:
+            return EfficiencyDecision(
+                False, self.budget.reason, complexity, tokens_used, elapsed_seconds, False, token_status
+            )
+        return EfficiencyDecision(
+            True, "WITHIN_BUDGET", complexity, tokens_used, elapsed_seconds, False, token_status
+        )
+
+    def admit_observation(self, provider: EfficiencyObservationProvider) -> EfficiencyDecision | None:
+        observation = provider.latest()
+        if observation is None:
+            return None
+        return self.admit(
+            dependency_count=observation.dependency_count,
+            risk=observation.risk,
+            blocking_uncertainty=observation.blocking_uncertainty,
+            evidence_change_count=observation.evidence_change_count,
+            operation=observation.operation,
+            operation_fingerprint=observation.operation_fingerprint,
+            tokens_used=observation.tokens_used,
+            elapsed_seconds=observation.elapsed_seconds,
+        )
+
+    def reuse_prompt(self, context_fingerprint: str) -> str | None:
+        return self.optimizer.reuse(context_fingerprint)
+
+
+__all__ = [
+    "BudgetGovernor",
+    "ComplexityResult",
+    "EfficiencyDecision",
+    "EfficiencyObservation",
+    "EfficiencyObservationProvider",
+    "EfficiencyRuntime",
+    "ProgressWatchdog",
+    "PromptOptimizer",
+    "TaskComplexityEngine",
+]

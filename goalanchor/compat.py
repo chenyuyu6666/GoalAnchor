@@ -941,7 +941,15 @@ def _run_platforms_report(config_path: Path | None, *, probe: bool = False) -> d
     return report
 
 
+def _force_utf8_stdio() -> None:
+    """JSON line output may contain non-ASCII; never inherit a cp1252 console."""
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
+    _force_utf8_stdio()
     arguments = list(sys.argv[1:] if argv is None else argv)
     if arguments and arguments[0] == "workflow":
         from .workflow_cli import main as workflow_main

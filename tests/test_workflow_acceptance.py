@@ -186,6 +186,51 @@ def test_unknown_reconciliation_requires_correlated_evidence_and_never_resends(t
     assert calls == [1]
 
 
+def test_reconciled_unknown_can_observe_and_close_without_review_evidence_drift(tmp_path):
+    """Recovery evidence added after review must not invalidate the frozen review context."""
+    runtime, base, user, observer = setup_workflow(tmp_path)
+    review(runtime, observer)
+    op = operation(tmp_path, base)
+    approve(runtime, op, user)
+
+    def lost(_):
+        raise TimeoutError("response lost")
+
+    assert runtime.execute("O1", "lost", lost)["state"] == "UNKNOWN"
+    snapshot = EvidenceSnapshot.capture("E-result", "O1", b"observed success", source="runner",
+                                        collected_at=NOW)
+    runtime.add_evidence("G1", snapshot, observer.sign("observer.evidence", snapshot.fingerprint,
+                         {"goal_id": "G1", "snapshot": snapshot.to_dict()}, at=NOW))
+    payload = {"attempt_id": "lost", "operation_digest": op.fingerprint, "state": "SUCCEEDED",
+               "result": {"exit_code": 0, "object_ref": "artifact"}, "evidence_id": "E-result",
+               "source_request_id": "O1"}
+    assert runtime.reconcile("lost", observer.sign("observer.reconcile", "lost", payload, at=NOW))[
+        "state"] == "SUCCEEDED"
+    observed = {"goal_id": "G1", "baseline_digest": base.fingerprint, "criterion_id": "C1",
+                "object_ref": "artifact", "actual": "done", "attempt_id": "lost"}
+    runtime.observe("G1", observer.sign("observer.observation", base.fingerprint, observed, at=NOW))
+    assert runtime.close("G1")["state"] == "CLOSED"
+
+
+def test_frozen_review_still_rejects_tampered_or_removed_evidence(tmp_path):
+    runtime, _base, _user, observer = setup_workflow(tmp_path)
+    review(runtime, observer)
+    ctx = runtime.review_context("G1")
+    assert ctx.evidence_refs
+    import sqlite3
+
+    db = sqlite3.connect(runtime.store.path)
+    try:
+        db.execute("PRAGMA foreign_keys=OFF")
+        # Bypass the append-only triggers and physically remove reviewed evidence.
+        db.execute("DELETE FROM records WHERE kind='evidence'")
+        db.commit()
+    finally:
+        db.close()
+    with pytest.raises(ContractValidationError):
+        runtime.close("G1")
+
+
 @pytest.mark.parametrize("change", [{"object_ref": "other"}, {"baseline_digest": "0" * 64},
                                     {"object_digest": "0" * 64}, {"actual": "stale version"}])
 def test_observation_cannot_substitute_object_or_version(tmp_path, change):
