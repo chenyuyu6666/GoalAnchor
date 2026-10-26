@@ -105,6 +105,8 @@ def _run(
         input=json.dumps(request.to_dict(), ensure_ascii=False) + "\n",
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         env=env,
         check=False,
         timeout=15,

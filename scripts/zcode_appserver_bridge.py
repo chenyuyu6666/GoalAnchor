@@ -95,6 +95,11 @@ def run_request(request: Any, client_factory: Callable[[str], ProbeClient]) -> d
 
 
 def main() -> int:
+    # Windows locales other than UTF-8 would otherwise decode the JSON request
+    # (which may contain Chinese prompts) as cp1252 and corrupt it.
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     try:
         line = sys.stdin.readline(MAX_INPUT_CHARS + 1)
         if len(line) > MAX_INPUT_CHARS:

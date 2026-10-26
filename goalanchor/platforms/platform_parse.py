@@ -116,7 +116,12 @@ def _run_subprocess(
     env: Mapping[str, str],
 ) -> tuple[str, str]:
     resolved = (shutil.which(argv[0]) or argv[0],) + tuple(argv[1:])
-    merged_env = {**os.environ, **env}
+    merged_env = {
+        **os.environ,
+        "PYTHONUTF8": "1",
+        "PYTHONIOENCODING": "utf-8",
+        **env,
+    }
     try:
         completed = subprocess.run(
             resolved,

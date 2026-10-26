@@ -503,7 +503,12 @@ class JsonStdioAgentAdapter:
                 check=False,
                 encoding="utf-8",
                 errors="replace",
-                env={**os.environ, **command.env},
+                env={
+                    **os.environ,
+                    "PYTHONUTF8": "1",
+                    "PYTHONIOENCODING": "utf-8",
+                    **command.env,
+                },
                 shell=False,
                 timeout=command.timeout_seconds,
             )
