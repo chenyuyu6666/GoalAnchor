@@ -263,6 +263,49 @@ def test_strict_authorization_question_and_one_time_grant(tmp_path):
     assert closure["state"] == "CLOSED"
     assert runtime.close(baseline.goal_id) == closure
 
+
+def test_strict_reconciled_unknown_can_close_without_review_evidence_drift(tmp_path):
+    """Post-review recovery evidence must not invalidate the frozen Strict review."""
+    runtime, baseline, user, observer = _ready_operation_runtime(tmp_path)
+    bundle = _bundle(runtime)
+    event = observer.sign("observer.review", runtime.review_context(baseline.goal_id).fingerprint, bundle, at=NOW)
+    assert runtime.submit_review(baseline.goal_id, bundle, event)["status"] == "PASSED"
+    question = runtime.request_authorization("op-1")
+    runtime.answer(
+        question.question.question_id,
+        user.sign("user.answer", question.question.fingerprint,
+                  {"answer_id": "approve-1", "selected": ["approve"], "custom": None}, at=NOW),
+    )
+
+    def lost(_operation):
+        raise TimeoutError("result unknown")
+
+    receipt = runtime.execute("op-1", "attempt-lost", lost)
+    assert receipt["state"] == "UNKNOWN"
+    reconcile_payload = {
+        "attempt_id": "attempt-lost",
+        "operation_digest": receipt["operation_digest"],
+        "outcome": "SUCCEEDED",
+        "result": {"exit_code": 0, "object_ref": "artifact.txt"},
+    }
+    reconciled = runtime.reconcile(
+        "attempt-lost",
+        observer.sign("observer.reconcile", "attempt-lost", reconcile_payload, at=NOW),
+    )
+    assert reconciled["state"] == "SUCCEEDED"
+    observation_payload = {
+        "goal_id": baseline.goal_id,
+        "baseline_digest": baseline.fingerprint,
+        "criterion_id": "artifact",
+        "object_ref": "artifact.txt",
+        "actual": "done",
+        "attempt_id": "attempt-lost",
+    }
+    assert runtime.observe(
+        baseline.goal_id, observer.sign("observer.observation", baseline.fingerprint, observation_payload, at=NOW)
+    )["status"] == "PASS"
+    assert runtime.close(baseline.goal_id)["state"] == "CLOSED"
+
 def test_strict_authorization_answer_rejects_runtime_identity_rotation(tmp_path):
     runtime, _baseline, user, observer = _ready_operation_runtime(tmp_path)
     bundle = _bundle(runtime)

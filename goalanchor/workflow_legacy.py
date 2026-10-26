@@ -137,12 +137,7 @@ class Workflow:
         self._commit([("evidence", key, record)], {("evidence", key): old, ("goal", goal_id): goal}, event)
         return record
 
-    def review_context(self, goal_id: str) -> ReviewContext:
-        goal = self._goal(goal_id)
-        baseline = Baseline.from_dict(goal["baseline"])
-        snapshots = [EvidenceSnapshot.from_dict(item["snapshot"]) for item in self.store.list("evidence", goal_id)]
-        if not snapshots or any(not item.valid_at(self.clock()) for item in snapshots):
-            raise ContractValidationError("review requires current verified evidence")
+    def _build_review_context(self, baseline: Baseline, snapshots: list[EvidenceSnapshot]) -> ReviewContext:
         snapshots.sort(key=lambda item: item.evidence_id)
         return ReviewContext(
             goal=baseline.objective,
@@ -158,6 +153,40 @@ class Workflow:
             ),
             evidence_digests=tuple((item.evidence_id, item.sha256) for item in snapshots),
         )
+
+    def review_context(self, goal_id: str) -> ReviewContext:
+        goal = self._goal(goal_id)
+        baseline = Baseline.from_dict(goal["baseline"])
+        snapshots = [EvidenceSnapshot.from_dict(item["snapshot"]) for item in self.store.list("evidence", goal_id)]
+        if not snapshots or any(not item.valid_at(self.clock()) for item in snapshots):
+            raise ContractValidationError("review requires current verified evidence")
+        return self._build_review_context(baseline, snapshots)
+
+    def _frozen_review_context(self, goal_id: str, review: Payload) -> ReviewContext:
+        """Rebuild the context frozen at review submission time.
+
+        Recovery evidence added after review (e.g. reconcile proofs) must not
+        invalidate the review, while evidence referenced by the frozen bundle
+        is still re-checked for presence, tampering and expiry.
+        """
+        goal = self._goal(goal_id)
+        baseline = Baseline.from_dict(goal["baseline"])
+        frozen = ReviewContext.from_dict(review["history"][-1]["context"])
+        available = {
+            EvidenceSnapshot.from_dict(item["snapshot"]).evidence_id:
+                EvidenceSnapshot.from_dict(item["snapshot"])
+            for item in self.store.list("evidence", goal_id)
+        }
+        try:
+            snapshots = [available[ref] for ref in frozen.evidence_refs]
+        except KeyError as exc:
+            raise ContractValidationError("review evidence is missing") from exc
+        if any(not item.valid_at(self.clock()) for item in snapshots):
+            raise ContractValidationError("review requires current verified evidence")
+        context = self._build_review_context(baseline, snapshots)
+        if context.fingerprint != review["context_fingerprint"]:
+            raise ContractValidationError("review evidence changed")
+        return context
 
     def review_packets(self, goal_id: str, bundle: Payload) -> dict[str, Payload]:
         context = self.review_context(goal_id)
@@ -279,8 +308,7 @@ class Workflow:
         goal = self._goal(goal_id)
         if review["status"] != "PASSED" or review["baseline_digest"] != goal["baseline_digest"]:
             raise ContractValidationError("valid review required")
-        if self.review_context(goal_id).fingerprint != review["context_fingerprint"]:
-            raise ContractValidationError("evidence changed since review")
+        self._frozen_review_context(goal_id, review)
         source = SignedEvent.from_dict(self._get_event(review["source_event_id"]))
         payload = self._verify(self.observer_authority, source, "observer.review", review["context_fingerprint"])
         if canonical(payload) != canonical(review["history"][-1]):

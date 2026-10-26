@@ -920,7 +920,7 @@ class StrictWorkflow(Workflow):
         )
         return record
 
-    def review_context(self, goal_id: str) -> ReviewContext:
+    def review_context(self, goal_id: str, *, _frozen_refs: frozenset[str] | None = None) -> ReviewContext:
         try:
             snapshot = self.store.read_strict_snapshot(goal_id)
         except ContractValidationError as exc:
@@ -935,13 +935,22 @@ class StrictWorkflow(Workflow):
             subject=baseline.fingerprint,
             expected_payload=baseline.to_dict(),
         )
-        evidence_snapshots: list[EvidenceSnapshot] = []
-        evidence_events: list[tuple[SignedEvent, Payload, EvidenceSnapshot]] = []
-        for head, proof, projection in zip(
+        evidence_triples = list(zip(
             snapshot["evidence_heads"], snapshot["evidence_proofs"],
             [snapshot["evidence_projections"].get(item["subject_id"]) for item in snapshot["evidence_heads"]],
             strict=True,
-        ):
+        ))
+        verified_proofs: list[Payload] = []
+        if _frozen_refs is not None:
+            evidence_triples = [
+                triple for triple in evidence_triples if triple[0]["subject_id"] in _frozen_refs
+            ]
+            if len({triple[0]["subject_id"] for triple in evidence_triples}) != len(_frozen_refs):
+                raise self._strict_error("UNTRUSTED", "Strict review evidence is missing")
+        evidence_snapshots: list[EvidenceSnapshot] = []
+        evidence_events: list[tuple[SignedEvent, Payload, EvidenceSnapshot]] = []
+        for head, proof, projection in evidence_triples:
+            verified_proofs.append(proof)
             evidence = self._load_evidence(
                 head, proof, projection, baseline,
                 snapshot["source_events"][proof["source_event_id"]]["payload"],
@@ -988,7 +997,7 @@ class StrictWorkflow(Workflow):
         if after["binding_digest"] != expected_runtime:
             raise self._strict_error("STALE", "Runtime identity changed during context verification")
         self._require_context_deadlines(
-            baseline_proof, snapshot["evidence_proofs"], evidence_snapshots
+            baseline_proof, verified_proofs, evidence_snapshots
         )
         evidence_snapshots.sort(key=lambda item: item.evidence_id)
         evidence_heads = [
@@ -998,7 +1007,7 @@ class StrictWorkflow(Workflow):
                 "proof_digest": self.store.fingerprint(proof),
                 "source_seq": proof["source_seq"],
             }
-            for head, proof in zip(snapshot["evidence_heads"], snapshot["evidence_proofs"], strict=True)
+            for head, proof in ((triple[0], triple[1]) for triple in evidence_triples)
         ]
         strict_binding = {
             "schema_version": "goalanchor.strict-context/v1",
@@ -1669,8 +1678,17 @@ class StrictWorkflow(Workflow):
     ) -> None:
         validate_history(self, goal_id, context, previous)
 
+    def _frozen_review_context(self, goal_id: str, review: Payload) -> ReviewContext:
+        """Context frozen at review submission; recovery evidence added later is excluded."""
+        frozen = ReviewContext.from_dict(review["history"][-1]["context"])
+        return self.review_context(goal_id, _frozen_refs=frozenset(frozen.evidence_refs))
+
     def _current_review(self, goal_id: str, context: ReviewContext) -> Payload | None:
         review = self.store.get("strict_review_record", goal_id)
+        if review is not None:
+            # Consumers validate the frozen review context, not the live evidence
+            # set, so post-review recovery evidence cannot invalidate the review.
+            context = self._frozen_review_context(goal_id, review)
         self._validate_strict_review_history(goal_id, context, review)
         return review
 
@@ -1854,6 +1872,8 @@ class StrictWorkflow(Workflow):
         self._validate_strict_operation_record(raw_operation, operation, baseline)
         context = self.review_context(operation.goal_id)
         review = self._current_review(operation.goal_id, context)
+        if review is not None:
+            context = self._frozen_review_context(operation.goal_id, review)
         if (
             review is None
             or review.get("status") != "PASSED"
@@ -3090,6 +3110,8 @@ class StrictWorkflow(Workflow):
         goal, baseline = self._load_baseline(snapshot, goal_id)
         context = self.review_context(goal_id)
         review = self._current_review(goal_id, context)
+        if review is not None:
+            context = self._frozen_review_context(goal_id, review)
         if (
             review is None
             or review.get("status") != "PASSED"
