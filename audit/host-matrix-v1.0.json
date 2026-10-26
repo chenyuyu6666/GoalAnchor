@@ -10,11 +10,12 @@
       "os": "Windows",
       "mode": "app-server",
       "capability": "LIMITED",
-      "status": "PARTIAL/VERIFIED_REVIEW_DISPATCH_AND_APPSERVER_CALLBACKS",
+      "status": "PARTIAL/VERIFIED_DEEP_LOOP",
       "execution_path": "scripts/verify_codex_workflow_host.py",
       "evidence": "Built-in probe returned probe=ok; real four-role Codex review dispatch with gpt-6-astra completed WARN, 29,991 tokens; on 2026-10-26 all five App Server scenarios (smoke, question, cancel, decline, accept) completed on gpt-6-luna with real model turns: signed-core question callback answered, interrupt confirmed, escalated-command approval declined and accepted (fixture SUCCEEDED, 1 approved request). Earlier failure root-caused to model routing: gpt-6-astra and codex-family models return HTTP 400 'not supported when using Codex with a ChatGPT account' through the current CC Switch proxy; gpt-6-luna is the supported channel (see audit/codex-appserver-smoke-20261026.json).",
       "mapped_tests": ["tests/test_codex_host.py", "tests/test_codex_controller.py"],
-      "limitations": "Deep loop verified 2026-10-26 (audit/codex-appserver-accept-20261026b.json): real gpt-6-luna turn completed question/approval/dispatch/receipt/observation/closure (closure=CLOSED) and one-shot consumption (second dispatch without new approval BLOCKED:ContractValidationError). Boundary: review results inside the loop are a synthetic fixture (real model review dispatch evidenced separately on 2026-10-24); UNKNOWN/reconcile through App Server remains NOT_RUN."
+      "deep_loop_evidence": "2026-10-26: (1) real-review scenario — four REAL model roles (reviewer-1/2, arbiter, meta on gpt-6-luna, 128,832 measured exec tokens, arbiter extra findings field tolerated and recorded) drove question/approval/dispatch/receipt/observation/closure=CLOSED with one-shot consumption BLOCKED:ContractValidationError (audit/codex-appserver-realreview-20261026b.json); (2) reconcile scenario — dispatch with forced tiny timeout produced receipt UNKNOWN with no automatic retry, then observer-signed reconcile with correlated evidence flipped it to SUCCEEDED; closure after reconcile is honestly blocked by evidence-freeze semantics (audit/codex-appserver-reconcile-20261026.json); (3) P6 before/after — compact prompt accepted on MEDIUM (-19 tokens, correctness held) and rejected on HIGH (+1390 tokens), decision PARTIAL/BOUNDED (audit/prompt-optimizer-experiment-20261026.json).",
+      "limitations": "Reconciled goals cannot close under current evidence-freeze semantics (recorded boundary, not a defect claim); single-pair P6 runs; native UI and account provenance remain unverified."
     },
     {
       "host": "claude",

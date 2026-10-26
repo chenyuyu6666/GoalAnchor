@@ -14,7 +14,7 @@
     "P3_host_neutral_protocol": "IMPLEMENTED_AND_VERIFIED (all five public interfaces exist incl. EfficiencyObservationProvider; native bindings remain PARTIAL)",
     "P4_native_hosts": "PARTIAL/BOUNDED",
     "P5_efficiency_baseline": "PARTIAL/BOUNDED (offline baseline + opportunistic samples + 2026-10-26 fixed-task LOW/MEDIUM/HIGH real samples on gpt-6-luna all correct; UNKNOWN/reconcile tier NOT_RUN pending reconcile harness)",
-    "P6_efficiency_components": "PARTIAL/BOUNDED (five components, reuse rule and admission facade done; before/after optimization experiments await real runtime)",
+    "P6_efficiency_components": "PARTIAL/BOUNDED (five components, reuse rule, admission facade and provider done; 2026-10-26 before/after experiment: compact prompt accepted on MEDIUM (-19 tokens, correctness held), rejected on HIGH (+1390); broader before/after coverage awaits real runtime)",
     "P7_final_release": "DEFERRED"
   },
   "implemented_and_verified": [
@@ -51,9 +51,9 @@
   },
   "host_matrix": {
     "codex": {
-      "status": "PARTIAL/VERIFIED_REVIEW_DISPATCH_AND_APPSERVER_CALLBACKS",
+      "status": "PARTIAL/VERIFIED_DEEP_LOOP",
       "installed_version": "0.163.0",
-      "evidence": "Real four-role review dispatch (gpt-6-astra, 29,991 tokens, WARN) plus 2026-10-26 App Server callbacks: all five scenarios (smoke/question/cancel/decline/accept) completed on gpt-6-luna with signed-core question answering and escalated-command approval fixture SUCCEEDED. Root cause of the earlier failure was model routing (ChatGPT account channel supports gpt-6-luna only). One-shot grant consumption, UNKNOWN/reconcile and observation/closure through App Server remain NOT_RUN."
+      "evidence": "2026-10-26 deep loop: real four-role review (gpt-6-luna, 128,832 tokens) -> signed approval -> dispatch -> receipt -> observation -> closure=CLOSED with one-shot consumption blocked; UNKNOWN receipt reconciled to SUCCEEDED via observer proof (post-reconcile closure blocked by evidence-freeze semantics, recorded); P6 before/after experiment accepted compact prompt on MEDIUM tier only. All on App Server plus codex exec. Native UI/account provenance remain unverified."
     },
     "claude": {
       "status": "PARTIAL/BOUNDED",
