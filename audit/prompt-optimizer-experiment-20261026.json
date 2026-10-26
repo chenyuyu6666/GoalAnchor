@@ -1,0 +1,47 @@
+{
+  "schema": "goalanchor.p6-prompt-optimizer-experiment/v1",
+  "date": "2026-10-26",
+  "model": "gpt-6-luna",
+  "boundary": "single-pair runs per tier; acceptance requires both runs correct and token delta < 0; no claim beyond these fixed tasks",
+  "results": {
+    "medium-two-reviewer": {
+      "baseline": {
+        "exit_code": 0,
+        "tokens_used": 27812,
+        "elapsed_seconds": 7.75,
+        "correct": true
+      },
+      "compact": {
+        "exit_code": 0,
+        "tokens_used": 27793,
+        "elapsed_seconds": 8.234,
+        "correct": true
+      },
+      "token_delta": -19,
+      "elapsed_delta_seconds": 0.484
+    },
+    "high-dispute-review": {
+      "baseline": {
+        "exit_code": 0,
+        "tokens_used": 27878,
+        "elapsed_seconds": 6.141,
+        "correct": true
+      },
+      "compact": {
+        "exit_code": 0,
+        "tokens_used": 29268,
+        "elapsed_seconds": 9.437,
+        "correct": true
+      },
+      "token_delta": 1390,
+      "elapsed_delta_seconds": 3.296
+    }
+  },
+  "optimizer_accepted": {
+    "medium-two-reviewer": {
+      "context_fingerprint": "fdf3dafb5eb390627f9c5d8b886c7eb9d376e8f75e3fd40401f757e10834e397",
+      "token_saving": 19
+    }
+  },
+  "decision": "PARTIAL/BOUNDED"
+}
