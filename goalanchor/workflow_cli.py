@@ -118,6 +118,9 @@ def run_demo(directory: Path) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            stream.reconfigure(encoding='utf-8', errors='replace')
     parser = argparse.ArgumentParser(prog='goalanchor workflow')
     commands = parser.add_subparsers(dest='command', required=True)
     for name in ('status', 'audit', 'recover'):
