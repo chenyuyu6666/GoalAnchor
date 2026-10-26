@@ -52,6 +52,7 @@
       "mapped_tests": ["tests/test_host_contract.py", "tests/test_zcode_goalanchor_bridge.py", "tests/test_zcode_protocol_probe.py"],
       "final_protocol_trace": "audit/zcode-protocol-final-20261025.json",
       "final_protocol_observation": "Second independently created no-tool session succeeded; complete input/session/turn and v4 subscription correlations retained; tokenCount=3185, elapsed_seconds=13.937; closed=true.",
+      "appserver_bridge_observation": "2026-10-26: scripts/zcode_appserver_bridge.py (new) drove a real GLM Reviewer dispatch over the app-server transport with host-controlled terminal verification; binding-validated FAIL verdict on the synthetic missing-evidence case, toolCallCount=0, tokenCount=3690, session closed (audit/zcode-appserver-bridge-review-20261026.json).",
       "limitations": "These are bounded real-host tests with synthetic input, not full native Strict acceptance. UI task/workspace labels are not signed runtime identities; provider/account/server-model provenance and Strict question/authorization/reconcile/closure remain unverified. The one-shot bridge is advisory and rejects Strict requests."
     },
     {

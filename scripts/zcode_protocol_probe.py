@@ -416,9 +416,10 @@ class NdjsonTransport:
 class TurnTracker:
     """Bind one send to one turn; stale/replayed/cross-session events cannot pass."""
 
-    def __init__(self, session_id: str, input_id: str) -> None:
+    def __init__(self, session_id: str, input_id: str, *, capture_response: bool = False) -> None:
         self.session_id = session_id
         self.input_id = input_id
+        self.capture_response = capture_response
         self.turn_id: str | None = None
         self.start_seq: int | None = None
         self.terminal: dict[str, Any] | None = None
@@ -495,6 +496,13 @@ class TurnTracker:
             raise ProtocolError("missing completion tool count")
         if not isinstance(payload.get("response"), str):
             raise ProtocolError("completion response must be text")
+        if self.capture_response:
+            success = result_type == "success" and calls == 0 and not self.tool_observed
+            self.terminal = {"outcome": "SUCCESS" if success else "FAILED", "result_type": result_type,
+                             "event_id": event_id, "tool_call_count": calls,
+                             "response_text": payload["response"],
+                             "token_count": payload.get("tokenCount") if _integer(payload.get("tokenCount")) else None}
+            return
         success = (result_type == "success" and payload["response"].strip() == MARKER
                    and calls == 0 and not self.tool_observed)
         self.terminal = {"outcome": "SUCCESS" if success else "FAILED", "result_type": result_type,
@@ -505,8 +513,10 @@ class TurnTracker:
 class ProbeClient:
     def __init__(self, transport: Transport, *, workspace: Path, provider: str, model: str,
                  timeout: float = 45.0, cleanup_timeout: float = 3.0, reasoning_level: str | None = None,
-                 allow_workspace_mode_write: bool = False) -> None:
+                 allow_workspace_mode_write: bool = False, prompt: str | None = None,
+                 capture_response: bool = False) -> None:
         self.transport = transport
+        self.custom_prompt = prompt
         self.workspace = str(workspace.resolve())
         self.model: dict[str, Any] = {"providerId": provider, "modelId": model}
         if reasoning_level is not None:
@@ -517,7 +527,7 @@ class ProbeClient:
         self.cleanup_timeout = _seconds(cleanup_timeout)
         self.session_id = "sess_" + str(uuid.uuid4())
         self.input_id = "goalanchor-probe-" + str(uuid.uuid4())
-        self.tracker = TurnTracker(self.session_id, self.input_id)
+        self.tracker = TurnTracker(self.session_id, self.input_id, capture_response=capture_response)
         self.owned = False
         self.used = False
         self.send_count = 0
@@ -776,7 +786,8 @@ class ProbeClient:
             if send:
                 self.tracker.arm(max(subscription["eventSeq"], self.tracker.last_seq))
                 self.send_count = 1  # Reserve before write: a lost ACK must never cause retransmission.
-                ack = self.rpc("session/send", {"sessionId": self.session_id, "content": FIXED_PROMPT,
+                ack = self.rpc("session/send", {"sessionId": self.session_id,
+                               "content": self.custom_prompt if self.custom_prompt is not None else FIXED_PROMPT,
                                "inputId": self.input_id, "queryId": self.input_id,
                                "expectedRevision": revision, "toolDenylist": ["Bash", "Write", "Edit"]}, deadline)
                 if (not isinstance(ack, dict) or ack.get("accepted") is not True
