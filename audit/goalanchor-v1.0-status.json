@@ -12,7 +12,7 @@
     "P1_strict_append_only_review": "IMPLEMENTED_AND_VERIFIED (offline storage boundary; native provenance remains unverified)",
     "P2_strict_lifecycle": "PARTIAL/BOUNDED (offline semantics complete; real principal/account/session binding awaits native hosts)",
     "P3_host_neutral_protocol": "IMPLEMENTED_AND_VERIFIED (all five public interfaces exist incl. EfficiencyObservationProvider; native bindings remain PARTIAL)",
-    "P4_native_hosts": "PARTIAL/BOUNDED",
+    "P4_native_hosts": "PARTIAL/BOUNDED (Codex App Server controlled deep loop through UNKNOWN/reconcile/closure verified; native UI/account provenance and other host loops remain incomplete)",
     "P5_efficiency_baseline": "PARTIAL/BOUNDED (offline baseline + opportunistic samples + 2026-10-26 fixed-task LOW/MEDIUM/HIGH real samples on gpt-6-luna all correct; UNKNOWN/reconcile tier NOT_RUN pending reconcile harness)",
     "P6_efficiency_components": "PARTIAL/BOUNDED (five components, reuse rule, admission facade and provider done; 2026-10-26 before/after experiment: compact prompt accepted on MEDIUM (-19 tokens, correctness held), rejected on HIGH (+1390); broader before/after coverage awaits real runtime)",
     "P7_final_release": "DEFERRED"
@@ -36,18 +36,20 @@
     "Host-neutral public interfaces: host capability descriptor, TrustedRuntimeBindingProvider, TrustedReviewProofProvider, review delivery proof, EfficiencyObservationProvider",
     "EfficiencyRuntime fail-closed admission facade with UNKNOWN token handling and provider-fed observations",
     "Legacy Workflow compatibility regression suite",
-    "Offline efficiency governance primitives and deterministic baseline"
+    "Offline efficiency governance primitives and deterministic baseline",
+    "Codex App Server controlled deep loop: real four-role review, approval callback, dispatch, receipt, observation, closure and UNKNOWN/reconcile/closure; native UI/account provenance remains unverified",
+    "Codex App Server controlled deep loop: real four-role review dispatch, approval callback, execution receipt, observation, closure, and UNKNOWN/reconcile/closure; native UI/account provenance remains unverified"
   ],
   "verification": {
-    "pytest": "PASS (1298 passed, exit 0; re-verified after Mimosa remediation and efficiency provider slice)",
+    "pytest": "PASS (1305 passed / exit 0 at PR #22 merge, per the 2026-10-26 handoff; PR CI 15/15. The 1298-test XML is the earlier Strict proof slice, not the merge-time full-suite count.)",
     "ruff": "PASS",
     "mypy": "PASS (42 source files)",
     "skill_sync": "PASS",
     "phase6_offline_benchmark": "5/5 aligned",
-    "native_host_matrix": "Codex review dispatch and bounded ZCode desktop/App Server tests verified; native Strict full-loop closure still NOT_RUN",
-    "efficiency_token_usage": "29,991 measured Codex review tokens plus 3,140 host-reported ZCode app-server tokens recorded as opportunistic real samples; broader fixed-task baseline remains pending",
-    "efficiency_baseline_artifact": "audit/efficiency-baseline-v1.0.json (20 local samples + 2 opportunistic real-host samples) and audit/real-efficiency-samples-20261026.json (3 fixed-task real samples, gpt-6-luna, 3/3 correct, tokens/elapsed measured)",
-    "graphify": "PARTIAL: scoped ZCode AST + cited document semantics available in audit/zcode-graphify-20261025; full-project semantic rebuild remains pending after earlier Ollama 502"
+    "native_host_matrix": "Codex App Server deep loop verified through question/approval/dispatch/receipt/observation/closure and UNKNOWN/reconcile/closure. Overall matrix remains PARTIAL/BOUNDED: native UI/account provenance and ZCode/Claude/DSH/PI-Desktop loops remain incomplete.",
+    "efficiency_token_usage": "29,991 measured Codex review tokens; 3 fixed-task gpt-6-luna LOW/MEDIUM/HIGH samples are correct with tokens and elapsed time recorded; ZCode 3,140 tokens are a separate opportunistic sample. Repeat sampling and UNKNOWN/reconcile tier remain pending.",
+    "efficiency_baseline_artifact": "audit/efficiency-baseline-v1.0.json (20 local + 2 opportunistic host samples); audit/real-efficiency-samples-20261026.json (3 fixed-task real samples, one per LOW/MEDIUM/HIGH tier, all correct). These are initial observations, not a stable broad baseline.",
+    "graphify": "PARTIAL: scoped ZCode AST/semantic graph from 2026-10-25 is retained but predates PR #22; full-project semantic rebuild remains pending because Ollama is not installed/on PATH."
   },
   "host_matrix": {
     "codex": {
@@ -60,19 +62,41 @@
       "installed_version": "2.1.309",
       "evidence": "Fixed no-tool smoke succeeded; sonnet probe returned API Error 402 Insufficient Balance; Strict full-loop dispatch rejected configured gpt-6-luna as unrecognized_model."
     },
-    "dsh": {"status": "PARTIAL/BOUNDED", "installed_version": "0.2.1.0 desktop", "evidence": "Executable and running native window observed; Strict integration NOT_RUN"},
+    "dsh": {
+      "status": "PARTIAL/BOUNDED",
+      "installed_version": "0.2.1.0 desktop",
+      "evidence": "Executable and running native window observed; Strict integration NOT_RUN"
+    },
     "zcode": {
       "status": "PARTIAL/BOUNDED",
       "installed_version": "3.16.3 desktop; embedded CLI 0.17.0",
-      "evidence": "Desktop GLM-5.3-Flash smoke and real four-role missing-evidence rejection succeeded. App-server ark-code-latest/low produced correlated turn.completed/resultType=success, zero tool calls, tokenCount=3140 and verified session close. Prior missing-event evidence was corrected: old parser read the wrong field. Native Strict full-loop proof remains pending."
+      "evidence": "Desktop GLM-5.3-Flash smoke and real four-role missing-evidence rejection succeeded. App-server ark-code-latest/low produced correlated turn.completed/resultType=success, zero tool calls, tokenCount=3140 and verified session close. Prior missing-event evidence was corrected: old parser read the wrong field. Native Strict full-loop proof remains pending.",
+      "strict_binding_status": "UNAVAILABLE by design: scripts/zcode_appserver_bridge.py rejects strict_binding. The installed bridge correlates session/input/turn and terminal completion but does not authenticate principal/account. Official ZCode docs assign identity/provider resolution to the Desktop Host; the Agent process is not the identity authority, and secrets are not included in conversation snapshots. A future Strict adapter needs a host-owned non-secret identity binding and trusted review-proof callback, not model output, environment labels, or exposed credentials.",
+      "identity_authority_source": "https://github.com/zai-org/ZCode/blob/main/docs/coding-plan/zcode-official-server-mcp-client-phase-1-spec.md",
+      "protocol_source": "https://github.com/zai-org/ZCode/blob/main/docs/zcode-protocol.md"
     },
-    "pi_desktop": {"status": "PLUGIN_TESTED_STRICT_NATIVE_NOT_RUN"}
+    "pi_desktop": {
+      "status": "PLUGIN_TESTED_STRICT_NATIVE_NOT_RUN",
+      "installed_version": "0.20.1.0 (D:\\AIWorkspace\\Tools\\PI-Desktop\\PI-Desktop.exe)",
+      "evidence": "Desktop app installed above the 0.18.0 plugin baseline; GoalAnchor Skill installed at ~/.pi/agent/skills/goalanchor byte-identical to the repo skill; current master passes Node plugin contract tests 13/13 and Python tests 12/12. Runtime capability detection and native Strict full-loop still require a desktop session with the plugin loaded."
+    }
   },
   "remaining": [
-    "Full-project Graphify semantic rebuild (blocked by unavailable local LLM; scoped AST scan retained)",
-    "Real strict full-loop validation for Codex, Claude, DSH, Zcode and PI-Desktop (external account/environment/token budget required)",
-    "Fixed-task real-model efficiency baseline with token and latency attribution (requires authorized real model spend)",
-    "Before/after optimization experiments for PromptOptimizer against the real baseline",
-    "Final packaging, release manifest and publication after all in-scope evidence is IMPLEMENTED_AND_VERIFIED"
-  ]
+    "Full-project Graphify semantic rebuild (Ollama is not installed/on PATH; retained scoped graph predates PR #22)",
+    "ZCode native Strict binding and deep-loop validation: establish a trusted runtime identity and review-proof provider first; the current bridge deliberately rejects strict_binding",
+    "Native Strict loop validation for Claude, DSH and PI-Desktop; Codex App Server deep loop is verified but native UI/account provenance remains limited",
+    "Expand P5 real-model efficiency samples beyond one LOW/MEDIUM/HIGH sample per tier and collect UNKNOWN/reconcile latency",
+    "Repeat PromptOptimizer before/after experiments across more tasks and tiers while preserving correctness and security gates",
+    "Final packaging, release manifest, annotated tag, GitHub Release and Gitee mirror after every in-scope requirement is IMPLEMENTED_AND_VERIFIED"
+  ],
+  "current_snapshot": {
+    "commit": "760bae5d284c70f5361805f4fc9d194fc84459c0",
+    "branch": "master",
+    "package_version": "0.9.2",
+    "pull_request": "https://github.com/chenyuyu6666/GoalAnchor/pull/22",
+    "pull_request_state": "MERGED",
+    "github_master": "760bae5d284c70f5361805f4fc9d194fc84459c0",
+    "gitee_master": "77f4332506b1cf773d296b5751bb4346f4f776b9",
+    "release": "DEFERRED; no v1.0 tag; Gitee mirror synchronization is held until release"
+  }
 }
