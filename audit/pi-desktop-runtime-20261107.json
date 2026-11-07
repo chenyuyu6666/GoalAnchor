@@ -1,0 +1,42 @@
+{
+  "schema": "goalanchor.pi-desktop-runtime-acceptance/v1",
+  "observed_at": "2026-11-07",
+  "host": "pi-desktop",
+  "installation": {
+    "path": "D:\\AIWorkspace\\Tools\\PI-Desktop\\PI-Desktop.exe",
+    "ui_version": "0.21.0",
+    "previous_file_product_version": "0.20.1.0",
+    "skill_path": "C:\\Users\\chen\\.pi\\agent\\skills\\goalanchor"
+  },
+  "runtime": {
+    "session": "desktop session with GoalAnchor project open",
+    "status_command": "/goalanchor-status",
+    "protocol_version": "plugin current version",
+    "guard": "OFF",
+    "remaining_approved_operations": 0,
+    "tool_hook": "installed",
+    "dispatch_mode": "host-completion",
+    "python": "python",
+    "model": "gpt-6-astra"
+  },
+  "review_smoke": {
+    "tool_name": "plugin_local_goalanchor_goalanchor_review",
+    "risk": "LOW",
+    "max_rounds": 1,
+    "request_scope": "capability smoke only; no file or command operation requested",
+    "result": "PASS",
+    "rounds": "1/1",
+    "independent_review": "success; no findings",
+    "arbiter_meta": "consistent",
+    "side_effects": "no files written; no other tools or commands executed",
+    "dispatch_mode": "host-completion"
+  },
+  "classification": {
+    "capability": "LIMITED",
+    "status": "PARTIAL/VERIFIED_REVIEW_TOOL",
+    "strict_full_loop": "NOT_RUN",
+    "native_principal_account_provenance": "NOT_VERIFIED",
+    "execution_receipt_reconcile_closure": "NOT_RUN"
+  },
+  "source": "Live PI-Desktop UI via CUA; no credentials or private account identifiers captured."
+}
