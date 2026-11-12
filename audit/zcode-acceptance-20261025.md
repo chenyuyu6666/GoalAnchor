@@ -10,10 +10,10 @@
 | 桌面短句 | 准确回复 ZCODE_GOALANCHOR_UI_SMOKE_OK；界面显示约 5 秒 | zcode-desktop-review-20261025.json |
 | Reviewer-1 / Reviewer-2 | 两个独立新任务收到逐字相同的 prompt 和同一材料摘要；均返回 FAIL 并引用 C-4 缺证据 | 同上，含可见输出全文、提示、不同 workspace 标签 |
 | Arbiter / Meta | 两个独立新任务收到原始材料和前序输出；均保留未处置 finding、拒绝候选验收结论 | 同上 |
-| App Server | Coding Plan ark-code-latest / low，单次 send、相关 ACK 和 turn.completed/resultType=success；固定响应匹配 | zcode-protocol-plan-state-20261025.json 与同名 events.jsonl |
+| App Server | Coding Plan ark-code-latest / low，单次 send、相关 ACK 和 turn.completed/resultType=success；固定响应匹配 | zcode-protocol-plan-state-20261025.json；原始事件流见 `Doc/03_验证与测试/2026-10-25_ZCode协议验收/raw/zcode-protocol-plan-state-20261025.events.jsonl` |
 | 工具和清理 | 本次 App Server toolCallCount=0，session/close 回执 closed=true | 同上 |
 | 度量 | 宿主 terminal.tokenCount=3140；客户端总耗时 17.406 秒；终态 duration=11398（宿主字段） | 同上；没有填补未知输入/输出 token 拆分 |
-| 最终复测 | 新建独立协议会话，完整 input/session/turn 和 v4 订阅关联，success、tools=0、closed=true；tokenCount=3185，总耗时 13.937 秒 | zcode-protocol-final-20261025.json 与同名 events.jsonl |
+| 最终复测 | 新建独立协议会话，完整 input/session/turn 和 v4 订阅关联，success、tools=0、closed=true；tokenCount=3185，总耗时 13.937 秒 | zcode-protocol-final-20261025.json；原始事件流见 `Doc/03_验证与测试/2026-10-25_ZCode协议验收/raw/zcode-protocol-final-20261025.events.jsonl` |
 
 四角色的验收题目是合成的缺证据案例，模型答复来自真实 ZCode。案例的正确表现是 FAIL：它与整个软件项目的验收状态不是同一个结论。Reviewer 是顺序投递到独立任务，未验证原生并行调度。
 Skill 文件发现和同步已经单独验证；这四个无工具模型回合是否实际加载 Skill 全文未知，不据此宣称 Skill 自动触发完成。
@@ -35,7 +35,7 @@ Skill 文件发现和同步已经单独验证；这四个无工具模型回合�
 - Mypy：goalanchor 和两个 ZCode 脚本共 41 个文件通过。
 - Skill sync 与 git diff --check 通过。
 - 双 Reviewer 有界复核、主裁决和独立 Meta 复核通过；两条日志 P2 已修，无未解决高优先级异议。记录：zcode-slice-review-20261025.json。
-- 范围图谱：zcode-graphify-20261025/ 为本切片早期源码导航快照，后续修改需对照源哈希；不是全项目最终 Graphify。
+- 范围图谱：`Doc/03_验证与测试/2026-10-25_ZCode协议验收/graphify-slice/zcode-graphify-20261025/` 为本切片早期源码导航快照，后续修改需对照源哈希；不是全项目最终 Graphify。
 
 ## 边界与下一开发切片
 

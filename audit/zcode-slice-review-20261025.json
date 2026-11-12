@@ -12,7 +12,7 @@
     "tests/test_zcode_protocol_probe.py": "c15adaba7bcb5476b3d2d7dad0a06ec444d2f7caafc59d7ab200c1aff6c75c7b",
     "tests/test_zcode_goalanchor_bridge.py": "4e47c76efcdac5adac5aa320935384f39de2ed53917b465601812acc532e4737",
     "audit/zcode-protocol-final-20261025.json": "4691212a9377f7d12ac273b707b35e1b68b5c343338b538a2c2ab18f37b3d8cc",
-    "audit/zcode-protocol-final-20261025.events.jsonl": "cb56232266d809d08549fe63b3c15d1c8c61f92ae2992d7aa13699c11f7bbf67",
+    "Doc/03_验证与测试/2026-10-25_ZCode协议验收/raw/zcode-protocol-final-20261025.events.jsonl": "cb56232266d809d08549fe63b3c15d1c8c61f92ae2992d7aa13699c11f7bbf67",
     "audit/zcode-desktop-review-20261025.json": "85b855edad0017bed06dca6f008f83dcc71746aa21f5a735b9835b0c5f6737c6",
     "audit/zcode-slice-final-regression-20261025.xml": "627d504f105b2412cd0bab78f29fbd28b884319a53e66aee2a631aa1d7446eaf"
   },
