@@ -5,6 +5,25 @@
 
 ## [未发布]
 
+## [0.9.4] - 2026-11-14
+
+### Changed
+
+- PI-Desktop 验收证据更新到 0.22.0 真实会话：插件从 0.6.0 升级到 0.9.3，`/goalanchor.capabilities` 返回实时能力报告（review available、host-completion）；首个成功审核轮次（LOW 单轮 1m 9s，结论 WARN）；`/goalanchor-guard on` 执行成功，宿主确认 Guard 已启用。
+- 仓库 `audit/` 证据规则固化为 `audit/README.md`；未入库的原始证据迁入工作区 `Doc/03_验证与测试/`。
+- 发布规范消歧（`docs/开发Git提交与维护更新规范.md` 第 9.1/13 节）：区分 Release 标题（纯版本号）与 tag message（带一行说明）；发布聚合提交四段正文；构建产物走独立 `chore(delivery)` 提交；tag 直接指向发布聚合提交。
+
+### Fixed
+
+- 发布合规勘误（v0.9.3 五项违规留痕）：发布聚合提交正文四段、版本类型判定、构建产物入库方式、tag 指向、tag 内 manifest 状态；规范文本同步修订以消除 9.1 内部矛盾。
+
+### Notes
+
+- **本版本无产品代码变更**：`goalanchor/`、`tests/`、`scripts/` 相对 0.9.3 零差异；变更全部为验证证据、审计记录与规范文档。wheel/sdist 内容与 0.9.3 一致（仅版本号不同）。
+- **已知缺陷（如实记录，未修复）**：PI-Desktop 0.22.0 上 Guard 启用成功后，运行时拦截未生效——Bash 探针在无批准的情况下正常执行（`tool.log` `tool.execution.completed`）。根因候选：tool_call 钩子未被调用、GuardState 被运行时重载重置、事件形状异常被静默 revoke。证据见 `audit/pi-desktop-runtime-20261113.json`。在该缺陷修复前，PI-Desktop 的 Guard 运行时拦截不能宣称可用。
+- 原生宿主状态不变：Codex 深层闭环已验证；PI-Desktop 审核/启用已验证、执行闭环未完成；ZCode/Claude/DSH 未闭合。
+- Gitee 镜像 refs 已同步；Gitee Release 页面未创建（需 access token）。
+
 ## [0.9.3] - 2026-11-13
 
 ### Added
