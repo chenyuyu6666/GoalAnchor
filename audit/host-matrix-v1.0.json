@@ -89,14 +89,26 @@
         "visible_subagents": "UNAVAILABLE (no verified public child-session dispatch contract)",
         "remote_cancel": "UNAVAILABLE (no verified cancellation parameter on agent.complete)",
         "review_budget_ms": 10000,
-        "review_modes": ["agent"],
+        "review_modes": [
+          "agent"
+        ],
         "tested_protocol_baseline": "0.18.0"
       },
       "mapped_tests": [
         "tests/test_pi_desktop.py",
         "tests/js/test_pi_desktop.cjs"
       ],
-      "limitations": "Plugin install, command surface, capability report, one successful LOW review round and guard enablement are verified on a real 0.22.0 host. Exact tool approval via /goalanchor-approve, one-time consumption, receipt, UNKNOWN/reconcile, closure and trusted principal/account provenance remain unverified; runtime blocking of an unapproved mutation has not been probed. visible_subagents and remote_cancel are reported unavailable by the host itself."
+      "limitations": "Plugin install, capability report, one successful LOW review round and guard enablement are verified. Runtime blocking is NOT effective: a Bash probe executed unblocked despite Guard enabled (defect recorded). Exact approval, one-time consumption, receipt, UNKNOWN/reconcile, closure and trusted provenance remain unverified. visible_subagents and remote_cancel are reported unavailable by the host itself.",
+      "updated_at": "2026-11-14",
+      "guard_runtime_probe": {
+        "probe": "Bash echo GUARD_PROBE_OK",
+        "at": "2026-11-13T16:49:04.624Z",
+        "session": "b0271a8e",
+        "observed": "Bash executed successfully, output GUARD_PROBE_OK; NOT blocked despite Guard enabled",
+        "expected": "guard.cjs check() should block with no exact approval",
+        "verdict": "GUARD_RUNTIME_BLOCKING_NOT_EFFECTIVE",
+        "root_cause": "OPEN: tool_call hook invocation unproven on host 0.22.0, or GuardState reset between enable and probe (session_start -> disable on runtime reload)"
+      }
     }
   ]
 }
