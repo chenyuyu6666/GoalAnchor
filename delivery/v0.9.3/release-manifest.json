@@ -45,11 +45,22 @@
   "gitee_mirror": {
     "repository_url": "https://gitee.com/chen-yuyu6666/goal-anchor.git",
     "direction": "github-to-gitee",
-    "status": "DEFERRED_REMOTE_DIVERGED",
-    "reason": "Gitee master has 2 unique README commits and is missing 28 master commits; fast-forward is impossible. Mirror synchronization requires a separate topology decision and was intentionally skipped for this release.",
-    "gitee_unique_commits": 2,
-    "master_commits_not_in_gitee": 28,
-    "merge_base": "8a04e9fd30b0477e0c8d395cf37d4b03057e7a88"
+    "status": "GIT_REFS_SYNCED_RELEASE_PAGE_PENDING",
+    "reason": "The Gitee remote was reconciled on 2026-11-13 per CONTRIBUTING.md:19 (single-direction mirror). Gitee had 2 unique README commits that were a degradation of the canonical README (498 lines reduced to 198, table of contents dropped, Chinese quotes replaced with straight quotes), so they were discarded via an explicit --force-with-lease push instead of being cherry-picked. The v* tags were synced individually; git push --mirror was not used (CONTRIBUTING.md:20). The Gitee Release page for v0.9.3 is still missing because creating it requires a Gitee access token that the local credential store does not hold.",
+    "gitee_unique_commits": 0,
+    "master_commits_not_in_gitee": 0,
+    "merge_base": "0776f6ee9a98432c0eb2e18c4bc3859b0850134b",
+    "master_sha": "0776f6ee9a98432c0eb2e18c4bc3859b0850134b",
+    "tag_name": "v0.9.3",
+    "tag_object_sha": "294702066c7ab9c3696bf98473e346d86e9b2f6c",
+    "peeled_commit_sha": "c95c3bf8b0725018caf744b5b7b6e917d44662f1",
+    "readback_verified": true,
+    "branches_on_gitee": [
+      "refs/heads/master"
+    ],
+    "release_id": null,
+    "assets_uploaded": false,
+    "release_pending_reason": "Gitee access token unavailable in the local credential store (only an account password is present)"
   },
   "verification": {
     "pytest": "PASS_1305_EXIT_0 (144.45s; JUnit evidence audit/full-suite-0.9.3.xml)",
@@ -66,5 +77,5 @@
     "public_sha256sums_sha256": "MATCH",
     "release_asset_digests": "MATCH (GitHub API digest equals local SHA-256 for all 3 assets)"
   },
-  "task_status": "COMPLETE_GITHUB_RELEASE_PUBLIC_DOWNLOADS_VERIFIED_GITEE_DEFERRED"
+  "task_status": "COMPLETE_GITHUB_RELEASE_PUBLIC_DOWNLOADS_VERIFIED_GITEE_REFS_SYNCED_RELEASE_PAGE_PENDING"
 }

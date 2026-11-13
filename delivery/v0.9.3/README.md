@@ -36,4 +36,4 @@ Get-FileHash -Algorithm SHA256 .\goalanchor-0.9.3.tar.gz
 
 - 版本类型：PATCH，向后兼容；旧 `Workflow` 路径与序列化格式保持可用。
 - 原生宿主仍为 `PARTIAL/BOUNDED`；58 项原生场景按证据记录 `NOT_RUN`，不因本版本发布升级为完成。
-- Gitee 镜像本次未同步（远端分叉待处理），只发布 GitHub。
+- Gitee 镜像：`master` 与 `v0.9.3` 标签已于 2026-11-13 与 GitHub 对齐（单向镜像，`git push --mirror` 未使用）；Gitee 的 v0.9.3 Release 页面尚未创建，需要本地没有的 Gitee access token。
