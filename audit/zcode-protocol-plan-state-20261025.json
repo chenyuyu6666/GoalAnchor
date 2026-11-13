@@ -47,5 +47,6 @@
   "cli_path": "D:\\AIWorkspace\\Tools\\ZCode\\resources\\glm\\zcode.cjs",
   "cli_sha256": "97490d0f06a7a225d54d47817acf4b4859cdb268b59f2490caaeda982bef063a",
   "provider_config_passed": true,
-  "event_projection_path": "D:\\Project\\GoalAnchor\\Project\\GoalAnchor\\audit\\zcode-protocol-plan-state-20261025.events.jsonl"
+  "event_projection_path": "Doc/03_验证与测试/2026-10-25_ZCode协议验收/raw/zcode-protocol-plan-state-20261025.events.jsonl",
+  "event_projection_path_note": "Workspace-root-relative (workspace root D:\\Project\\GoalAnchor). The raw event stream moved to the Doc evidence center on 2026-11-13 and is no longer shipped inside the repository."
 }

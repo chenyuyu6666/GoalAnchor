@@ -1,7 +1,7 @@
 {
   "schema": "goalanchor.host-matrix/v1",
   "baseline": "v0.9.2 / 8a04e9f",
-  "updated_at": "2026-10-26",
+  "updated_at": "2026-11-12",
   "evidence_rule": "CLI presence, fixtures, protocol simulations and package tests do not prove a native Strict full loop.",
   "hosts": [
     {
@@ -72,18 +72,18 @@
     },
     {
       "host": "pi-desktop",
-      "version": "0.20.1.0 (D:\\AIWorkspace\\Tools\\PI-Desktop\\PI-Desktop.exe; start-menu shortcut verified)",
+      "version": "0.21.0 UI (file ProductVersion 0.20.1.0 previously recorded)",
       "os": "Windows",
       "mode": "plugin",
-      "capability": "ADVISORY",
-      "status": "PARTIAL/BOUNDED",
-      "execution_path": "tests/js/test_pi_desktop.cjs",
-      "evidence": "Desktop app installed at 0.20.1.0 (above the 0.18.0 plugin baseline). GoalAnchor Skill installed at C:\\Users\\chen\\.pi\\agent\\skills\\goalanchor with SKILL.md SHA-256 byte-identical to goalanchor/_skill/SKILL.md and directory tree identical. On 2026-10-27 current master: Node plugin contract tests 13/13 and tests/test_pi_desktop.py 12/12 passed.",
+      "capability": "LIMITED",
+      "status": "PARTIAL/VERIFIED_REVIEW_TOOL_NATIVE_STRICT_NOT_RUN",
+      "execution_path": "Live PI-Desktop desktop session, /goalanchor-status and plugin_local_goalanchor_goalanchor_review",
+      "evidence": "Live session reported Tool Hook installed, host-completion dispatch, Python bridge available and Guard OFF; exact plugin_local_goalanchor_goalanchor_review returned PASS for LOW/1 round with no findings and consistent Arbiter/Meta result. See audit/pi-desktop-runtime-20261107.json.",
       "mapped_tests": [
         "tests/test_pi_desktop.py",
         "tests/js/test_pi_desktop.cjs"
       ],
-      "limitations": "Current real desktop Strict full-loop installation/model/approval evidence is not part of this checkout."
+      "limitations": "Review tool path is verified. Native execute approval, one-time consumption, receipt, UNKNOWN/reconcile/closure and trusted principal/account provenance remain unverified."
     }
   ]
 }
