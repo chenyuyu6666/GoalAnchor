@@ -2,8 +2,9 @@
 
 本目录是 v0.9.3 的权威交付目录，包含最终发布包、校验和、发布 manifest 和发布说明。
 
-发布提交：待 tag 定稿后回填（见 `release-manifest.json`）
-GitHub Release：[v0.9.3](https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.9.3)
+发布提交：`c95c3bf8b0725018caf744b5b7b6e917d44662f1`
+GitHub Release：[v0.9.3](https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.9.3)（Release ID `443739062`）
+annotated tag object：`294702066c7ab9c3696bf98473e346d86e9b2f6c`
 
 | 文件 | 用途 |
 |---|---|
