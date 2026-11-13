@@ -1,0 +1,96 @@
+{
+  "schema": "goalanchor.pi-desktop-runtime/v2",
+  "date": "2026-11-13",
+  "task_id": "GA-PI-PLUGIN-UPGRADE-01",
+  "host": {
+    "name": "PI-Desktop",
+    "ui_version": "0.22.0",
+    "file_product_version": "0.22.0.0",
+    "install_path": "D:\\AIWorkspace\\Tools\\PI-Desktop\\PI-Desktop.exe",
+    "os": "Windows 10.0.26300 x64"
+  },
+  "plugin": {
+    "id": "local.goalanchor",
+    "previous_version": "0.6.0",
+    "installed_version": "0.9.3",
+    "install_method": "host Plugins page -> install from local .piplug file (verified through the host's own dialog and permission review)",
+    "install_artifact": {
+      "path": "D:\\Project\\GoalAnchor\\Project\\GoalAnchor\\build\\goalanchor.piplug",
+      "size_bytes": 934975,
+      "sha256": "12314f259ae58f290644d0af0a692ac1319e5b6f095dc5e0a1cff658dd6f0384"
+    },
+    "manifest_version_after_install": "0.9.3",
+    "runtime_version_after_install": "0.9.3",
+    "registry_state": {
+      "version": "0.9.3",
+      "status": "ready",
+      "enabled": true,
+      "updated_at": "2026-11-13T09:14:34.279360700+00:00"
+    },
+    "permissions_unchanged_from_0_6_0": true,
+    "tools_unchanged_from_0_6_0": ["goalanchor_review", "goalanchor_gate"],
+    "rollback": {
+      "backup_dir": "C:\\Users\\chen\\.pi-desktop\\plugins\\installed\\local.goalanchor.bak-20261113-165428",
+      "backup_registry": "C:\\Users\\chen\\.pi-desktop\\plugins\\registry.json.bak-20261113-165428",
+      "backup_file_count": 61
+    }
+  },
+  "capability_report": {
+    "source": "live /goalanchor.capabilities output in PI-Desktop 0.22.0 session",
+    "raw": {
+      "version": "0.22.0",
+      "protocol_version": 1,
+      "minimum_version": "0.18.0",
+      "review": {"available": true, "missing": [], "dispatch_mode": "host-completion"},
+      "visible_subagents": {"available": false, "reason": "No verified public child-session dispatch contract."},
+      "remote_cancel": {"available": false, "reason": "No verified cancellation parameter on agent.complete."},
+      "status": {"available": true},
+      "review_budget_ms": 10000,
+      "review_modes": ["agent"],
+      "tested_protocol_baseline": "0.18.0"
+    }
+  },
+  "plugin_commands_visible": {
+    "verified": true,
+    "commands": ["/goalanchor.capabilities"],
+    "skills": ["/skill:goalanchor", "/skill:local.goalanchor/goalanchor"],
+    "evidence": "command palette completion listed the plugin command and both skills after the host restart that loaded 0.9.3"
+  },
+  "tool_invocation_attempts": [
+    {
+      "at": "2026-11-13T09:23:43.382Z",
+      "tool": "plugin_local_goalanchor_goalanchor_review",
+      "ok": false,
+      "result": "ReviewContext 不接受 max_rounds 参数",
+      "interpretation": "The tool was dispatched by the host and rejected the argument shape at the contract layer. This proves the tool is reachable; it does not prove a successful review."
+    },
+    {
+      "at": "2026-11-13T09:24:53.638Z",
+      "tool": "plugin_local_goalanchor_goalanchor_review",
+      "ok": false,
+      "result": "缺少必需字段 risk",
+      "interpretation": "max_rounds was accepted at request top level; the next contract requirement is a top-level risk field, consistent with pi_desktop.py:142 reading request['risk'] and request['context']."
+    }
+  ],
+  "contract_findings": {
+    "review_context_required_fields": ["goal", "prompt", "constraints", "evidence_refs", "candidate"],
+    "review_request_top_level_fields": ["risk", "context", "max_rounds"],
+    "source": "goalanchor/review_service.py:89-98 and goalanchor/pi_desktop.py:142",
+    "note": "A third attempt with risk added did not reach the host because the composer did not accept the synthetic text; no ok=true review was obtained in this session."
+  },
+  "status_summary": "PLUGIN_UPGRADED_AND_COMMANDS_VERIFIED_TOOL_REACHABLE_REVIEW_NOT_COMPLETED",
+  "verified": [
+    "PI-Desktop 0.22.0 installed plugin upgraded from 0.6.0 to 0.9.3 through the host Plugins page",
+    "manifest, runtime and registry all report 0.9.3 with status ready and enabled true",
+    "host logged plugin.unload -> plugin.skills.register -> plugin.load.success during install, and plugin.restored after restart",
+    "the plugin command and both skills appear in the composer completion list",
+    "/goalanchor.capabilities returned a live capability report in the desktop session",
+    "goalanchor_review is dispatched by the host and reaches the Python contract layer (two failed calls show real validation errors, not missing tool)"
+  ],
+  "not_verified": [
+    "a successful goalanchor_review round (ok=true) on 0.9.3; both attempts failed argument validation",
+    "native Strict execute approval, one-time consumption, receipt, UNKNOWN/reconcile and closure",
+    "trusted principal/account provenance"
+  ],
+  "boundary": "This records a real desktop session on a real host. Argument-validation failures are reported as failures, not as partial success. No file or command side effects were authorized or executed by the review attempts."
+}

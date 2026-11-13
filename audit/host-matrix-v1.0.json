@@ -72,18 +72,30 @@
     },
     {
       "host": "pi-desktop",
-      "version": "0.21.0 UI (file ProductVersion 0.20.1.0 previously recorded)",
-      "os": "Windows",
+      "version": "0.22.0 UI (file ProductVersion 0.22.0.0)",
+      "os": "Windows 10.0.26300 x64",
       "mode": "plugin",
+      "plugin_version": "0.9.3 (upgraded from 0.6.0 on 2026-11-13 through the host Plugins page)",
       "capability": "LIMITED",
-      "status": "PARTIAL/VERIFIED_REVIEW_TOOL_NATIVE_STRICT_NOT_RUN",
-      "execution_path": "Live PI-Desktop desktop session, /goalanchor-status and plugin_local_goalanchor_goalanchor_review",
-      "evidence": "Live session reported Tool Hook installed, host-completion dispatch, Python bridge available and Guard OFF; exact plugin_local_goalanchor_goalanchor_review returned PASS for LOW/1 round with no findings and consistent Arbiter/Meta result. See audit/pi-desktop-runtime-20261107.json.",
+      "status": "PARTIAL/PLUGIN_0_9_3_INSTALLED_COMMANDS_VERIFIED_TOOL_REACHABLE_NATIVE_STRICT_NOT_RUN",
+      "execution_path": "Live PI-Desktop desktop session: Plugins page install of build/goalanchor.piplug, /goalanchor.capabilities, and plugin_local_goalanchor_goalanchor_review",
+      "evidence": "2026-11-13: plugin upgraded 0.6.0 -> 0.9.3 through the host's own install dialog and permission review; manifest, runtime and registry all report 0.9.3 with status ready and enabled true; host logged plugin.unload -> plugin.skills.register -> plugin.load.success, and plugin.restored after a full restart. /goalanchor.capabilities returned a live report (review available, dispatch_mode host-completion, visible_subagents unavailable, remote_cancel unavailable, review_budget_ms 10000). The plugin command and both skills appear in the composer completion list. goalanchor_review was dispatched by the host and reached the Python contract layer twice, both rejected on argument validation (max_rounds placed in context; then missing top-level risk). See audit/pi-desktop-runtime-20261113.json. Prior 2026-11-07 evidence on 0.6.0: audit/pi-desktop-runtime-20261107.json.",
+      "capability_report": {
+        "protocol_version": 1,
+        "minimum_version": "0.18.0",
+        "review_available": true,
+        "dispatch_mode": "host-completion",
+        "visible_subagents": "UNAVAILABLE (no verified public child-session dispatch contract)",
+        "remote_cancel": "UNAVAILABLE (no verified cancellation parameter on agent.complete)",
+        "review_budget_ms": 10000,
+        "review_modes": ["agent"],
+        "tested_protocol_baseline": "0.18.0"
+      },
       "mapped_tests": [
         "tests/test_pi_desktop.py",
         "tests/js/test_pi_desktop.cjs"
       ],
-      "limitations": "Review tool path is verified. Native execute approval, one-time consumption, receipt, UNKNOWN/reconcile/closure and trusted principal/account provenance remain unverified."
+      "limitations": "The plugin is installed and its command surface is live on a real 0.22.0 host, and the review tool is reachable through the host. A successful review round on 0.9.3 was NOT obtained: both dispatches failed argument validation, so no ok=true review is claimed. Native execute approval, one-time consumption, receipt, UNKNOWN/reconcile/closure and trusted principal/account provenance remain unverified. visible_subagents and remote_cancel are reported unavailable by the host itself."
     }
   ]
 }
