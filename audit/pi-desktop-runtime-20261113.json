@@ -1,19 +1,20 @@
 {
   "schema": "goalanchor.pi-desktop-runtime/v2",
   "date": "2026-11-13",
-  "task_id": "GA-PI-PLUGIN-UPGRADE-01",
+  "task_id": "GA-PI-ACCEPT-093",
   "host": {
     "name": "PI-Desktop",
     "ui_version": "0.22.0",
     "file_product_version": "0.22.0.0",
     "install_path": "D:\\AIWorkspace\\Tools\\PI-Desktop\\PI-Desktop.exe",
-    "os": "Windows 10.0.26300 x64"
+    "os": "Windows 10.0.26300 x64",
+    "session_model": "gpt-6-astra"
   },
   "plugin": {
     "id": "local.goalanchor",
     "previous_version": "0.6.0",
     "installed_version": "0.9.3",
-    "install_method": "host Plugins page -> install from local .piplug file (verified through the host's own dialog and permission review)",
+    "install_method": "host Plugins page -> install from local .piplug file, through the host's own dialog and permission review",
     "install_artifact": {
       "path": "D:\\Project\\GoalAnchor\\Project\\GoalAnchor\\build\\goalanchor.piplug",
       "size_bytes": 934975,
@@ -50,47 +51,56 @@
       "tested_protocol_baseline": "0.18.0"
     }
   },
-  "plugin_commands_visible": {
-    "verified": true,
-    "commands": ["/goalanchor.capabilities"],
-    "skills": ["/skill:goalanchor", "/skill:local.goalanchor/goalanchor"],
-    "evidence": "command palette completion listed the plugin command and both skills after the host restart that loaded 0.9.3"
+  "review_round_succeeded": {
+    "ok": true,
+    "at": "2026-11-13T10:05:50.790Z",
+    "tool": "plugin_local_goalanchor_goalanchor_review",
+    "tool_call_id": "call_3ef6da4defd3436a92fb6f5bc7267850|fc_0f5100c6ad990dc6016af6e0c892b087d0bb4e343f172d0d4e",
+    "risk": "LOW",
+    "max_rounds": 1,
+    "elapsed": "1m 9s",
+    "verdict": "WARN",
+    "verdict_reason_reported_by_host": "缺少能力报告内容及直接完成证据，无法完全验证工具成功完成；另有 VISIBLE_SUBAGENTS_UNAVAILABLE 警告。",
+    "interpretation": "This is the first successful review round on plugin 0.9.3. WARN is the correct outcome for the synthetic candidate, which deliberately cited no concrete evidence content. A WARN verdict is a completed review, not a failure of the tool."
   },
-  "tool_invocation_attempts": [
-    {
-      "at": "2026-11-13T09:23:43.382Z",
-      "tool": "plugin_local_goalanchor_goalanchor_review",
-      "ok": false,
-      "result": "ReviewContext 不接受 max_rounds 参数",
-      "interpretation": "The tool was dispatched by the host and rejected the argument shape at the contract layer. This proves the tool is reachable; it does not prove a successful review."
+  "review_request_schema_discovered": {
+    "request": {
+      "risk": "uppercase enum: LOW | MEDIUM | HIGH | CRITICAL",
+      "max_rounds": "integer, top level of request",
+      "context": {
+        "goal": "string",
+        "prompt": "string",
+        "constraints": "array of strings",
+        "evidence_refs": "array of strings",
+        "candidate": "string"
+      }
     },
-    {
-      "at": "2026-11-13T09:24:53.638Z",
-      "tool": "plugin_local_goalanchor_goalanchor_review",
-      "ok": false,
-      "result": "缺少必需字段 risk",
-      "interpretation": "max_rounds was accepted at request top level; the next contract requirement is a top-level risk field, consistent with pi_desktop.py:142 reading request['risk'] and request['context']."
-    }
-  ],
-  "contract_findings": {
-    "review_context_required_fields": ["goal", "prompt", "constraints", "evidence_refs", "candidate"],
-    "review_request_top_level_fields": ["risk", "context", "max_rounds"],
-    "source": "goalanchor/review_service.py:89-98 and goalanchor/pi_desktop.py:142",
-    "note": "A third attempt with risk added did not reach the host because the composer did not accept the synthetic text; no ok=true review was obtained in this session."
+    "source": "goalanchor/review_service.py:17-21 (ReviewRisk enum), :89-98 (ReviewContext), goalanchor/pi_desktop.py:142",
+    "validation_errors_observed": [
+      "ReviewContext 不接受 max_rounds 参数 (max_rounds placed inside context)",
+      "缺少必需字段 risk (risk absent at request top level)",
+      "\"low\" is not a valid ReviewRisk value (enum is uppercase)"
+    ]
   },
-  "status_summary": "PLUGIN_UPGRADED_AND_COMMANDS_VERIFIED_TOOL_REACHABLE_REVIEW_NOT_COMPLETED",
+  "slash_commands_not_executed": {
+    "finding": "The plugin registers five commands in extension.mjs (goalanchor-status, goalanchor-python, goalanchor-guard, goalanchor-approve, goalanchor-check) but manifest.json declares only one contributed command (goalanchor.capabilities).",
+    "observed": "/goalanchor-status, /goalanchor-guard on and /goalanchor-status again were typed and submitted in the composer; none produced visible output, and plugin.log recorded zero command or guard events.",
+    "interpretation": "On host 0.22.0 the slash commands registered through the agent extension are not reaching the plugin, while the manifest-declared command works. This blocks the guard -> approve -> one-time consumption -> receipt path from the desktop composer.",
+    "status": "NOT_VERIFIED / BLOCKED_BY_HOST_COMMAND_SURFACE",
+    "not_a_conclusion_about": "It does not show the guard logic is wrong; guard.cjs and the approval flow remain untested from this host."
+  },
+  "status_summary": "PLUGIN_0_9_3_INSTALLED_REVIEW_ROUND_PASSED_GUARD_PATH_BLOCKED",
   "verified": [
     "PI-Desktop 0.22.0 installed plugin upgraded from 0.6.0 to 0.9.3 through the host Plugins page",
     "manifest, runtime and registry all report 0.9.3 with status ready and enabled true",
     "host logged plugin.unload -> plugin.skills.register -> plugin.load.success during install, and plugin.restored after restart",
     "the plugin command and both skills appear in the composer completion list",
     "/goalanchor.capabilities returned a live capability report in the desktop session",
-    "goalanchor_review is dispatched by the host and reaches the Python contract layer (two failed calls show real validation errors, not missing tool)"
+    "one LOW-risk single-round review completed successfully on 0.9.3 with verdict WARN (plugin.log ok=true, 1m 9s)"
   ],
   "not_verified": [
-    "a successful goalanchor_review round (ok=true) on 0.9.3; both attempts failed argument validation",
-    "native Strict execute approval, one-time consumption, receipt, UNKNOWN/reconcile and closure",
+    "guard enablement, exact approval, one-time consumption, receipt, UNKNOWN/reconcile and closure from the desktop composer: the registered slash commands produced no output and no log entries on 0.22.0",
     "trusted principal/account provenance"
   ],
-  "boundary": "This records a real desktop session on a real host. Argument-validation failures are reported as failures, not as partial success. No file or command side effects were authorized or executed by the review attempts."
+  "boundary": "Real desktop session on a real host. A WARN review verdict is recorded as a completed review, not as a pass. The guard path is recorded as blocked by the host command surface, not as a product defect proven by test."
 }
