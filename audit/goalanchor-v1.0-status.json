@@ -77,7 +77,7 @@
       "protocol_source": "https://github.com/zai-org/ZCode/blob/main/docs/zcode-protocol.md"
     },
     "pi_desktop": {
-      "status": "PARTIAL/PLUGIN_0_9_3_INSTALLED_REVIEW_ROUND_PASSED_GUARD_PATH_BLOCKED",
+      "status": "PARTIAL/PLUGIN_0_9_3_INSTALLED_REVIEW_ROUND_PASSED_GUARD_PATH_BLOCKED_HOST_EXTENSION_PUBLICATION",
       "installed_version": "0.22.0 UI (file ProductVersion 0.22.0.0); plugin upgraded 0.6.0 -> 0.9.3 on 2026-11-13",
       "capability": "LIMITED",
       "evidence": "2026-11-13: plugin installed through the host Plugins page from build/goalanchor.piplug; manifest, runtime and registry all report 0.9.3 with status ready and enabled true; host logged plugin.unload -> plugin.skills.register -> plugin.load.success, and plugin.restored after a full restart. /goalanchor.capabilities returned a live report: review available, dispatch_mode host-completion, visible_subagents unavailable, remote_cancel unavailable, review_budget_ms 10000. One LOW-risk single-round review COMPLETED on 0.9.3 with verdict WARN (plugin.log ok=true at 10:05:50Z, 1m 9s). See audit/pi-desktop-runtime-20261113.json.",

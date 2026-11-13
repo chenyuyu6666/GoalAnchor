@@ -89,7 +89,16 @@
     "status": "NOT_VERIFIED / BLOCKED_BY_HOST_COMMAND_SURFACE",
     "not_a_conclusion_about": "It does not show the guard logic is wrong; guard.cjs and the approval flow remain untested from this host."
   },
-  "status_summary": "PLUGIN_0_9_3_INSTALLED_REVIEW_ROUND_PASSED_GUARD_PATH_BLOCKED",
+  "manifest_command_experiment": {
+    "attempted": true,
+    "temporary_change": "Added goalanchor-status, goalanchor-python, goalanchor-guard, goalanchor-approve and goalanchor-check to contributes.commands in the source manifest, built and installed the package, then fully restarted PI-Desktop.",
+    "patched_artifact_sha256": "b9f8781ce0e616e377a5bc88e20eba06db41b7eff5cb5d09a57f24855a23405e",
+    "observed_result": "The extension commands still did not appear in the command palette or composer, and no new extension command events appeared in plugin.log. The manifest-declared capabilities command remained the only visible command.",
+    "decision": "Manifest-only change is insufficient; source manifest and installed package were restored to the original 0.9.3 shape with only goalanchor.capabilities.",
+    "restored_artifact_sha256": "436c58e021c21f719230dd7f611eaf684a0b6945c0ae0564c62817add69445c",
+    "remaining_blocker": "PI-Desktop 0.22.0 agent-extension session loading/publication path, not a proven Guard implementation defect."
+  },
+  "status_summary": "PLUGIN_0_9_3_INSTALLED_REVIEW_ROUND_PASSED_GUARD_PATH_BLOCKED_HOST_EXTENSION_PUBLICATION",
   "verified": [
     "PI-Desktop 0.22.0 installed plugin upgraded from 0.6.0 to 0.9.3 through the host Plugins page",
     "manifest, runtime and registry all report 0.9.3 with status ready and enabled true",
