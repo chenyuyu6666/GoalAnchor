@@ -77,10 +77,10 @@
       "mode": "plugin",
       "plugin_version": "0.9.3 (upgraded from 0.6.0 on 2026-11-13 through the host Plugins page)",
       "capability": "LIMITED",
-      "status": "PARTIAL/PLUGIN_0_9_3_INSTALLED_REVIEW_ROUND_PASSED_GUARD_PATH_BLOCKED_HOST_EXTENSION_PUBLICATION",
+      "status": "PARTIAL/PLUGIN_0_9_3_INSTALLED_REVIEW_ROUND_PASSED_GUARD_ENABLE_VERIFIED",
       "execution_path": "Live PI-Desktop desktop session: Plugins page install of build/goalanchor.piplug, /goalanchor.capabilities, and plugin_local_goalanchor_goalanchor_review",
       "evidence": "2026-11-13: plugin upgraded 0.6.0 -> 0.9.3 through the host's own install dialog and permission review; manifest, runtime and registry all report 0.9.3 with status ready and enabled true; host logged plugin.unload -> plugin.skills.register -> plugin.load.success, and plugin.restored after a full restart. /goalanchor.capabilities returned a live report (review available, dispatch_mode host-completion, visible_subagents unavailable, remote_cancel unavailable, review_budget_ms 10000). One LOW-risk single-round review COMPLETED on 0.9.3 with verdict WARN (plugin.log ok=true at 10:05:50Z, elapsed 1m 9s); WARN is correct for a candidate that cited no concrete evidence content. Argument-schema discovery: risk is an uppercase enum, max_rounds and risk sit at request top level, context holds only the five ReviewContext fields. See audit/pi-desktop-runtime-20261113.json.",
-      "guard_path_blocker": "The plugin registers five slash commands in extension.mjs (status, python, guard, approve, check) but manifest.json contributes only goalanchor.capabilities. On host 0.22.0 the three attempts to run /goalanchor-status and /goalanchor-guard on produced no visible output and zero command or guard entries in plugin.log. A manifest-only experiment added all five IDs, rebuilt and installed the package, and fully restarted the host; the commands still did not publish, so the experiment was reverted. The guard -> approve -> one-time consumption -> receipt path is therefore NOT reachable from the desktop composer in this host version. This is recorded as an agent-extension session publication blocker, not as proof that the guard logic is wrong.",
+      "guard_path_blocker": "RESOLVED 2026-11-13: the earlier reading was wrong. The extension commands do publish; two host-specific behaviours prevented submission. (a) The PI-Desktop composer inserts a newline on Enter and requires the Send button. (b) The window opened at 1750x1020 on a 1536x864 screen, so the Send button sat off-screen and synthesized clicks landed outside the window. After resizing the window to 1480x800, /goalanchor-guard on executed through Send (12s, 2 tools) and the host returned 'GoalAnchor Guard 已启用'; plugin.log recorded plugin.skill.load ok=true for local.goalanchor/goalanchor. The manifest-only experiment remains unnecessary and was reverted. Exact tool approval, one-time consumption, receipt, UNKNOWN/reconcile and closure are still unverified.",
       "capability_report": {
         "protocol_version": 1,
         "minimum_version": "0.18.0",
@@ -96,7 +96,7 @@
         "tests/test_pi_desktop.py",
         "tests/js/test_pi_desktop.cjs"
       ],
-      "limitations": "Plugin install, command surface, capability report and one successful LOW review round are verified on a real 0.22.0 host. The guard path (enable, exact approval, one-time consumption, receipt, UNKNOWN/reconcile, closure) is NOT reachable from the desktop composer in this host version because the extension-registered slash commands produce no output or log entries. Trusted principal/account provenance remains unverified. visible_subagents and remote_cancel are reported unavailable by the host itself."
+      "limitations": "Plugin install, command surface, capability report, one successful LOW review round and guard enablement are verified on a real 0.22.0 host. Exact tool approval via /goalanchor-approve, one-time consumption, receipt, UNKNOWN/reconcile, closure and trusted principal/account provenance remain unverified; runtime blocking of an unapproved mutation has not been probed. visible_subagents and remote_cancel are reported unavailable by the host itself."
     }
   ]
 }

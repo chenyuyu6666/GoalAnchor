@@ -77,16 +77,16 @@
       "protocol_source": "https://github.com/zai-org/ZCode/blob/main/docs/zcode-protocol.md"
     },
     "pi_desktop": {
-      "status": "PARTIAL/PLUGIN_0_9_3_INSTALLED_REVIEW_ROUND_PASSED_GUARD_PATH_BLOCKED_HOST_EXTENSION_PUBLICATION",
+      "status": "PARTIAL/PLUGIN_0_9_3_INSTALLED_REVIEW_ROUND_PASSED_GUARD_ENABLE_VERIFIED",
       "installed_version": "0.22.0 UI (file ProductVersion 0.22.0.0); plugin upgraded 0.6.0 -> 0.9.3 on 2026-11-13",
       "capability": "LIMITED",
       "evidence": "2026-11-13: plugin installed through the host Plugins page from build/goalanchor.piplug; manifest, runtime and registry all report 0.9.3 with status ready and enabled true; host logged plugin.unload -> plugin.skills.register -> plugin.load.success, and plugin.restored after a full restart. /goalanchor.capabilities returned a live report: review available, dispatch_mode host-completion, visible_subagents unavailable, remote_cancel unavailable, review_budget_ms 10000. One LOW-risk single-round review COMPLETED on 0.9.3 with verdict WARN (plugin.log ok=true at 10:05:50Z, 1m 9s). See audit/pi-desktop-runtime-20261113.json.",
-      "limitations": "Plugin install, command surface, capability report and one successful LOW review round are verified. The guard path is NOT reachable from the desktop composer on host 0.22.0: extension.mjs registers five slash commands but manifest.json contributes only goalanchor.capabilities, and /goalanchor-status and /goalanchor-guard on produced no output and zero log entries. Guard enable, exact approval, one-time consumption, receipt, UNKNOWN/reconcile, closure and trusted principal/account provenance remain unverified."
+      "limitations": "Plugin install, command surface, capability report, one successful LOW review round and guard enablement are verified. /goalanchor-guard on executed through the composer Send button and the host confirmed Guard enabled. Exact approval, one-time consumption, receipt, UNKNOWN/reconcile, closure and trusted principal/account provenance remain unverified; runtime blocking of an unapproved mutation has not been probed. The earlier 'extension command surface blocked' reading was wrong: the real causes were Enter-inserts-newline and an off-screen Send button on this 1536x864 screen."
     }
   },
   "remaining": [
     "Codex native UI/account provenance remains unverified despite the controlled App Server deep loop",
-    "PI-Desktop: plugin 0.9.3 is installed and one LOW review round completed (verdict WARN), but the guard path is blocked on host 0.22.0 because extension-registered slash commands produce no output or log entries; guard enable, exact approval, one-time consumption, receipt, UNKNOWN/reconcile/closure and trusted identity provenance remain NOT_RUN",
+    "PI-Desktop: plugin 0.9.3 is installed, one LOW review round completed (verdict WARN) and /goalanchor-guard on executed with the host confirming Guard enabled; exact approval, one-time consumption, receipt, UNKNOWN/reconcile, closure, runtime blocking of an unapproved mutation and trusted identity provenance remain NOT_RUN",
     "ZCode native Strict binding and deep-loop validation require a trusted Desktop Host runtime identity and review-proof provider; the current bridge deliberately rejects strict_binding",
     "Claude remains blocked by the 402 account balance and model-routing rejection; its native Strict loop is NOT_RUN",
     "DSH native GoalAnchor integration is NOT_RUN and still requires the API key plus a verified CLI/runtime entry",

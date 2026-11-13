@@ -83,33 +83,52 @@
     ]
   },
   "slash_commands_not_executed": {
-    "finding": "The plugin registers five commands in extension.mjs (goalanchor-status, goalanchor-python, goalanchor-guard, goalanchor-approve, goalanchor-check) but manifest.json declares only one contributed command (goalanchor.capabilities).",
-    "observed": "/goalanchor-status, /goalanchor-guard on and /goalanchor-status again were typed and submitted in the composer; none produced visible output, and plugin.log recorded zero command or guard events.",
-    "interpretation": "On host 0.22.0 the slash commands registered through the agent extension are not reaching the plugin, while the manifest-declared command works. This blocks the guard -> approve -> one-time consumption -> receipt path from the desktop composer.",
-    "status": "NOT_VERIFIED / BLOCKED_BY_HOST_COMMAND_SURFACE",
-    "not_a_conclusion_about": "It does not show the guard logic is wrong; guard.cjs and the approval flow remain untested from this host."
+    "finding": "Earlier attempts to run /goalanchor-status and /goalanchor-guard on produced no output and no plugin.log command events.",
+    "observed": "Three attempts were made in restored and fresh sessions, all with no effect.",
+    "interpretation": "SUPERSEDED on 2026-11-13T16:49 by guard_command_executed below. The real cause was two host-specific submission behaviours, not a blocked extension command surface: (a) the PI-Desktop composer inserts a newline on Enter and requires the Send button, and (b) the window was taller than the 1536x864 screen, so the Send button sat off-screen and coordinate clicks landed outside the window.",
+    "status": "SUPERSEDED",
+    "not_a_conclusion_about": "It never showed the guard logic was wrong; guard.cjs was untested at that point."
+  },
+  "guard_command_executed": {
+    "at": "2026-11-13T16:49 (local session, host pid 21384)",
+    "command": "/goalanchor-guard on",
+    "submission": "composer Send button (Enter only inserts a newline in this host)",
+    "host_result_text": "GoalAnchor Guard 已启用。后续涉及计划、调查或执行的任务将先经过 PLAN → VERIFY → EXECUTE；当前无具体任务，未执行任何操作。",
+    "elapsed": "12s, 2 tools",
+    "plugin_log_evidence": "plugin.skill.load ok=true skillId=local.goalanchor/goalanchor at ts 1794588364991",
+    "interpretation": "First real execution of a GoalAnchor extension command on plugin 0.9.3 in PI-Desktop 0.22.0. The agent extension command surface works; earlier failures were UI-submission and window-geometry problems on this machine, not a host publication defect.",
+    "status": "GUARD_ENABLE_VERIFIED"
+  },
+  "window_geometry_note": {
+    "screen": "1536x864",
+    "problem": "PI-Desktop opened at 1750x1020, taller than the screen; the composer Send button was off-screen, so synthesized clicks landed outside the window and commands never submitted.",
+    "resolution": "Resized the window to 1480x800 inside the screen bounds with MoveWindow, after which the Send button became reachable and the command executed.",
+    "caution": "Forcing MoveWindow to an out-of-screen size once produced a black client area; a full host restart recovered it. Prefer keeping the window within the primary screen when driving this host."
   },
   "manifest_command_experiment": {
     "attempted": true,
     "temporary_change": "Added goalanchor-status, goalanchor-python, goalanchor-guard, goalanchor-approve and goalanchor-check to contributes.commands in the source manifest, built and installed the package, then fully restarted PI-Desktop.",
     "patched_artifact_sha256": "b9f8781ce0e616e377a5bc88e20eba06db41b7eff5cb5d09a57f24855a23405e",
     "observed_result": "The extension commands still did not appear in the command palette or composer, and no new extension command events appeared in plugin.log. The manifest-declared capabilities command remained the only visible command.",
-    "decision": "Manifest-only change is insufficient; source manifest and installed package were restored to the original 0.9.3 shape with only goalanchor.capabilities.",
+    "decision": "Manifest-only change is insufficient and unnecessary; source manifest and installed package were restored to the original 0.9.3 shape with only goalanchor.capabilities.",
     "restored_artifact_sha256": "436c58e021c21f719230dd7f611eaf684a0b6945c0ae0564c62817add69445c",
-    "remaining_blocker": "PI-Desktop 0.22.0 agent-extension session loading/publication path, not a proven Guard implementation defect."
+    "remaining_blocker": "None for command exposure: extension commands publish and run once the composer can actually submit them. The earlier 'publication blocker' reading is withdrawn."
   },
-  "status_summary": "PLUGIN_0_9_3_INSTALLED_REVIEW_ROUND_PASSED_GUARD_PATH_BLOCKED_HOST_EXTENSION_PUBLICATION",
+  "status_summary": "PLUGIN_0_9_3_INSTALLED_REVIEW_ROUND_PASSED_GUARD_ENABLE_VERIFIED",
   "verified": [
     "PI-Desktop 0.22.0 installed plugin upgraded from 0.6.0 to 0.9.3 through the host Plugins page",
     "manifest, runtime and registry all report 0.9.3 with status ready and enabled true",
     "host logged plugin.unload -> plugin.skills.register -> plugin.load.success during install, and plugin.restored after restart",
     "the plugin command and both skills appear in the composer completion list",
     "/goalanchor.capabilities returned a live capability report in the desktop session",
-    "one LOW-risk single-round review completed successfully on 0.9.3 with verdict WARN (plugin.log ok=true, 1m 9s)"
+    "one LOW-risk single-round review completed successfully on 0.9.3 with verdict WARN (plugin.log ok=true, 1m 9s)",
+    "/goalanchor-guard on executed through the composer Send button and the host returned 'GoalAnchor Guard 已启用'; plugin.log recorded plugin.skill.load ok=true for local.goalanchor/goalanchor",
+    "the plugin detail panel shows Agent 扩展 已加载 with all five command names listed"
   ],
   "not_verified": [
-    "guard enablement, exact approval, one-time consumption, receipt, UNKNOWN/reconcile and closure from the desktop composer: the registered slash commands produced no output and no log entries on 0.22.0",
+    "exact tool approval via /goalanchor-approve, one-time consumption, receipt, UNKNOWN/reconcile and closure: not yet exercised in this host",
+    "whether the guard hook actually blocks an unapproved mutation at runtime: not yet probed",
     "trusted principal/account provenance"
   ],
-  "boundary": "Real desktop session on a real host. A WARN review verdict is recorded as a completed review, not as a pass. The guard path is recorded as blocked by the host command surface, not as a product defect proven by test."
+  "boundary": "Real desktop session on a real host. A WARN review verdict is recorded as a completed review, not as a pass. Guard enablement is verified from the host's own confirmation text and plugin.log; runtime blocking of unapproved tools is still unproven."
 }
