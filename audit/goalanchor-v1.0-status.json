@@ -93,33 +93,41 @@
     "Full-project Graphify semantic rebuild remains pending; only a scoped graph predating PR #22 is retained",
     "P5 needs more real-model samples per tier and UNKNOWN/reconcile latency coverage",
     "P6 needs broader PromptOptimizer before/after trials while preserving correctness and security gates",
-    "P7 requires final packaging, release manifest, annotated tag, GitHub Release and Gitee topology reconciliation before publication"
+    "P7 requires final packaging, release manifest, annotated tag and GitHub Release after every in-scope requirement is IMPLEMENTED_AND_VERIFIED; the v0.9.3 patch release is published, but no v1.0 tag exists",
+    "Gitee Release page for v0.9.3 is not created yet: it needs a Gitee access token that the local credential store does not hold (only an account password is present)"
   ],
   "current_snapshot": {
-    "commit": "bb66b219944d001d52179291579107e4584ad33a",
+    "commit": "0776f6ee9a98432c0eb2e18c4bc3859b0850134b",
     "branch": "master",
-    "package_version": "0.9.2",
-    "latest_merged_pull_request": "https://github.com/chenyuyu6666/GoalAnchor/pull/24",
+    "package_version": "0.9.3",
+    "latest_merged_pull_request": "https://github.com/chenyuyu6666/GoalAnchor/pull/28",
     "merged_pull_requests": [
       "https://github.com/chenyuyu6666/GoalAnchor/pull/22",
       "https://github.com/chenyuyu6666/GoalAnchor/pull/23",
-      "https://github.com/chenyuyu6666/GoalAnchor/pull/24"
+      "https://github.com/chenyuyu6666/GoalAnchor/pull/24",
+      "https://github.com/chenyuyu6666/GoalAnchor/pull/25",
+      "https://github.com/chenyuyu6666/GoalAnchor/pull/26",
+      "https://github.com/chenyuyu6666/GoalAnchor/pull/27",
+      "https://github.com/chenyuyu6666/GoalAnchor/pull/28"
     ],
-    "github_master": "bb66b219944d001d52179291579107e4584ad33a",
-    "gitee_master": "77f4332506b1cf773d296b5751bb4346f4f776b9",
+    "github_master": "0776f6ee9a98432c0eb2e18c4bc3859b0850134b",
+    "gitee_master": "0776f6ee9a98432c0eb2e18c4bc3859b0850134b",
     "gitee_relation": {
-      "merge_base": "8a04e9fd30b0477e0c8d395cf37d4b03057e7a88",
-      "gitee_unique_commits": 2,
-      "master_commits_not_in_gitee": 28,
-      "fast_forward_possible": false,
-      "classification": "DIVERGED"
+      "merge_base": "0776f6ee9a98432c0eb2e18c4bc3859b0850134b",
+      "gitee_unique_commits": 0,
+      "master_commits_not_in_gitee": 0,
+      "fast_forward_possible": true,
+      "classification": "IN_SYNC",
+      "reconciled_at": "2026-11-13",
+      "reconciliation_method": "Single-direction mirror per CONTRIBUTING.md:19. Gitee had 2 unique README commits that were a degradation (498 lines -> 198 lines, table of contents dropped, Chinese quotes replaced with straight quotes); they were discarded with an explicit --force-with-lease push rather than cherry-picked, so the canonical GitHub README is preserved. Backup kept locally at branch backup/gitee-readme-20261113. v* tags were synced individually; git push --mirror was not used (CONTRIBUTING.md:20)."
     },
     "local_handoff_branch": {
       "branch": "docs/pi-desktop-runtime-acceptance-20261107",
       "commit": "13b5946025cbc2ce123241eb01651e075801f4c7",
-      "commits_ahead_of_master": 1,
-      "pushed": false
+      "commits_ahead_of_master": 0,
+      "pushed": true,
+      "merged_as": "https://github.com/chenyuyu6666/GoalAnchor/pull/25"
     },
-    "release": "DEFERRED; no v1.0 tag; Gitee mirror synchronization is held until release"
+    "release": "v0.9.3 published on GitHub (Release ID 443739062) with GitHub/Gitee master and v0.9.3 tag in sync. Gitee Release page for v0.9.3 is not yet created; it requires a Gitee access token that is not available in the local credential store. No v1.0 tag exists."
   }
 }
