@@ -122,6 +122,9 @@ v0.3.2 简化多人协作流程
 - 运行时版本以 `goalanchor/__init__.py` 导出的 `__version__` 为单一来源。
 - 发布前更新 `CHANGELOG.md`，在 `master` 上使用一个发布聚合提交和同名 `vX.Y.Z` 标签，
   并推送提交和标签。
+- 发布聚合提交正文包含四段：影响范围 / 关键决策 / 验证 / 风险与后续；该提交只做版本与文档同步，不混入构建产物。
+- tag 直接指向发布聚合提交（不是 PR 合并提交）；tag message 为 `vX.Y.Z <发布说明>`，与提交标题一致。
+- 发布包走独立的 `chore(delivery)` 提交；`delivery/<ver>/` 在 tag 内只放 `README.md` 与 `release-notes.md`，`release-manifest.json` 在 Release 完成后回填。
 
 发布示例：
 
