@@ -118,6 +118,7 @@ v0.3.2 简化多人协作流程
 - `v0.9.1`：`StrictWorkflow` 增量 API、strict/legacy 门面拆分、SQLite schema v2 与 Strict 基线/证据/审核上下文；Strict 审核/授权/执行/关闭仍为 `UNAVAILABLE`。
 - `v0.9.2`：legacy `ONE_TIME` 默认 fail-closed、显式进程内消费边界、效率治理输入校验和 review delivery binding fail-closed 校验；原生宿主边界保持不变。
 - `v0.9.3`：Strict 生命周期补全与 append-only 审核证明、宿主中立公共接口、效率治理五组件与准入门面、Codex App Server 深层闭环与 ZCode 传输桥接、Windows UTF-8 修复；原生宿主仍为 `PARTIAL/BOUNDED`，不宣称 v1.0 完成。
+- `v0.9.4`：验证证据版本——PI-Desktop 0.22.0 审核轮次成功与 Guard 启用成功；运行时拦截缺陷如实记录（Bash 探针未被阻止，根因未定）；无产品代码变更。
 - 新功能增加 `MINOR`，兼容性修复增加 `PATCH`，破坏性变更增加 `MAJOR`。
 - 运行时版本以 `goalanchor/__init__.py` 导出的 `__version__` 为单一来源。
 - 发布前更新 `CHANGELOG.md`，在 `master` 上使用一个发布聚合提交和同名 `vX.Y.Z` 标签，
