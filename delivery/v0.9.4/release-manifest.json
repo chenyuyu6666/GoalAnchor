@@ -1,0 +1,83 @@
+{
+  "task_id": "GA-V094-PUBLISH",
+  "state": "PUBLISHED_AND_PUBLIC_DOWNLOADS_VERIFIED",
+  "version": "0.9.4",
+  "release_date": "2026-11-14",
+  "repository": "chenyuyu6666/GoalAnchor",
+  "base_tag": "v0.9.3",
+  "base_commit": "c95c3bf8b0725018caf744b5b7b6e917d44662f1",
+  "release_commit": "1b6ec29fdd4125fa70abce85cba28c0173d522c9",
+  "release_commit_note": "Tag points directly at the release aggregation commit (not the PR merge commit 0ca8914), per the revised spec section 8 rule 5.",
+  "tag_name": "v0.9.4",
+  "tag_message": "v0.9.4 PI-Desktop 验收证据与发布规范修订",
+  "release_title": "v0.9.4",
+  "release_notes_file": "delivery/v0.9.4/release-notes.md",
+  "assets": [
+    {
+      "name": "goalanchor-0.9.4-py3-none-any.whl",
+      "size_bytes": 227704,
+      "sha256": "cc7a272367ad65f411d9f82fa8798869f9baf4293c7c5c451e89f2b6beb92f27",
+      "committed_in": "chore/v0.9.4-delivery (145935b), separate chore(delivery) commit per spec 9.1 step 6"
+    },
+    {
+      "name": "goalanchor-0.9.4.tar.gz",
+      "size_bytes": 640114,
+      "sha256": "9e92a789f5be331bdd461caeb8a55b6a9f3231f2aa29de3c1647b918bac05cd6",
+      "committed_in": "chore/v0.9.4-delivery (145935b)"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size_bytes": 190,
+      "sha256": "ab1e54691c2b790dfbbadb6fc1bc9fa3b88e49f6d9166dea45aa28b56ddeb852",
+      "committed_in": "chore/v0.9.4-delivery (145935b)"
+    }
+  ],
+  "expected_release_state": {
+    "draft": false,
+    "prerelease": false,
+    "published_at_required": true
+  },
+  "tag_object_sha": "170e14d176d60cafe681d0d81aa653c05f9337c9",
+  "tag_pushed": true,
+  "tag_target": "release aggregation commit 1b6ec29 (single-parent, direct)",
+  "release_id": 444564948,
+  "release_url": "https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.9.4",
+  "published_at": "2026-11-13T18:04:27Z",
+  "draft": false,
+  "prerelease": false,
+  "immutable": false,
+  "public_unauthenticated_download_verified": true,
+  "version_type_note": "Labeled PATCH; contains NO product code changes relative to 0.9.3 (goalanchor/ tests/ scripts/ zero-diff) — changes are verification evidence and spec docs. CHANGELOG Notes states this explicitly.",
+  "known_defects": [
+    "PI-Desktop 0.22.0: Guard runtime blocking NOT effective — a Bash probe executed unblocked despite Guard enabled (host-confirmed enablement). Root cause open: tool_call hook invocation unproven, or GuardState reset on runtime reload. Evidence: audit/pi-desktop-runtime-20261113.json. PI-Desktop Guard runtime interception must not be claimed available until fixed."
+  ],
+  "gitee_mirror": {
+    "repository_url": "https://gitee.com/chen-yuyu6666/goal-anchor.git",
+    "direction": "github-to-gitee",
+    "status": "REFS_SYNCED_RELEASE_PAGE_PENDING",
+    "reason": "Gitee Release page creation requires an access token that the local credential store does not hold (only an account password is present; API returned 401).",
+    "master_sha": null,
+    "tag_name": "v0.9.4",
+    "tag_object_sha": null,
+    "assets_uploaded": false,
+    "readback_verified": false
+  },
+  "verification": {
+    "pytest": "PASS_1305_EXIT_0 (174.24s; JUnit evidence audit/full-suite-0.9.4.xml)",
+    "ruff": "PASS",
+    "mypy": "PASS_42_FILES",
+    "skill_bundle": "IN_SYNC",
+    "fixtures": "12/12_ALIGNED",
+    "pi_desktop_node": "PASS_13_OF_13",
+    "wheel_metadata": "PASS_0.9.4",
+    "sdist_metadata": "PASS_0.9.4",
+    "clean_wheel_import": "PASS_0.9.4",
+    "sdist_hygiene": "no delivery/ audit/ dist/ inside sdist",
+    "product_code_diff_since_0_9_3": "ZERO (goalanchor/ tests/ scripts/)",
+    "public_wheel_sha256": "MATCH",
+    "public_sdist_sha256": "MATCH",
+    "public_sha256sums_sha256": "MATCH",
+    "release_asset_digests": "MATCH (GitHub API digest equals local SHA-256 for all 3 assets)"
+  },
+  "task_status": "COMPLETE_GITHUB_RELEASE_PUBLIC_DOWNLOADS_VERIFIED_GITEE_REFS_SYNCED_RELEASE_PAGE_PENDING"
+}
