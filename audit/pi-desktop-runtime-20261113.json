@@ -114,7 +114,22 @@
     "restored_artifact_sha256": "436c58e021c21f719230dd7f611eaf684a0b6945c0ae0564c62817add69445c",
     "remaining_blocker": "None for command exposure: extension commands publish and run once the composer can actually submit them. The earlier 'publication blocker' reading is withdrawn."
   },
-  "status_summary": "PLUGIN_0_9_3_INSTALLED_REVIEW_ROUND_PASSED_GUARD_ENABLE_VERIFIED",
+  "guard_runtime_blocking_probe": {
+    "at": "2026-11-13T16:49:04.624Z (tool.log)",
+    "session": "b0271a8e",
+    "probe": "Use the Bash tool to run exactly: echo GUARD_PROBE_OK",
+    "observed": "Bash executed successfully; chat shows 原始输出: GUARD_PROBE_OK (运行完成 11s, 1个工具)",
+    "expected": "guard.cjs check() should block: Bash is not in READ_TOOLS, allowed list is empty after enable(), so the signature should miss and return {block:true, reason:'no exact approval; use /goalanchor-approve.'}",
+    "verdict": "GUARD_RUNTIME_BLOCKING_NOT_EFFECTIVE",
+    "root_cause_candidates": [
+      "the tool_call hook was not invoked by host 0.22.0 for this call (extension runner machinery exists in sidecar.js but invocation unproven)",
+      "GuardState was reset between /goalanchor-guard on and the probe (session_start -> disable fires on runtime reload; model switch gpt-6-astra -> gpt-6-luna observed later in the session)",
+      "state.check received an unexpected event shape and the catch path revoked silently"
+    ],
+    "not_a_conclusion_about": "It does not prove guard.cjs check() logic is wrong in isolation; Node tests cover it. The failure is in the host integration path.",
+    "status": "DEFECT_RECORDED / ROOT_CAUSE_OPEN"
+  },
+  "status_summary": "PLUGIN_0_9_3_INSTALLED_REVIEW_ROUND_PASSED_GUARD_ENABLE_VERIFIED_RUNTIME_BLOCKING_DEFECT_OPEN",
   "verified": [
     "PI-Desktop 0.22.0 installed plugin upgraded from 0.6.0 to 0.9.3 through the host Plugins page",
     "manifest, runtime and registry all report 0.9.3 with status ready and enabled true",
