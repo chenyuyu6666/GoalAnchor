@@ -5,6 +5,38 @@
 
 ## [未发布]
 
+## [0.9.3] - 2026-11-13
+
+### Added
+
+- StrictWorkflow 生命周期补全：scope grant/revoke、accepted-risk、resume、observation reuse、cancellation 与 closure；审核证明链采用 append-only proof/head、原子 attestation 与 CAS 串行化。
+- 宿主中立公共接口：宿主能力描述、`TrustedRuntimeBindingProvider`、`TrustedReviewProofProvider`、review delivery proof 与 `EfficiencyObservationProvider`。
+- 效率治理组件：`EfficiencyRuntime` fail-closed 准入门面、`TaskComplexityEngine`、`BudgetGovernor`、`ProgressWatchdog` 与 `PromptOptimizer`/context reuse。
+- ZCode app-server 传输桥接与协议探测器；桥接明确拒绝 `strict_binding`，不把模型输出或环境标签当作身份证明。
+- Codex App Server 五场景（smoke/question/cancel/decline/accept）与真实四角色审核深层闭环验证，含 UNKNOWN/reconcile/closure。
+- `audit/README.md`：把「被引用 + 终态才入库」的证据规则固化到仓库内。
+
+### Changed
+
+- `AgentRuntime` 按角色投影结果字段，容忍非关键扩展字段。
+- PI-Desktop 插件与 Skill 同步证据更新到宿主 0.21.0。
+- v1.0 状态表与宿主矩阵按真实验收证据刷新；原始协议事件流、中间探测件与图谱产物迁入工作区 `Doc/03_验证与测试/`，仓库只保留终态证据。
+
+### Fixed
+
+- 审核消费侧改用冻结上下文，闭合 reconcile→close 缺口；证据删除/篡改/过期仍 fail-closed。
+- Windows cp1252 编码崩溃：子进程、CLI 与宿主传输全面强制 UTF-8。
+- 依赖：pytest 收紧至 `>=9.0.3,<10.0`（PYSEC-2026-1845），项目范围 pip-audit 零漏洞。
+
+### Security
+
+- 测试 SQL 拼接的扫描拦截模式已消除；`journal_mode` PRAGMA 改为字面量分支；fuzz 随机数改为本地确定性实现。
+
+### Notes
+
+- 原生宿主仍是 `PARTIAL/BOUNDED`：Codex 深层闭环已验证；PI-Desktop 仅验证审核工具与 host-completion 路径；ZCode/Claude/DSH 未闭合；58 项原生场景按证据记录 `NOT_RUN`。
+- 本版本为向后兼容发布，不宣称 v1.0 完成；P2b–P7、全项目 Graphify 与 Gitee 镜像对齐仍未完成。
+
 ## [0.9.2] - 2026-10-24
 
 ### Changed
