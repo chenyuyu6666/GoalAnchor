@@ -194,28 +194,32 @@ git describe --tags --exact-match <release-commit>
 
 ### 9.1 Release 命名
 
-- Git tag 与 Release 标题均为纯 `vX.Y.Z`，不使用主题后缀或任何修饰语（与 v0.7.0 及之前所有版本保持一致）。
-- 版本主题、亮点与说明一律写入 Release 说明正文和 `CHANGELOG.md`，不进入标题。
+- **Release 标题**（GitHub Release 的 name）为纯 `vX.Y.Z`，不使用主题后缀或任何修饰语。
+- **Git tag 名**为纯 `vX.Y.Z`；**tag message** 使用 `vX.Y.Z <发布说明>`，与发布聚合提交标题逐字一致。这是 v0.1.0 起的既有惯例（17 个版本 tag 中 16 个带说明，仅 v0.9.2 为纯版本号），也与本文第 7 步模板和 `CONTRIBUTING.md` 的发布示例一致。
+- 版本主题、亮点与详细说明写入 Release 说明正文和 `CHANGELOG.md`；tag message 只写一行主题，不展开。
 
 发布步骤：
 
-1. 确认目标版本和变更范围；
+1. 确认目标版本和变更范围，按 SemVer 判定 `MAJOR`/`MINOR`/`PATCH`（含新公共接口或新组件即 `MINOR`）；
 2. 更新运行时版本单一来源；
 3. 将 `CHANGELOG.md` 的未发布内容定版；
 4. 同步 README、贡献规范、规格和示例中的版本引用；
 5. 执行完整测试、质量门禁和打包检查；
-6. 在稳定分支创建发布聚合提交：
+6. 在稳定分支创建发布聚合提交，标题与 tag message 一致：
 
    ```text
    vX.Y.Z <发布说明>
    ```
 
-7. 创建 annotated tag 并推送提交和标签：
+   正文必须包含四段：**影响范围 / 关键决策 / 验证 / 风险与后续**。该提交只做版本号、CHANGELOG、README、贡献规范和发布资料同步，**不混入构建产物**（wheel/sdist 走独立的 `chore(delivery)` 提交）。
+7. 创建 annotated tag，**直接指向该发布聚合提交**（不是 PR 合并提交），并推送提交和标签：
 
    ```powershell
    git tag -a vX.Y.Z -m "vX.Y.Z <发布说明>"
    git push origin master --follow-tags
    ```
+
+8. tag 内 `delivery/<ver>/` 只放 `README.md` 与 `release-notes.md`；`release-manifest.json` 在 tag 与 Release 完成后生成并回填，避免 tag 快照记录尚未发生的事实。
 
 已发布标签不可移动、不可复用。维护更新应说明是否改变行为、是否需要迁移和应使用的版本号。
 
@@ -352,6 +356,7 @@ README 与实际行为不一致时，以代码为准修正 README；若 README �
 - 移动或复用已发布标签；
 - 未确认就用强制推送覆盖他人工作；
 - 提交构建产物、临时缓存或机器专属绝对路径；
+  - 例外：`delivery/<ver>/` 下的正式发布包（wheel/sdist）按历史惯例可以入库，但必须走**独立的 `chore(delivery)` 提交**，不得混入发布聚合提交，也不得在 `dist/`、`build/` 等构建输出目录中提交。
 - 没有验证结果就宣称任务完成。
 
 ## 14. 提交前检查清单
