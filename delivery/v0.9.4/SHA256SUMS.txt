@@ -1,0 +1,2 @@
+cc7a272367ad65f411d9f82fa8798869f9baf4293c7c5c451e89f2b6beb92f27 *goalanchor-0.9.4-py3-none-any.whl
+9e92a789f5be331bdd461caeb8a55b6a9f3231f2aa29de3c1647b918bac05cd6 *goalanchor-0.9.4.tar.gz
