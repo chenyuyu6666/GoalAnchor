@@ -77,16 +77,16 @@
       "protocol_source": "https://github.com/zai-org/ZCode/blob/main/docs/zcode-protocol.md"
     },
     "pi_desktop": {
-      "status": "PARTIAL/VERIFIED_REVIEW_TOOL_NATIVE_STRICT_NOT_RUN",
-      "installed_version": "0.21.0 UI (file ProductVersion 0.20.1.0 previously recorded)",
+      "status": "PARTIAL/PLUGIN_0_9_3_INSTALLED_COMMANDS_VERIFIED_TOOL_REACHABLE_NATIVE_STRICT_NOT_RUN",
+      "installed_version": "0.22.0 UI (file ProductVersion 0.22.0.0); plugin upgraded 0.6.0 -> 0.9.3 on 2026-11-13",
       "capability": "LIMITED",
-      "evidence": "Live desktop session: /goalanchor-status reported Tool Hook installed, host-completion dispatch, Python bridge available and Guard OFF; exact plugin_local_goalanchor_goalanchor_review returned PASS for LOW/1 round with no findings and consistent Arbiter/Meta result. See audit/pi-desktop-runtime-20261107.json.",
-      "limitations": "This verifies the review tool and host-completion path only. Native execute approval, one-time consumption, receipt, UNKNOWN/reconcile/closure and trusted principal/account provenance remain unverified."
+      "evidence": "2026-11-13: plugin installed through the host Plugins page from build/goalanchor.piplug; manifest, runtime and registry all report 0.9.3 with status ready and enabled true; host logged plugin.unload -> plugin.skills.register -> plugin.load.success, and plugin.restored after a full restart. /goalanchor.capabilities returned a live report: review available, dispatch_mode host-completion, visible_subagents unavailable, remote_cancel unavailable, review_budget_ms 10000. The plugin command and both skills appear in composer completion. goalanchor_review was dispatched and reached the Python contract layer twice, both rejected on argument validation (max_rounds in context; then missing top-level risk). See audit/pi-desktop-runtime-20261113.json.",
+      "limitations": "Plugin install, command surface and tool reachability are verified on a real 0.22.0 host. A successful review round on 0.9.3 was NOT obtained; both dispatches failed argument validation. Native execute approval, one-time consumption, receipt, UNKNOWN/reconcile/closure and trusted principal/account provenance remain unverified."
     }
   },
   "remaining": [
     "Codex native UI/account provenance remains unverified despite the controlled App Server deep loop",
-    "PI-Desktop native Strict execute approval, one-time consumption, receipt, UNKNOWN/reconcile/closure and trusted identity provenance remain NOT_RUN",
+    "PI-Desktop: plugin 0.9.3 is installed and its command surface is live, but a successful goalanchor_review round was not obtained (both dispatches failed argument validation); native Strict execute approval, one-time consumption, receipt, UNKNOWN/reconcile/closure and trusted identity provenance remain NOT_RUN",
     "ZCode native Strict binding and deep-loop validation require a trusted Desktop Host runtime identity and review-proof provider; the current bridge deliberately rejects strict_binding",
     "Claude remains blocked by the 402 account balance and model-routing rejection; its native Strict loop is NOT_RUN",
     "DSH native GoalAnchor integration is NOT_RUN and still requires the API key plus a verified CLI/runtime entry",
