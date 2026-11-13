@@ -1,12 +1,12 @@
 {
   "task_id": "GA-V093-PUBLISH",
-  "state": "PACKAGED_PENDING_TAG_AND_RELEASE",
+  "state": "PUBLISHED_AND_PUBLIC_DOWNLOADS_VERIFIED",
   "version": "0.9.3",
   "release_date": "2026-11-13",
   "repository": "chenyuyu6666/GoalAnchor",
   "base_tag": "v0.9.2",
   "base_commit": "8a04e9fd30b0477e0c8d395cf37d4b03057e7a88",
-  "release_commit": null,
+  "release_commit": "c95c3bf8b0725018caf744b5b7b6e917d44662f1",
   "tag_name": "v0.9.3",
   "tag_message": "v0.9.3",
   "release_title": "v0.9.3",
@@ -33,14 +33,15 @@
     "prerelease": false,
     "published_at_required": true
   },
-  "tag_object_sha": null,
-  "tag_pushed": false,
-  "release_id": null,
+  "tag_object_sha": "294702066c7ab9c3696bf98473e346d86e9b2f6c",
+  "tag_pushed": true,
+  "release_id": 443739062,
   "release_url": "https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.9.3",
-  "published_at": null,
-  "draft": null,
-  "prerelease": null,
-  "public_unauthenticated_download_verified": false,
+  "published_at": "2026-11-13T02:20:31Z",
+  "draft": false,
+  "prerelease": false,
+  "immutable": false,
+  "public_unauthenticated_download_verified": true,
   "gitee_mirror": {
     "repository_url": "https://gitee.com/chen-yuyu6666/goal-anchor.git",
     "direction": "github-to-gitee",
@@ -59,7 +60,11 @@
     "pi_desktop_node": "PASS_13_OF_13",
     "wheel_metadata": "PASS_0.9.3",
     "sdist_metadata": "PASS_0.9.3",
-    "clean_wheel_import": "PASS_0.9.3"
+    "clean_wheel_import": "PASS_0.9.3",
+    "public_wheel_sha256": "MATCH",
+    "public_sdist_sha256": "MATCH",
+    "public_sha256sums_sha256": "MATCH",
+    "release_asset_digests": "MATCH (GitHub API digest equals local SHA-256 for all 3 assets)"
   },
-  "task_status": "PACKAGED_LOCAL_PENDING_PUBLICATION"
+  "task_status": "COMPLETE_GITHUB_RELEASE_PUBLIC_DOWNLOADS_VERIFIED_GITEE_DEFERRED"
 }
