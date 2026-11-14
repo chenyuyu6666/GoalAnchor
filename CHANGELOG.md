@@ -5,6 +5,29 @@
 
 ## [未发布]
 
+## [0.10.1] - 2026-11-14
+
+### Fixed
+
+- **Composer 批准通路（对话框已验证可达）**：新增 `/goalanchor-approve <记录>.json` 输入框批准分支（extension 0.10.1）——经 2 轮独立评审（第 2 轮仲裁+Meta PASS，八项验收条件全部落实）：工作区 jail 读记录、本地 preflight（12s 超时）、真实宿主确认对话框（标注 prompt-initiated，模型可触发但点击永远是用户的授权）、批准前后 generation/model 双重复检、28KiB 显示上限失败封闭、全部分支返回真实通知（失败注入截断+前缀）；armedNotice/APPROVE_HINT/阻断理由全部改指 composer 通路（不再指向失效的命令面板）。
+- Node 测试 18/18：完整批准流（对话框授权→一次性消费→未批准仍拦）、未武装拒绝、非 JSON/缺记录失败分支、缺会话身份拒绝、通知文案一致性。
+
+### Known Issues
+
+- **批准结果被宿主丢弃**（如实记录，实测）：0.22.0 的 before_agent_start 派发不等待异步处理器——对话框弹出并可人工点击（已两次实测，含完整契约展示），但点击后的批准状态与通知从未回到会话（转录无该回合、后续强制调用被模型以"无可验证批准记录"拒绝）。这验证了评审门槛 R2-R2-F2 预警的处理器生命周期风险属宿主侧限制。后续路径：两步同步批准协议（需重新评审）或宿主修复。
+- **Guard 运行时拦截的端到端宿主证据未取得**：武装会话内模型因每回合真实通知持续自我拒绝，无法诱导真实工具调用。跨回合持久与批准流由 Node 测试直接覆盖（18 项）；pytest 1305/0、ruff/mypy/fixtures 全绿。
+- 命令面板对空闲会话的扩展命令报 "runtime not found" 且不传参数。
+- 插件重载或宿主重启静默复位门禁（模块 Map 清空）；每回合武装通知消失即为复位信号。
+
+### Changed
+
+- `skills/goalanchor/SKILL.md`「PI-Desktop runtime guard」一节更新为 composer 批准通路现实（含慢点击失败封闭症状）；插件 README 同步。
+
+### Notes
+
+- 评审记录：v1 状态文件 FAIL（模型可植入自批准文件）；v2 模块级设计一轮收敛 WARN（五门槛）；v3 composer 批准两轮（r2 仲裁 PASS + Meta PASS，与 reviewer-1 PASS 一致、推翻 reviewer-2 WARN 的"流程位置"异议——八项要求全部保留为 merge 前验收条件）。桌面实测完整时间线见 `audit/pi-desktop-runtime-20261114.json`（v2_followup.v3_followup）。
+- 插件包：`build/goalanchor-0.10.1.piplug`，SHA-256 `69c13531ffd0a04c31425fe2b8c3fdd21e6aacb2061968f4c3c26fafbeec93ad`。
+
 ## [0.10.0] - 2026-11-14
 
 ### Fixed

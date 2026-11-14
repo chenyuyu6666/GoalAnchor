@@ -232,11 +232,18 @@ actually returned a result in this session.
   disarm it; arming only tightens blocking. On hosts where delegation runs as tool calls
   of the parent session, the armed gate covers them; a genuinely new session starts
   unarmed by design.
+- Approvals on PI-Desktop 0.22.0 work through the composer: the prompt
+  `/goalanchor-approve <record>.json` (workspace-relative path) runs a local preflight,
+  shows a human confirmation dialog marked as prompt-initiated, and only the dialog
+  click grants the exact operations once. The model can trigger the dialog but clicking
+  it is always the user's decision; nothing is granted without that click.
 - On PI-Desktop 0.22.0, composer-typed slash text reaches the model as a literal prompt
   and does not execute extension command handlers, and palette extension commands fail
-  for idle sessions and receive no arguments, so no working approval UI exists there:
-  an armed session is read-only by default. When a blocked call reports
-  `no exact approval`, tell the user the host currently offers no approval path and a
-  newer plugin/host may add one.
+  for idle sessions and receive no arguments, so the composer approve prompt above is
+  the working approval path. When a blocked call reports `no exact approval`, tell the
+  user to run `/goalanchor-approve <record>.json` in the composer and confirm the
+  dialog.
 - Once armed, unapproved non-read tool calls are blocked; a failed approved call or a
-  model change revokes the remaining approvals on hosts where approval works.
+  model change revokes the remaining approvals. The whole approval flow shares the
+  turn's handler budget, so a slow click can fail closed with no notice - visible later
+  as a `no exact approval` rejection; just run the approve prompt again.

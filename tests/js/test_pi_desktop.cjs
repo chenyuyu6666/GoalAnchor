@@ -263,7 +263,9 @@ test('before_agent_start arms the guard from the exact prompt and never disarms'
   assert.ok(!armed.systemPrompt.includes('only via /goalanchor-approve from the command palette'),
     'notice must not advertise an approval path that does not work on 0.22.0');
   assert.equal(hooks.get('tool_call')(bash,context).block,true);
-  assert.ok(hooks.get('tool_call')(bash,context).reason.includes('command palette'));
+  assert.ok(hooks.get('tool_call')(bash,context).reason.includes('/goalanchor-approve'));
+  assert.ok(!hooks.get('tool_call')(bash,context).reason.includes('command palette'),
+    'block hint must name the composer approval path, not the broken palette');
 
   // Prompt variants can never disarm; they only append an honest notice.
   const denied = hook({prompt:'/goalanchor-guard off',systemPrompt:base},context);
@@ -311,4 +313,101 @@ test('guard state persists across factory calls within one process', {skip:!plug
   const bash = {toolName:'Bash',input:{command:'echo next-turn'},toolCallId:'t1'};
   assert.equal(hooks2.get('tool_call')(bash,context).block,true,
     'arming from one factory call must hold in the next factory call (per-turn runtime rebuild)');
+});
+
+test('notices never advertise the broken palette path and carry the instance id', {skip:!plugin}, async () => {
+  const {pathToFileURL} = require('node:url');
+  const create = (await import(pathToFileURL(path.join(plugin,'extension.mjs')).href)).default;
+  const hooks = new Map();
+  create({registerCommand:() => {},on:(name,handler) => hooks.set(name,handler)});
+  const context={model:{provider:'p',id:'m'},signal:new AbortController().signal,
+    sessionManager:{getSessionId:() => 'NOTICE-S1'},ui:{notify:() => {},confirm:async () => false}};
+  const hook = hooks.get('before_agent_start');
+  const out = hook({prompt:'/goalanchor-guard on',systemPrompt:'B'},context);
+  assert.ok(out.systemPrompt.includes('instance '));
+  assert.ok(out.systemPrompt.includes('/goalanchor-approve'), 'armed notice must name the composer approval path');
+  assert.ok(!out.systemPrompt.includes('command palette'), 'no notice may point at the broken palette');
+  const bash = {toolName:'Bash',input:{command:'x'},toolCallId:'n1'};
+  const blocked = hooks.get('tool_call')(bash,context);
+  assert.ok(blocked.reason.includes('/goalanchor-approve'));
+  assert.ok(!blocked.reason.includes('command palette'), 'block hint must name the composer path');
+});
+
+test('composer approve branch: dialog click grants once, prompts never grant without it', {skip:!plugin}, async () => {
+  const {pathToFileURL} = require('node:url');
+  const create = (await import(pathToFileURL(path.join(plugin,'extension.mjs')).href)).default;
+  const fixture = JSON.parse(await fs.readFile(path.join(plugin,'examples','approval.json'),'utf8'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(),'goalanchor-approve-test-'));
+  try {
+    await fs.writeFile(path.join(directory,'approval.json'),JSON.stringify(fixture));
+    const hooks = new Map();
+    create({registerCommand:() => {},on:(name,handler) => hooks.set(name,handler)});
+    const bash = {toolName:'Bash',input:{command:'echo approved-once'},toolCallId:'a1'};
+    const session = id => ({sessionManager:{getSessionId:() => id}});
+    let confirmResult = false; let dialogCalls = 0; let dialogTitle=''; let dialogBody='';
+    const mkContext = () => ({cwd:directory,model:{provider:'p',id:'m'},signal:new AbortController().signal,
+      ...session('APPR-S1'),
+      ui:{notify:() => {},confirm:async (title,body) => {dialogCalls++;dialogTitle=title;dialogBody=body;return confirmResult;}}});
+    const hook = hooks.get('before_agent_start');
+    const context = mkContext();
+
+    // Approve while unarmed: honest failure, no dialog.
+    let out = await hook({prompt:'/goalanchor-approve approval.json',systemPrompt:'B'},context);
+    assert.ok(out.systemPrompt.includes('not armed'));
+    assert.equal(dialogCalls,0);
+
+    // Arm via the exact prompt, then decline in the dialog: nothing granted.
+    hook({prompt:'/goalanchor-guard on',systemPrompt:'B'},context);
+    confirmResult = false;
+    out = await hook({prompt:'/goalanchor-approve approval.json',systemPrompt:'B'},context);
+    assert.equal(dialogCalls,1);
+    assert.ok(out.systemPrompt.includes('declined'));
+    assert.ok(dialogTitle.includes('prompt-initiated'), 'dialog must mark prompt-initiated requests');
+    assert.equal(hooks.get('tool_call')(bash,context).block,true);
+
+    // Confirm in the dialog: exactly the fixture operations are granted once.
+    confirmResult = true;
+    out = await hook({prompt:'/goalanchor-approve approval.json',systemPrompt:'B'},context);
+    assert.equal(dialogCalls,2);
+    assert.ok(out.systemPrompt.includes('approved once'));
+    assert.ok(dialogBody.includes(fixture.operations[0].tool));
+    const op = fixture.operations[0];
+    const approvedCall = {toolName:op.tool,input:op.input,toolCallId:'a2'};
+    assert.equal(hooks.get('tool_call')(approvedCall,context),undefined,'approved op must pass the gate');
+    assert.equal(hooks.get('tool_call')(approvedCall,context).block,true,'one-time consumption');
+    assert.equal(hooks.get('tool_call')(bash,context).block,true,'unapproved op stays blocked');
+
+    // The approve prompt never changes the armed state.
+    out = await hook({prompt:'nothing to see here',systemPrompt:'B'},context);
+    assert.ok(out.systemPrompt.includes('armed'),'armed notice must persist after approvals');
+  } finally { await fs.rm(directory,{recursive:true,force:true}); }
+});
+
+test('composer approve failures: missing session, bad record, non-json path', {skip:!plugin}, async () => {
+  const {pathToFileURL} = require('node:url');
+  const create = (await import(pathToFileURL(path.join(plugin,'extension.mjs')).href)).default;
+  const hooks = new Map();
+  create({registerCommand:() => {},on:(name,handler) => hooks.set(name,handler)});
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(),'goalanchor-approve-err-'));
+  try {
+    const hook = hooks.get('before_agent_start');
+    // Missing session identity: refuse without throwing.
+    const noId = {cwd:directory,model:{provider:'p',id:'m'},signal:new AbortController().signal,
+      sessionManager:{getSessionId:() => null},ui:{notify:() => {},confirm:async () => true}};
+    const out1 = await hook({prompt:'/goalanchor-approve a.json',systemPrompt:'B'},noId);
+    assert.ok(out1.systemPrompt.includes('session identity unavailable'));
+    // Non-json suffix: jail message.
+    const ctx = {cwd:directory,model:{provider:'p',id:'m'},signal:new AbortController().signal,
+      sessionManager:{getSessionId:() => 'ERR-S1'},ui:{notify:() => {},confirm:async () => true}};
+    hook({prompt:'/goalanchor-guard on',systemPrompt:'B'},ctx);
+    const out2 = await hook({prompt:'/goalanchor-approve record.txt',systemPrompt:'B'},ctx);
+    assert.ok(out2.systemPrompt.includes('nothing approved'));
+    assert.ok(out2.systemPrompt.includes('preflight failed'));
+    // Missing record file: same fail-closed notice shape.
+    const out3 = await hook({prompt:'/goalanchor-approve missing.json',systemPrompt:'B'},ctx);
+    assert.ok(out3.systemPrompt.includes('nothing approved'));
+    // Bare command with no path.
+    const out4 = await hook({prompt:'/goalanchor-approve',systemPrompt:'B'},ctx);
+    assert.ok(out4.systemPrompt.includes('Supply a workspace record path'));
+  } finally { await fs.rm(directory,{recursive:true,force:true}); }
 });

@@ -21,19 +21,23 @@ const instanceId = randomUUID().slice(0, 8);
 
 // PI-Desktop 0.22.0 routes composer-typed slash text to the model as a literal
 // prompt (the command palette reaches extension command handlers but fails for
-// idle sessions and passes no arguments), so the guard arms from the raw user
-// prompt in before_agent_start. Arming only tightens blocking; prompts can
-// never disarm, keeping that decision with the user.
+// idle sessions and passes no arguments), so the guard arms and the user grants
+// approvals from the raw user prompt in before_agent_start. Arming only
+// tightens blocking; prompts can never disarm, and the ui.confirm dialog click
+// is the sole grant authority for approvals.
 const armedNotice = () =>
-  `GoalAnchor runtime guard is armed for this session (instance ${instanceId}): every non-read tool call now requires an exact prior approval and is blocked otherwise. Approvals can only be granted by the user through a working host approval UI; on PI-Desktop 0.22.0 none is available, so treat this session as read-only. Prompts can never disarm the guard: start a new session to disarm, and re-arm after a plugin reload or host restart (this notice stops when that happens).`;
+  `GoalAnchor runtime guard is armed for this session (instance ${instanceId}): every non-read tool call now requires an exact prior approval and is blocked otherwise. The user grants one-time approvals by typing "/goalanchor-approve <record>.json" in the composer (a human confirmation dialog is shown; without that click nothing is approved). Prompts can never disarm the guard: start a new session to disarm, and re-arm after a plugin reload or host restart (this notice stops when that happens).`;
 const guardStateNotice = armed =>
   `GoalAnchor: prompts cannot change the runtime guard (instance ${instanceId}). ${armed ? 'The guard remains armed. To disarm, start a new session or run /goalanchor-guard off from a working command surface.' : 'The guard is not armed. Arm with exactly "/goalanchor-guard on".'}`;
 const unknownGuardNotice = () =>
   `GoalAnchor: unrecognized /goalanchor-guard prompt; the runtime guard state is unchanged (instance ${instanceId}). Arm with exactly "/goalanchor-guard on".`;
 const noIdentityNotice = () =>
   `GoalAnchor: session identity unavailable; the guard cannot be armed from this prompt (instance ${instanceId}).`;
+// Composer approval path: the model or the user may trigger the dialog by
+// typing this command; only the human dialog click grants anything.
 const APPROVE_HINT =
-  ' In PI-Desktop, /goalanchor-approve must be run from the command palette; composer text cannot reach it, and on 0.22.0 the palette currently fails for idle sessions.';
+  ' The user grants approvals by typing "/goalanchor-approve <record>.json" in the composer and confirming the dialog.';
+const APPROVE_PREFIX = '/goalanchor-approve ';
 
 function sessionIdOf(ctx) {
   try { return ctx?.sessionManager?.getSessionId?.() ?? null; }
@@ -71,6 +75,14 @@ async function readRecord(name, cwd) {
   return JSON.parse(await readFile(file,'utf8'));
 }
 
+// The preflight result does not echo the raw record, so change_scope and
+// recovery_path are read from the parsed record itself (same source as the
+// palette handler).
+function recordScope(result, parsedRecord) {
+  const scope = parsedRecord?.execute?.change_scope;
+  const recovery = parsedRecord?.execute?.recovery_path;
+  return {scope: typeof scope === 'string' ? scope : '', recovery: typeof recovery === 'string' ? recovery : ''};
+}
 export default function goalanchor(pi) {
   let python = process.env.GOALANCHOR_PYTHON || 'python';
   const announce = (ctx,message) => { try { ctx.ui?.notify?.(message,'info'); } catch { /* optional UI */ } };
@@ -186,10 +198,84 @@ export default function goalanchor(pi) {
     // received system prompt is always carried through; the notice is appended.
     // While armed, the notice is re-injected every turn so the model's account
     // of the guard stays grounded and a lapsed arm (reload/restart) is visible
-    // by its absence.
+    // by its absence. The approve branch runs BEFORE the armed notice branch so
+    // its outcome notice is not clobbered (review gate R2-R2-F1).
+    //
+    // Composer approval path (review gate R2-R2-F*): the prompt can only
+    // trigger the dialog; the ui.confirm click is the sole grant authority.
+    // Mirrors the palette handler: generation/model baseline captured before
+    // preflight, re-checked after preflight and again after the dialog
+    // (R2-R2-F8); whole trimmed remainder is the record path (R2-R2-F5); the
+    // 28KiB display cap aborts fail-closed (R2-R2-F4); every branch returns a
+    // truthful notice, failures capped and prefixed (R2-R2-F6); the dialog
+    // marks prompt-initiated requests (R2-R2-F7). Known host limitation
+    // (documented): the whole flow shares the 30s handler budget, so a slow
+    // preflight or slow human click fails closed with no notice - visible
+    // later as a 'no exact approval' rejection (R2-R2-F2).
+    const approveFailureNotice = detail =>
+      `GoalAnchor: preflight failed; nothing approved, guard unchanged (instance ${instanceId}). ${detail}`;
+    const runApproveBranch = async (event,ctx,text) => {
+      const base = typeof event?.systemPrompt === 'string' ? event.systemPrompt : '';
+      const record = text.slice(APPROVE_PREFIX.length).trim();
+      if (!record) return {systemPrompt:approveFailureNotice('Supply a workspace record path, e.g. "/goalanchor-approve approval.json".').trim()};
+      const sessionId = sessionIdOf(ctx);
+      const state = stateFor(sessionId);
+      if (!state) return {systemPrompt:noIdentityNotice().trim()};
+      if (!state.enabled) {
+        return {systemPrompt:approveFailureNotice('The guard is not armed; approval requires "/goalanchor-guard on" first. Nothing was approved.').trim()};
+      }
+      const model = compatibility.currentModel(ctx);
+      const generation = state.generation;
+      let result; let parsed;
+      try {
+        parsed = await readRecord(record,ctx.cwd);
+        result = await bridge.runBridge({operation:'preflight',record:parsed}, {
+          python,signal:ctx.signal,timeoutMs:12000,root,
+        });
+      } catch (error) {
+        const detail = String(error?.message || error).slice(0,400);
+        return {systemPrompt:approveFailureNotice(`record/preflight error: ${detail}`).trim()};
+      }
+      if (state.generation !== generation) {
+        return {systemPrompt:approveFailureNotice('approval revoked while checking the record; nothing approved.').trim()};
+      }
+      if (!result.passed) {
+        const detail = JSON.stringify(result).slice(0,2000);
+        return {systemPrompt:approveFailureNotice(`preflight result: ${detail}`).trim()};
+      }
+      const scopeInfo = recordScope(result,parsed);
+      const message = JSON.stringify({goal:result.contract.task_objective,
+        constraints:result.contract.constraints,acceptance:result.contract.acceptance_criteria,
+        change_scope:scopeInfo.scope,recovery_path:scopeInfo.recovery,
+        model,operations:result.operations},null,2);
+      if (Buffer.byteLength(message) > 28000) {
+        return {systemPrompt:approveFailureNotice('approval display exceeds 28 KiB; split the operations. Nothing approved.').trim()};
+      }
+      let confirmed = false;
+      try {
+        confirmed = await ctx.ui.confirm('GoalAnchor: approve these exact tool calls? (prompt-initiated request; approve arms nothing)',
+          message);
+      } catch (error) {
+        const detail = String(error?.message || error).slice(0,200);
+        return {systemPrompt:approveFailureNotice(`approval dialog unavailable: ${detail}`).trim()};
+      }
+      if (!confirmed) return {systemPrompt:`GoalAnchor: approval declined; nothing approved (instance ${instanceId}).`.trim()};
+      if (ctx.signal?.aborted || compatibility.currentModel(ctx) !== model || state.generation !== generation) {
+        return {systemPrompt:approveFailureNotice('approval context changed or was revoked; nothing approved.').trim()};
+      }
+      state.approve(result.operations,model);
+      return {systemPrompt:`GoalAnchor: ${result.operations.length} exact operations approved once by user confirmation (instance ${instanceId}). They are consumed on first matching use; a failed approved call, a model change, or the end of this agent turn revokes the rest. This approval does not change the armed state.`.trim()};
+    };
     pi.on('before_agent_start', (event,ctx) => {
       const base = typeof event?.systemPrompt === 'string' ? event.systemPrompt : '';
       const text = typeof event?.prompt === 'string' ? event.prompt.trim() : '';
+      let pending = null;
+      if (text === '/goalanchor-approve' || text.startsWith(APPROVE_PREFIX)) {
+        pending = runApproveBranch(event,ctx,text);
+      }
+      // The synchronous notice branches run immediately; an async approve
+      // branch resolves into the final systemPrompt.
+      if (pending) return pending.then(r => r);
       const sessionId = sessionIdOf(ctx);
       let notice = null;
       if (text === '/goalanchor-guard on') {
