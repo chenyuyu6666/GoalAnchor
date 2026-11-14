@@ -5,6 +5,27 @@
 
 ## [未发布]
 
+## [0.10.0] - 2026-11-14
+
+### Fixed
+
+- **PI-Desktop 0.22.0 Guard 武装通路与跨回合持久修复**：输入框键入的斜杠文本被宿主作为普通 prompt 发给模型（扩展命令处理器只从命令面板可达且对空闲会话失败），`GuardState.enable()` 从未执行——模型"Guard 已启用"的叙述与运行时事实脱节。更深一层：宿主按回合重建扩展运行时，工厂局部守卫状态每回合失忆（欺骗探针实测未批准 Bash 成功执行）。修复（extension 0.10.0）：`before_agent_start` 钩子在精确 prompt `/goalanchor-guard on` 时武装并把守卫状态提升到**模块级 Map<sessionId,GuardState>**（依赖宿主 runner 的模块级工厂缓存，状态跨回合存活；无任何模型可写持久面——v1 状态文件设计因"模型可植入自批准状态文件"被评审 FAIL 否决）；武装通知每回合重注入并携带进程实例标识；缺失会话身份时拒绝武装、拦截侧 fail-closed；prompt（含模型组合的委托 prompt）只能武装、不能解除，解除 = 新会话。
+
+### Known Issues
+
+- **Guard 运行时拦截的端到端宿主证据未取得**（如实记录）：武装后模型的每回合真实状态通知使其持续自我拒绝，无法在武装会话中诱导出真实工具调用，转录中因此没有"被阻止的 tool_call"证据块。跨回合持久机制由 Node 测试直接覆盖（两次工厂调用共享武装条目、异 sessionId 隔离、禁解除、基座系统提示逐字保留），pytest 1305/0、ruff/mypy/fixtures 全绿。诚实状态：已知根因（跨回合状态丢失）已按构造修复并有测试，剩余是证据缺口而非已知缺陷。
+- 0.22.0 命令面板对空闲会话的扩展命令报 "runtime not found" 且不传参数——没有可用的批准 UI，武装会话默认只读。
+- 插件重载或宿主重启静默复位门禁（模块 Map 清空）；每回合武装通知消失即为复位信号。
+
+### Changed
+
+- `skills/goalanchor/SKILL.md` 新增「PI-Desktop runtime guard」一节：加载 Skill 不等于武装；模型不得在没有对应机制返回结果时宣称门禁已武装/已解除/存在批准；记录 0.22.0 输入框路由事实与命令面板唯一批准/解除通路。插件 README 同步。
+
+### Notes
+
+- 实现经过两轮 GoalAnchor 独立评审：v1 状态文件设计被 reviewer-2 FAIL 否决（模型可植入自批准状态文件的信任升级）；v2 模块级设计 2 reviewer + arbiter + meta 一轮收敛 WARN（HIGH 风险），五项实现门槛全部落实并有测试覆盖（Node 15 项：跨工厂调用持久化、会话隔离、缺身份 fail-closed、禁解除、基座系统提示逐字保留、通知文案不宣传不可用的批准路径）。
+- 桌面实测证据与完整时间线见 `audit/pi-desktop-runtime-20261114.json`（v3 schema + v2_followup）；`audit/pi-desktop-runtime-20261113.json` 的 0.9.3 缺陷结论保留为当时事实。
+
 ## [0.9.4] - 2026-11-14
 
 ### Changed
