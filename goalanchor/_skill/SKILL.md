@@ -214,3 +214,29 @@ change any Gate, status, evidence, or investigation rule above.
   smallest compliant option. Escalate only genuine unresolved ambiguity or an external
   decision the evidence cannot settle. Treat user-declared frozen facts as baseline and
   report build/package/validation success only as the evidence it actually supports.
+
+## PI-Desktop runtime guard
+
+On PI-Desktop with the GoalAnchor plugin, the runtime tool gate is a real mechanism
+separate from this Skill text. Loading this Skill does not arm anything. The gate arms
+only when the exact prompt `/goalanchor-guard on` starts a run (extension 0.10.0+; the
+host then appends a truthful armed notice with a process instance id to the run's system
+prompt, re-injected every turn while armed) or when the user runs `/goalanchor-guard on`
+from a working command surface. Arming persists for the whole session process; a new
+session (new id) starts unarmed; a plugin reload or host restart silently resets the
+guard, and the per-turn notice disappearing is the signal to re-arm. Never claim the
+guard is armed, disarmed, or that any approval exists unless the corresponding mechanism
+actually returned a result in this session.
+
+- Prompts (including model-composed delegation prompts) may arm the gate but can never
+  disarm it; arming only tightens blocking. On hosts where delegation runs as tool calls
+  of the parent session, the armed gate covers them; a genuinely new session starts
+  unarmed by design.
+- On PI-Desktop 0.22.0, composer-typed slash text reaches the model as a literal prompt
+  and does not execute extension command handlers, and palette extension commands fail
+  for idle sessions and receive no arguments, so no working approval UI exists there:
+  an armed session is read-only by default. When a blocked call reports
+  `no exact approval`, tell the user the host currently offers no approval path and a
+  newer plugin/host may add one.
+- Once armed, unapproved non-read tool calls are blocked; a failed approved call or a
+  model change revokes the remaining approvals on hosts where approval works.
