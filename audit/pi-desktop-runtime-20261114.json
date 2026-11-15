@@ -123,6 +123,20 @@
     },
     "verdict_e2e": "GUARD_RUNTIME_BLOCKING_VERIFIED_ON_HOST (2026-11-15): an unapproved Bash attempt was really blocked by the tool_call hook in a live PI-Desktop 0.22.0 session, with the durable tool_call block in the session transcript. The v0.9.4 Known Issue 'runtime blocking not effective' is now closed by direct evidence.",
     "remaining_gap": "approve-grant delivery only: the composer approve dialog result is still dropped by the host's async before_agent_start handling (the grant never landed - the gate reported 'no exact approval' for the very operation whose dialog had been clicked earlier). Blocking is proven; grant delivery needs the two-step synchronous protocol or a host fix."
+   },
+   "full_loop_evidence": {
+    "date": "2026-11-15 (evening)",
+    "session": "99f98d1e-a71a-4e92-b315-bbb967d68f4c (gpt-6-luna, plugin 0.10.1b epoch build, restart instance 02c6fd73)",
+    "working_path_discovered": "composer slash text is routed by the host to the PALETTE extension-command path (runTrustedExtensionCommand with args from the rest of the line) when a runtime is ACTIVE for the session; palette approve with the record path worked end-to-end. The before_agent_start composer branch is also reachable (debug log captured a real composer prompt at 14:56:54 in the RelayGrid new-task session) but the palette path is the reliable grant channel.",
+    "flow": [
+     "prime runtime: 'Reply READY' -> READY",
+     "arm: composer '/goalanchor-guard on' -> palette handler enable() -> toast 'GoalAnchor guard enabled. Mutations require /goalanchor-approve.'",
+     "approve: composer '/goalanchor-approve guard-probe-approval.json' -> palette handler -> preflight -> dialog -> human click 是 -> state.approve on the active session's GuardState (module Map)",
+     "consume: gate self-test prompt -> model attempted Bash echo GUARD_PROBE_OK -> EXECUTED (transcript entry 17, callId call_dd6560fc...a9055ebdbedfcfd2, exitCode 0, stdout GUARD_PROBE_OK, durationMs 701)",
+     "one-time consumption: second identical attempt -> BLOCKED (transcript entry 21, 'no exact approval')"
+    ],
+    "verdict_full_loop": "GUARD_FULL_LOOP_VERIFIED_ON_HOST: arm -> approve(dialog click) -> execute(approved op passes) -> re-block(one-time consumption) all proven with durable transcript entries in a live PI-Desktop 0.22.0 session.",
+    "notes": "before_agent_start composer-branch reachability confirmed via debug log but grant delivery through it remains unreliable; the palette path is the working grant channel on 0.22.0 (dialog + click verified). The composer branch stays as a fallback arm path (verified) and is harmless."
    }
   }
  }
