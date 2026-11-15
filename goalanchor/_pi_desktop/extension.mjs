@@ -152,7 +152,12 @@ export default function goalanchor(pi) {
       if (ctx.signal?.aborted || compatibility.currentModel(ctx) !== model || state.generation !== generation) {
         throw new Error('Approval context changed or was revoked.');
       }
-      state.approve(result.operations,model); announce(ctx,'GoalAnchor: exact operations approved once.');
+      state.approve(result.operations,model);
+      // A palette grant never inherits a composer grant's turn-epoch pairing:
+      // without this clear, a palette approve in the same turn after a composer
+      // grant would survive that turn's agent_end (reviewer-2 probe finding).
+      state._goalanchorGrantEpoch = -1;
+      announce(ctx,'GoalAnchor: exact operations approved once.');
     },
   });
   pi.registerCommand('goalanchor-check', {
@@ -192,7 +197,19 @@ export default function goalanchor(pi) {
     pi.on('agent_end', (event,ctx) => {
       const sessionId = sessionIdOf(ctx);
       const state = sessionId ? sessionStates.get(sessionId) : null;
-      state?.revoke();
+      if (!state) return;
+      // A composer grant made during the turn that is ending survives this one
+      // agent_end (so the next run can consume it); any later agent_end revokes
+      // normally. Epoch pairing bounds the survival even if the host drops an
+      // agent_end: a new turn start bumps the epoch, after which the grant no
+      // longer matches and is revoked. Palette grants never set the epoch pair,
+      // so their end-of-turn revocation is unchanged.
+      if (typeof state._goalanchorGrantEpoch === 'number' &&
+          state._goalanchorGrantEpoch === state._goalanchorTurnEpoch) {
+        state._goalanchorGrantEpoch = -1;
+        return;
+      }
+      state.revoke();
     });
     // The host replaces the run system prompt with the returned value, so the
     // received system prompt is always carried through; the notice is appended.
@@ -264,11 +281,17 @@ export default function goalanchor(pi) {
         return {systemPrompt:approveFailureNotice('approval context changed or was revoked; nothing approved.').trim()};
       }
       state.approve(result.operations,model);
-      return {systemPrompt:`GoalAnchor: ${result.operations.length} exact operations approved once by user confirmation (instance ${instanceId}). They are consumed on first matching use; a failed approved call, a model change, or the end of this agent turn revokes the rest. This approval does not change the armed state.`.trim()};
+      // Bind the grant to the current turn epoch so it survives this turn's
+      // own agent_end exactly once (agent_end pairs the epochs and clears the
+      // binding; see the agent_end handler).
+      state._goalanchorGrantEpoch = state._goalanchorTurnEpoch;
+      return {systemPrompt:`GoalAnchor: ${result.operations.length} exact operations approved once by user confirmation (instance ${instanceId}). They may be executed in this run or the next; consumption is single-use, and a failed approved call, a model change, or the end of the run after this one revokes the rest. This approval does not change the armed state.`.trim()};
     };
     pi.on('before_agent_start', (event,ctx) => {
       const base = typeof event?.systemPrompt === 'string' ? event.systemPrompt : '';
       const text = typeof event?.prompt === 'string' ? event.prompt.trim() : '';
+      const epochState = sessionIdOf(ctx) ? sessionStates.get(sessionIdOf(ctx)) : null;
+      if (epochState) epochState._goalanchorTurnEpoch = (epochState._goalanchorTurnEpoch || 0) + 1;
       let pending = null;
       if (text === '/goalanchor-approve' || text.startsWith(APPROVE_PREFIX)) {
         pending = runApproveBranch(event,ctx,text);

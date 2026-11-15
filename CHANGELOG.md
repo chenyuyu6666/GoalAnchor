@@ -12,6 +12,10 @@
 - **Composer 批准通路（对话框已验证可达）**：新增 `/goalanchor-approve <记录>.json` 输入框批准分支（extension 0.10.1）——经 2 轮独立评审（第 2 轮仲裁+Meta PASS，八项验收条件全部落实）：工作区 jail 读记录、本地 preflight（12s 超时）、真实宿主确认对话框（标注 prompt-initiated，模型可触发但点击永远是用户的授权）、批准前后 generation/model 双重复检、28KiB 显示上限失败封闭、全部分支返回真实通知（失败注入截断+前缀）；armedNotice/APPROVE_HINT/阻断理由全部改指 composer 通路（不再指向失效的命令面板）。
 - Node 测试 18/18：完整批准流（对话框授权→一次性消费→未批准仍拦）、未武装拒绝、非 JSON/缺记录失败分支、缺会话身份拒绝、通知文案一致性。
 
+### Fixed
+
+- **composer 授予存活修复（纪元配对）**：composer 批准发生在批准回合内，原实现会在该回合自身的 agent_end 立即撤销刚授予的批准——授予永远无法被消费（设计缺陷，与宿主异步行为无关）。修复：授予绑定回合纪元（before_agent_start 每回合递增），agent_end 仅在纪元配对时跳过一次 revoke（授予活过其所在回合的结束，供下一回合消费），此后正常撤销；宿主丢弃 agent_end 时漂移有界（下一回合纪元递增即失配）。palette 批准清除配对（同回合交错不继承），stale 保护与语义不变。评审闭环：实现后 reviewer-1 PASS、reviewer-2 WARN（交错发现，探针实证）→修复→reviewer-2 r2 PASS、仲裁 PASS（自跑 21/21）、Meta PASS；gate outcome PASS。Node 21/21、pytest 1305/0。
+
 ### Known Issues
 
 - **批准结果被宿主丢弃**（如实记录，实测）：0.22.0 的 before_agent_start 派发不等待异步处理器——对话框弹出并可人工点击（已两次实测，含完整契约展示），但点击后的批准状态与通知从未回到会话（转录无该回合、后续强制调用被模型以"无可验证批准记录"拒绝）。这验证了评审门槛 R2-R2-F2 预警的处理器生命周期风险属宿主侧限制。后续路径：两步同步批准协议（需重新评审）或宿主修复。

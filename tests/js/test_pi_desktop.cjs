@@ -411,3 +411,84 @@ test('composer approve failures: missing session, bad record, non-json path', {s
     assert.ok(out4.systemPrompt.includes('Supply a workspace record path'));
   } finally { await fs.rm(directory,{recursive:true,force:true}); }
 });
+
+test('composer grant survives exactly one agent_end, then revokes', {skip:!plugin}, async () => {
+  const {pathToFileURL} = require('node:url');
+  const create = (await import(pathToFileURL(path.join(plugin,'extension.mjs')).href)).default;
+  const fixture = JSON.parse(await fs.readFile(path.join(plugin,'examples','approval.json'),'utf8'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(),'goalanchor-survive-test-'));
+  try {
+    await fs.writeFile(path.join(directory,'approval.json'),JSON.stringify(fixture));
+    const hooks = new Map();
+    create({registerCommand:() => {},on:(name,handler) => hooks.set(name,handler)});
+    const context={cwd:directory,model:{provider:'p',id:'m'},signal:new AbortController().signal,
+      sessionManager:{getSessionId:() => 'SURV-S1'},ui:{notify:() => {},confirm:async () => true}};
+    const hook = hooks.get('before_agent_start');
+    const op = fixture.operations[0];
+    const call = {toolName:op.tool,input:op.input,toolCallId:'s1'};
+
+    // Turn 1: arm (epoch 1).
+    hook({prompt:'/goalanchor-guard on',systemPrompt:'B'},context);
+    // Turn 2 (epoch 2): approve grants, bound to this turn's epoch.
+    const out = await hook({prompt:'/goalanchor-approve approval.json',systemPrompt:'B'},context);
+    assert.ok(out.systemPrompt.includes('approved once'));
+    // End of the approve turn: the grant survives this agent_end exactly once.
+    hooks.get('agent_end')({},context);
+    assert.equal(hooks.get('tool_call')(call,context),undefined,'grant must survive the approve turn end');
+    // End of the next run: leftovers revoke.
+    hooks.get('agent_end')({},context);
+    assert.equal(hooks.get('tool_call')(call,context).block,true,'second agent_end must revoke');
+  } finally { await fs.rm(directory,{recursive:true,force:true}); }
+});
+
+test('palette grant is still revoked at the first agent_end (stale protection intact)', {skip:!plugin}, async () => {
+  const {pathToFileURL} = require('node:url');
+  const create = (await import(pathToFileURL(path.join(plugin,'extension.mjs')).href)).default;
+  const fixture = JSON.parse(await fs.readFile(path.join(plugin,'examples','approval.json'),'utf8'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(),'goalanchor-palette-eot-'));
+  try {
+    await fs.writeFile(path.join(directory,'approval.json'),JSON.stringify(fixture));
+    const commands = new Map(); const hooks = new Map();
+    create({registerCommand:(name,definition) => commands.set(name,definition),on:(name,handler) => hooks.set(name,handler)});
+    const context={cwd:directory,model:{provider:'p',id:'m'},signal:new AbortController().signal,
+      sessionManager:{getSessionId:() => 'PAL-S1'},ui:{notify:() => {},confirm:async () => true}};
+    const op = fixture.operations[0];
+    const call = {toolName:op.tool,input:op.input,toolCallId:'p1'};
+    await commands.get('goalanchor-guard').handler('on',context);
+    // A run started earlier: the host bumps the epoch as it would per turn.
+    hooks.get('before_agent_start')({prompt:'run the approved op',systemPrompt:'B'},context);
+    await commands.get('goalanchor-approve').handler('approval.json',context);
+    // The grant was made between turns (no new epoch since), so the first
+    // agent_end revokes it - stale protection and palette semantics unchanged.
+    hooks.get('agent_end')({},context);
+    assert.equal(hooks.get('tool_call')(call,context).block,true,
+      'palette grant must be revoked at the first agent_end (stale protection)');
+  } finally { await fs.rm(directory,{recursive:true,force:true}); }
+});
+
+test('same-turn palette approve after a composer grant does not inherit the epoch pairing', {skip:!plugin}, async () => {
+  const {pathToFileURL} = require('node:url');
+  const create = (await import(pathToFileURL(path.join(plugin,'extension.mjs')).href)).default;
+  const fixture = JSON.parse(await fs.readFile(path.join(plugin,'examples','approval.json'),'utf8'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(),'goalanchor-mixed-grant-'));
+  try {
+    await fs.writeFile(path.join(directory,'approval.json'),JSON.stringify(fixture));
+    const commands = new Map(); const hooks = new Map();
+    create({registerCommand:(name,definition) => commands.set(name,definition),on:(name,handler) => hooks.set(name,handler)});
+    const context={cwd:directory,model:{provider:'p',id:'m'},signal:new AbortController().signal,
+      sessionManager:{getSessionId:() => 'MIX-S1'},ui:{notify:() => {},confirm:async () => true}};
+    const hook = hooks.get('before_agent_start');
+    const op = fixture.operations[0];
+    const paletteCall = {toolName:op.tool,input:op.input,toolCallId:'m1'};
+    hook({prompt:'/goalanchor-guard on',systemPrompt:'B'},context);
+    // Composer grant (epoch pairing set)...
+    const out = await hook({prompt:'/goalanchor-approve approval.json',systemPrompt:'B'},context);
+    assert.ok(out.systemPrompt.includes('approved once'));
+    // ...then a palette approve in the same turn replaces the grant.
+    await commands.get('goalanchor-approve').handler('approval.json',context);
+    // The palette grant must NOT inherit the pairing: first agent_end revokes.
+    hooks.get('agent_end')({},context);
+    assert.equal(hooks.get('tool_call')(paletteCall,context).block,true,
+      'palette grant after a composer grant must be revoked at the first agent_end');
+  } finally { await fs.rm(directory,{recursive:true,force:true}); }
+});
