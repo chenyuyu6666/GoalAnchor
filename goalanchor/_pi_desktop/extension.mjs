@@ -35,6 +35,18 @@ const noIdentityNotice = () =>
   `GoalAnchor: session identity unavailable; the guard cannot be armed from this prompt (instance ${instanceId}).`;
 // Composer approval path: the model or the user may trigger the dialog by
 // typing this command; only the human dialog click grants anything.
+// Ground-truth diagnostics for the composer approve path (temporary; written by the
+// extension process itself because host-side toast/transcript channels are lossy here).
+const { appendFileSync, mkdirSync } = await import('node:fs');
+const DEBUG_DIR = path.join(process.env.APPDATA || process.env.HOME || '.', '.pi-desktop', 'plugins', 'data', 'local.goalanchor');
+function debugLog(event) {
+  try {
+    mkdirSync(DEBUG_DIR, { recursive: true });
+    appendFileSync(path.join(DEBUG_DIR, 'approve-debug.log'), `${new Date().toISOString()} ${event}
+`);
+  } catch { /* diagnostics only */ }
+}
+debugLog(`extension module (re)loaded instance=${instanceId}`);
 const APPROVE_HINT =
   ' The user grants approvals by typing "/goalanchor-approve <record>.json" in the composer and confirming the dialog.';
 const APPROVE_PREFIX = '/goalanchor-approve ';
@@ -232,10 +244,12 @@ export default function goalanchor(pi) {
     const approveFailureNotice = detail =>
       `GoalAnchor: preflight failed; nothing approved, guard unchanged (instance ${instanceId}). ${detail}`;
     const runApproveBranch = async (event,ctx,text) => {
+      debugLog(`composer approve prompt received: ${JSON.stringify(text)}`);
       const base = typeof event?.systemPrompt === 'string' ? event.systemPrompt : '';
       const record = text.slice(APPROVE_PREFIX.length).trim();
       if (!record) return {systemPrompt:approveFailureNotice('Supply a workspace record path, e.g. "/goalanchor-approve approval.json".').trim()};
       const sessionId = sessionIdOf(ctx);
+      debugLog(`sessionId=${sessionId} armed=${sessionStates.get(sessionId)?.enabled === true}`);
       const state = stateFor(sessionId);
       if (!state) return {systemPrompt:noIdentityNotice().trim()};
       if (!state.enabled) {
@@ -270,8 +284,10 @@ export default function goalanchor(pi) {
       }
       let confirmed = false;
       try {
+        debugLog('dialog opening');
         confirmed = await ctx.ui.confirm('GoalAnchor: approve these exact tool calls? (prompt-initiated request; approve arms nothing)',
           message);
+        debugLog(`dialog resolved confirmed=${confirmed}`);
       } catch (error) {
         const detail = String(error?.message || error).slice(0,200);
         return {systemPrompt:approveFailureNotice(`approval dialog unavailable: ${detail}`).trim()};
@@ -281,6 +297,7 @@ export default function goalanchor(pi) {
         return {systemPrompt:approveFailureNotice('approval context changed or was revoked; nothing approved.').trim()};
       }
       state.approve(result.operations,model);
+      debugLog(`state.approve executed ops=${result.operations.length} sessionId=${sessionIdOf(ctx)}`);
       // Bind the grant to the current turn epoch so it survives this turn's
       // own agent_end exactly once (agent_end pairs the epochs and clears the
       // binding; see the agent_end handler).
