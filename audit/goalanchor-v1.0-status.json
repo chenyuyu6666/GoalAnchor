@@ -12,7 +12,7 @@
     "P1_strict_append_only_review": "IMPLEMENTED_AND_VERIFIED (offline storage boundary; native provenance remains unverified)",
     "P2_strict_lifecycle": "PARTIAL/BOUNDED (offline semantics complete; real principal/account/session binding awaits native hosts)",
     "P3_host_neutral_protocol": "IMPLEMENTED_AND_VERIFIED (all five public interfaces exist incl. EfficiencyObservationProvider; native bindings remain PARTIAL)",
-    "P4_native_hosts": "PARTIAL/BOUNDED (Codex App Server controlled deep loop through UNKNOWN/reconcile/closure verified; native UI/account provenance and other host loops remain incomplete)",
+    "P4_native_hosts": "PARTIAL/BOUNDED (Codex App Server controlled deep loop through UNKNOWN/reconcile/closure verified; PI-Desktop now additionally verified for the Guard runtime loop (arm -> real confirmation dialog -> approved execution -> one-time re-block) and the deterministic closure gate in both directions; native UI/account provenance, the Strict lifecycle over a persistent store on the desktop host, and the ZCode/Claude/DSH loops remain incomplete)",
     "P5_efficiency_baseline": "PARTIAL/BOUNDED (offline baseline + opportunistic samples + 2026-10-26 fixed-task LOW/MEDIUM/HIGH real samples on gpt-6-luna all correct; UNKNOWN/reconcile tier NOT_RUN pending reconcile harness)",
     "P6_efficiency_components": "PARTIAL/BOUNDED (five components, reuse rule, admission facade and provider done; 2026-10-26 before/after experiment: compact prompt accepted on MEDIUM (-19 tokens, correctness held), rejected on HIGH (+1390); broader before/after coverage awaits real runtime)",
     "P7_final_release": "DEFERRED"
