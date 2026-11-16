@@ -70,9 +70,9 @@
       "limitations": "Skill-only and advisory: model-visible skill loading and rule compliance are verified, but there is no installed plugin on this host, so unapproved tool calls are NOT blocked at runtime and the Strict store surface is not exposed."
     },
     "zcode": {
-      "status": "PARTIAL/BOUNDED",
+      "status": "PARTIAL/SKILL_MOUNTED_PROTOCOL_LAYER_VERIFIED",
       "installed_version": "3.16.3 desktop; embedded CLI 0.17.0",
-      "evidence": "Desktop GLM-5.3-Flash smoke and real four-role missing-evidence rejection succeeded. App-server ark-code-latest/low produced correlated turn.completed/resultType=success, zero tool calls, tokenCount=3140 and verified session close. Prior missing-event evidence was corrected: old parser read the wrong field. Native Strict full-loop proof remains pending.",
+      "evidence": "Desktop GLM-5.3-Flash smoke and real four-role missing-evidence rejection succeeded. App-server ark-code-latest/low produced correlated turn.completed/resultType=success, zero tool calls, tokenCount=3140 and verified session close. 2026-11-16: the GoalAnchor Skill was junction-mounted at ~/.zcode/skills/goalanchor (hash identical to the repository copy) and the protocol layer ran ON this host: the signed workflow demo reached state=CLOSED with 12 signed events (baseline -> evidence -> review -> question -> grant reserve/consume -> receipt -> observation -> closure) and zero-write inspection after a WAL checkpoint. The CLI gates (closure/review-cycle) also returned live results in this session.",
       "strict_binding_status": "UNAVAILABLE by design: scripts/zcode_appserver_bridge.py rejects strict_binding. The installed bridge correlates session/input/turn and terminal completion but does not authenticate principal/account. Official ZCode docs assign identity/provider resolution to the Desktop Host; the Agent process is not the identity authority, and secrets are not included in conversation snapshots. A future Strict adapter needs a host-owned non-secret identity binding and trusted review-proof callback, not model output, environment labels, or exposed credentials.",
       "identity_authority_source": "https://github.com/zai-org/ZCode/blob/main/docs/coding-plan/zcode-official-server-mcp-client-phase-1-spec.md",
       "protocol_source": "https://github.com/zai-org/ZCode/blob/main/docs/zcode-protocol.md"
@@ -89,7 +89,7 @@
   "remaining": [
     "Codex native UI/account provenance remains unverified despite the controlled App Server deep loop",
     "PI-Desktop: Guard runtime loop now verified on the host (arm -> approve via real dialog -> approved Bash executed -> second attempt re-blocked, session 99f98d1e) and the closure gate verified in both directions; remaining gaps are the full Strict lifecycle over the persistent store (not exposed by the desktop plugin), execution receipt persistence shape, trusted principal/account provenance, and the host review-cycle gate",
-    "ZCode native Strict binding and deep-loop validation require a trusted Desktop Host runtime identity and review-proof provider; the current bridge deliberately rejects strict_binding",
+    "ZCode: the protocol layer is now verified on this host (skill junction-mounted, signed workflow demo reached CLOSED with 12 signed events, CLI gates live); what remains is enforcement (no host plugin) and the Strict store surface; the bridge still deliberately rejects strict_binding pending a trusted Desktop Host runtime identity and review-proof provider",
     "Claude remains blocked by the 402 account balance and model-routing rejection; its native Strict loop is NOT_RUN",
     "DSH: the GoalAnchor Skill is now linked and loaded on the host (slash menu lists it, the model receives the full PLAN/VERIFY/EXECUTE text and follows it) and the bundled python runs the CLI gates; what remains is enforcement (no plugin installed, so unapproved tool calls are not blocked) and the Strict store surface",
     "Full-project Graphify semantic rebuild remains pending; only a scoped graph predating PR #22 is retained",
