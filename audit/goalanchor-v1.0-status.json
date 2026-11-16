@@ -64,9 +64,10 @@
       "evidence": "Fixed no-tool smoke succeeded; sonnet probe returned API Error 402 Insufficient Balance; Strict full-loop dispatch rejected configured gpt-6-luna as unrecognized_model."
     },
     "dsh": {
-      "status": "PARTIAL/BOUNDED",
-      "installed_version": "0.2.1.0 desktop",
-      "evidence": "Executable and running native window observed; Strict integration NOT_RUN"
+      "status": "PARTIAL/SKILL_LOADED_AND_FOLLOWED_ON_HOST",
+      "installed_version": "0.2.2-rc.1 desktop (cordis plugin host, hostProtocolVersion 4)",
+      "evidence": "2026-11-16: GoalAnchor Skill linked into ~/.dsh/skills via a directory junction (no plugin, no host API coupling). Session b3e9a5de: the slash menu listed goalanchor, invoking it produced <skill_content name=\"goalanchor\"> with the full PLAN/VERIFY/EXECUTE rule text and Base directory ~/.dsh/skills/goalanchor, and the model followed the skill's static-only PLAN discipline across 61 pwsh / 29 read / 9 glob / 9 grep calls. The bundled runtime python (3.12.14) imports goalanchor 0.10.3 and the closure gate returned passed=true for a real Root Fix record.",
+      "limitations": "Skill-only and advisory: model-visible skill loading and rule compliance are verified, but there is no installed plugin on this host, so unapproved tool calls are NOT blocked at runtime and the Strict store surface is not exposed."
     },
     "zcode": {
       "status": "PARTIAL/BOUNDED",
@@ -90,7 +91,7 @@
     "PI-Desktop: Guard runtime loop now verified on the host (arm -> approve via real dialog -> approved Bash executed -> second attempt re-blocked, session 99f98d1e) and the closure gate verified in both directions; remaining gaps are the full Strict lifecycle over the persistent store (not exposed by the desktop plugin), execution receipt persistence shape, trusted principal/account provenance, and the host review-cycle gate",
     "ZCode native Strict binding and deep-loop validation require a trusted Desktop Host runtime identity and review-proof provider; the current bridge deliberately rejects strict_binding",
     "Claude remains blocked by the 402 account balance and model-routing rejection; its native Strict loop is NOT_RUN",
-    "DSH native GoalAnchor integration is NOT_RUN and still requires the API key plus a verified CLI/runtime entry",
+    "DSH: the GoalAnchor Skill is now linked and loaded on the host (slash menu lists it, the model receives the full PLAN/VERIFY/EXECUTE text and follows it) and the bundled python runs the CLI gates; what remains is enforcement (no plugin installed, so unapproved tool calls are not blocked) and the Strict store surface",
     "Full-project Graphify semantic rebuild remains pending; only a scoped graph predating PR #22 is retained",
     "P5 needs more real-model samples per tier and UNKNOWN/reconcile latency coverage",
     "P6 needs broader PromptOptimizer before/after trials while preserving correctness and security gates",

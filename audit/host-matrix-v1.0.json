@@ -36,17 +36,19 @@
     },
     {
       "host": "dsh",
-      "version": "0.2.1.0 (desktop file ProductVersion)",
+      "version": "0.2.2-rc.1 (desktop-runtime.json release.version; earlier 0.2.1.0 came from the exe ProductVersion)",
       "os": "Windows",
       "mode": "skill-only",
       "capability": "ADVISORY",
-      "status": "PARTIAL/BOUNDED",
-      "execution_path": "D:\\AIWorkspace\\Tools\\Deepseek Harness\\DeepSeek Harness.exe",
-      "evidence": "Corrected 2026-10-25: native window inventory shows DeepSeek Harness running; installed executable ProductVersion reads 0.2.1.0. No native GoalAnchor workflow test has been performed here.",
+      "status": "PARTIAL/SKILL_LOADED_AND_FOLLOWED_ON_HOST",
+      "execution_path": "D:\\AIWorkspace\\Tools\\Deepseek Harness\\DeepSeek Harness.exe (cordis plugin host, hostProtocolVersion 4, 329 shared packages incl. @agentclientprotocol/sdk and MCP client)",
+      "install_method": "Directory junction C:\\Users\\chen\\.dsh\\skills\\goalanchor -> D:\\Project\\GoalAnchor\\Project\\GoalAnchor\\skills\\goalanchor. No plugin, no host API coupling: DSH upgrades cannot break it, and the skill is the same file the repository ships.",
+      "evidence": "2026-11-16: the GoalAnchor Skill was linked into the host's filesystem skill directory and the host loaded it natively. Session b3e9a5de-2f73-4f5b-8ac9-aa53832aef62 (project D:\\Project\\AIKnowledgeSystem): the composer slash menu listed 'goalanchor' as a ListItem; invoking /goalanchor produced a session/title '/goalanchor' and a user/message carrying <skill_content name=\"goalanchor\"> with Base directory C:\\Users\\chen\\.dsh\\skills\\goalanchor and the full PLAN/VERIFY/EXECUTE rule text (Q1 Goal and GOALANCHOR PASS markers present). The model then followed the skill's static-only PLAN discipline: 61 pwsh, 29 read, 9 glob, 9 grep calls, repeatedly citing 'Per the skill' and refusing to execute without a formed plan. Separately, the bundled runtime python (3.12.14 at resources/runtime/primary-runtime/dependencies/python/python.exe) imports goalanchor 0.10.3 and the CLI gate returned {findings: [], gate_id: CLOSURE, passed: true} for a real Root Fix closure record.",
       "mapped_tests": [
         "tests/test_host_contract.py"
       ],
-      "limitations": "Protocol support is not native runtime validation."
+      "limitations": "Skill-only: GoalAnchor here is advisory protocol text plus CLI gates, not enforced tool gating. The host has no installed plugin, so unapproved tool calls are NOT blocked at runtime on this host. The Strict store surface is not exposed either. Model-visible skill loading and rule compliance ARE verified; enforcement is not claimed.",
+      "updated_at": "2026-11-16"
     },
     {
       "host": "zcode",
