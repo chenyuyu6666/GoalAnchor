@@ -75,12 +75,12 @@
       "version": "0.22.0 UI (file ProductVersion 0.22.0.0)",
       "os": "Windows 10.0.26300 x64",
       "mode": "plugin",
-      "plugin_version": "0.9.3 (upgraded from 0.6.0 on 2026-11-13 through the host Plugins page)",
+      "plugin_version": "0.10.1 (0.6.0 -> 0.9.3 on 2026-11-13 -> 0.10.0/0.10.1 on 2026-11-14/15, each through the host's own install path)",
       "capability": "LIMITED",
-      "status": "PARTIAL/PLUGIN_0_9_3_INSTALLED_REVIEW_ROUND_PASSED_GUARD_ENABLE_VERIFIED",
-      "execution_path": "Live PI-Desktop desktop session: Plugins page install of build/goalanchor.piplug, /goalanchor.capabilities, and plugin_local_goalanchor_goalanchor_review",
-      "evidence": "2026-11-13: plugin upgraded 0.6.0 -> 0.9.3 through the host's own install dialog and permission review; manifest, runtime and registry all report 0.9.3 with status ready and enabled true; host logged plugin.unload -> plugin.skills.register -> plugin.load.success, and plugin.restored after a full restart. /goalanchor.capabilities returned a live report (review available, dispatch_mode host-completion, visible_subagents unavailable, remote_cancel unavailable, review_budget_ms 10000). One LOW-risk single-round review COMPLETED on 0.9.3 with verdict WARN (plugin.log ok=true at 10:05:50Z, elapsed 1m 9s); WARN is correct for a candidate that cited no concrete evidence content. Argument-schema discovery: risk is an uppercase enum, max_rounds and risk sit at request top level, context holds only the five ReviewContext fields. See audit/pi-desktop-runtime-20261113.json.",
-      "guard_path_blocker": "RESOLVED 2026-11-13: the earlier reading was wrong. The extension commands do publish; two host-specific behaviours prevented submission. (a) The PI-Desktop composer inserts a newline on Enter and requires the Send button. (b) The window opened at 1750x1020 on a 1536x864 screen, so the Send button sat off-screen and synthesized clicks landed outside the window. After resizing the window to 1480x800, /goalanchor-guard on executed through Send (12s, 2 tools) and the host returned 'GoalAnchor Guard 已启用'; plugin.log recorded plugin.skill.load ok=true for local.goalanchor/goalanchor. The manifest-only experiment remains unnecessary and was reverted. Exact tool approval, one-time consumption, receipt, UNKNOWN/reconcile and closure are still unverified.",
+      "status": "PARTIAL/GUARD_RUNTIME_LOOP_VERIFIED_CLOSURE_GATE_VERIFIED_STRICT_STORE_NOT_EXPOSED",
+      "execution_path": "Live PI-Desktop desktop session: plugin install, /goalanchor.capabilities, plugin_local_goalanchor_goalanchor_review, plugin_local_goalanchor_goalanchor_gate (phase=closure), guard arm/approve/execute through the composer palette route",
+      "evidence": "2026-11-13: plugin upgraded 0.6.0 -> 0.9.3 through the host's own install dialog and permission review; manifest, runtime and registry all reported 0.9.3 (ready/enabled). /goalanchor.capabilities returned a live report. One LOW-risk single-round review COMPLETED with verdict WARN (plugin.log ok=true). 2026-11-14/15 (plugin 0.10.0 -> 0.10.1): Guard runtime loop fully verified on the host - an unapproved Bash attempt was BLOCKED by the tool_call hook (transcript tool_call entry, 5 ms); composer '/goalanchor-approve <record>.json' routed by the host to the palette extension-command path produced a real ui.confirm dialog with the full contract, the human click granted the exact operations, the approved Bash then EXECUTED (exitCode 0, stdout GUARD_PROBE_OK, 701 ms), and a second identical attempt was BLOCKED again (one-time consumption). 2026-11-16: native closure gate verified in both directions - a valid Root Fix closure claim returned passed=true; an over-claimed Product Closure without artifact manifest failed closed with ARTIFACT_MANIFEST_REQUIRED and recommended_level=Build Success. See audit/pi-desktop-runtime-20261114.json (v2_followup.v3_followup: e2e_blocking_evidence, full_loop_evidence incl. native_gate_evidence).",
+      "guard_path_blocker": "RESOLVED 2026-11-13 (UI submission: Enter inserts a newline and the window exceeded the screen; resize + Send button fixed it) and RESOLVED 2026-11-15 (runtime blocking defect: the host rebuilds the extension runtime per turn so the factory-local GuardState lost arming; fixed with a module-level session-keyed GuardState plus a before_agent_start arm hook and epoch-paired grant survival; guard.cjs unchanged).",
       "capability_report": {
         "protocol_version": 1,
         "minimum_version": "0.18.0",
@@ -98,16 +98,28 @@
         "tests/test_pi_desktop.py",
         "tests/js/test_pi_desktop.cjs"
       ],
-      "limitations": "Plugin install, capability report, one successful LOW review round and guard enablement are verified. Runtime blocking is NOT effective: a Bash probe executed unblocked despite Guard enabled (defect recorded). Exact approval, one-time consumption, receipt, UNKNOWN/reconcile, closure and trusted provenance remain unverified. visible_subagents and remote_cancel are reported unavailable by the host itself.",
-      "updated_at": "2026-11-14",
+      "limitations": "Verified on the host: plugin install and capability report, one LOW review round (WARN), Guard runtime blocking, exact approval through the composer/palette route with a real confirmation dialog, one-time consumption, and the closure gate in both directions. Not verified: the full Strict lifecycle chain (UNKNOWN/reconcile/closure over the persistent store) because the desktop plugin exposes only the deterministic gate surface, not the store; execution receipt persistence shape; trusted principal/account provenance (the host supplies no non-secret identity binding); review-cycle gate on the host. visible_subagents and remote_cancel are reported unavailable by the host itself.",
+      "updated_at": "2026-11-16",
       "guard_runtime_probe": {
         "probe": "Bash echo GUARD_PROBE_OK",
-        "at": "2026-11-13T16:49:04.624Z",
-        "session": "b0271a8e",
-        "observed": "Bash executed successfully, output GUARD_PROBE_OK; NOT blocked despite Guard enabled",
-        "expected": "guard.cjs check() should block with no exact approval",
-        "verdict": "GUARD_RUNTIME_BLOCKING_NOT_EFFECTIVE",
-        "root_cause": "OPEN: tool_call hook invocation unproven on host 0.22.0, or GuardState reset between enable and probe (session_start -> disable on runtime reload)"
+        "at": "2026-11-15T15:03:57.810Z",
+        "session": "99f98d1e-a71a-4e92-b315-bbb967d68f4c",
+        "observed": "Before approval the Bash attempt was BLOCKED by the tool_call hook (5 ms, no execution). After the human approved the exact operation through the confirmation dialog the same command EXECUTED (exitCode 0, stdout GUARD_PROBE_OK, 701 ms). A second identical attempt was BLOCKED again.",
+        "expected": "guard.cjs check() blocks without an exact approval and allows exactly one matching consumption",
+        "verdict": "GUARD_RUNTIME_LOOP_VERIFIED",
+        "root_cause": "CLOSED: the earlier 'not effective' reading came from two defects now fixed - (a) composer slash text reached the model as a prompt while the guard was never armed, and (b) the host rebuilds the extension runtime per turn so the factory-local GuardState lost arming between turns. Fixed by the module-level session-keyed GuardState, the before_agent_start arm hook and epoch-paired grant survival (PR #38-#42).",
+        "superseded_probe": {
+          "at": "2026-11-13T16:49:04.624Z",
+          "session": "b0271a8e",
+          "observed": "Bash executed unblocked despite the host reporting Guard enabled",
+          "verdict": "GUARD_RUNTIME_BLOCKING_NOT_EFFECTIVE (historical; root cause identified and fixed)"
+        }
+      },
+      "native_closure_gate": {
+        "verified_at": "2026-11-16T02:07:06.808Z",
+        "positive": "phase=closure, requested_level='Root Fix' with evidence/root cause/build success -> {findings: [], passed: true}",
+        "negative": "phase=closure, requested_level='Product Closure' without artifact manifest -> {passed: false, findings: [ARTIFACT_MANIFEST_REQUIRED], recommended_level: 'Build Success'}",
+        "boundary": "Deterministic closure gate only; the Strict UNKNOWN/reconcile/closure lifecycle over the persistent store is not exposed by the desktop plugin."
       }
     }
   ]

@@ -5,6 +5,20 @@
 
 ## [未发布]
 
+## [0.10.2] - 2026-11-16
+
+### Fixed
+
+- **移除 composer 批准分支的临时调试日志**（0.10.1 取证期间为定位宿主路由行为加入，仅写本地诊断文件，不参与任何授权判定）；行为与 Node 21/21 测试完全一致。
+
+### Added
+
+- **原生 closure gate 宿主实证**：PI-Desktop 0.22.0 会话内 `goalanchor_gate(phase=closure)` 双向验证——有效 Root Fix 断言 `passed=true`；超额 Product Closure 无 artifact manifest → `ARTIFACT_MANIFEST_REQUIRED` + `recommended_level=Build Success`（fail-closed 且降级建议正确）。这是 T9 首个 native closure gate 证据。
+
+### Changed
+
+- 状态文档刷新为当前证据：`audit/host-matrix-v1.0.json`（pi-desktop 状态改为 `GUARD_RUNTIME_LOOP_VERIFIED_CLOSURE_GATE_VERIFIED_STRICT_STORE_NOT_EXPOSED`，旧 `GUARD_RUNTIME_BLOCKING_NOT_EFFECTIVE` 探针标为历史并记录根因）、`audit/goalanchor-v1.0-status.json`（host_matrix + remaining + native_host_matrix）、验收矩阵 T9 行。
+
 ## [0.10.1] - 2026-11-14
 
 ### Fixed

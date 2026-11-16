@@ -136,7 +136,27 @@
      "one-time consumption: second identical attempt -> BLOCKED (transcript entry 21, 'no exact approval')"
     ],
     "verdict_full_loop": "GUARD_FULL_LOOP_VERIFIED_ON_HOST: arm -> approve(dialog click) -> execute(approved op passes) -> re-block(one-time consumption) all proven with durable transcript entries in a live PI-Desktop 0.22.0 session.",
-    "notes": "before_agent_start composer-branch reachability confirmed via debug log but grant delivery through it remains unreliable; the palette path is the working grant channel on 0.22.0 (dialog + click verified). The composer branch stays as a fallback arm path (verified) and is harmless."
+    "notes": "before_agent_start composer-branch reachability confirmed via debug log but grant delivery through it remains unreliable; the palette path is the working grant channel on 0.22.0 (dialog + click verified). The composer branch stays as a fallback arm path (verified) and is harmless.",
+    "native_gate_evidence": {
+     "date": "2026-11-16",
+     "session": "99f98d1e-a71a-4e92-b315-bbb967d68f4c (gpt-6-luna, plugin 0.10.1b)",
+     "tool": "plugin_local_goalanchor_goalanchor_gate (phase=closure)",
+     "positive": {
+      "callId": "call_df02b7379b3e48d1a3f0d8e0c2e69aff|fc_0874921c5f416ee8016afa6548cb9c87d0b8f19caa080322a5",
+      "at": "2026-11-16T02:07:06.808Z",
+      "durationMs": 735,
+      "args_summary": "phase=closure, requested_level='Root Fix', evidence_refs=[audit/pi-desktop-runtime-20261114.json], root_cause_proven=true, fix_change_ref='PR #38-#42', build_success=true",
+      "result": {"findings": [], "gate_id": "CLOSURE", "passed": true}
+     },
+     "negative_fail_closed": {
+      "callId": "call_d7a7683417464fa186108aad0e5034b3|fc_0874921c5f416ee8016afa6569dbbc87d0a4bad09e25c6ec41",
+      "at": "2026-11-16T02:07:38.826Z",
+      "durationMs": 560,
+      "args_summary": "phase=closure, requested_level='Product Closure' with no artifact_manifest/provenance",
+      "result": {"findings": [{"code": "ARTIFACT_MANIFEST_REQUIRED", "field": "artifact_manifest", "message": "artifact manifest is required"}], "gate_id": "CLOSURE", "passed": false, "recommended_level": "Build Success"}
+     },
+     "verdict": "NATIVE_CLOSURE_GATE_VERIFIED_ON_HOST (both directions): a valid Root Fix closure claim passes, and an over-claimed Product Closure without artifact manifest fails closed with a downgrade recommendation. This is the first native-host evidence for a Strict closure gate on PI-Desktop; it closes the 'closure NOT_RUN' item for the closure-gate dimension (the full Strict lifecycle UNKNOWN/reconcile chain still requires the persistent store, which the desktop plugin does not expose)."
+    }
    }
   }
  }
