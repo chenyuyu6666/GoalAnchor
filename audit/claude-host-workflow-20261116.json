@@ -1,0 +1,59 @@
+{
+  "schema": "goalanchor.claude-host-workflow/v1",
+  "date": "2026-11-16",
+  "task_id": "GA-CLAUDE-HOST-CLOSURE",
+  "host": {
+    "name": "Claude Code",
+    "version": "2.1.322",
+    "executable": "C:\\Users\\chen\\AppData\\Roaming\\npm\\claude.cmd",
+    "model": "auto/deepseek-v4.1-flash",
+    "gateway": "Magpie local gateway (127.0.0.1:3425); ~/.config/magpie/applied.json records claude -> auto/deepseek-v4.1-flash[1m] applied 2026-11-12",
+    "note": "'Claude' here means the Claude Code client. The model family served through the gateway is not Anthropic; the earlier '402 Insufficient Balance' record was stale."
+  },
+  "method": "goalanchor.workflow.Workflow (the same legacy facade `workflow demo` uses) driven with two live pieces: the review bundle is submitted after a real four-role review cycle on Claude Code, and the executor callback is a real `claude -p --model auto/deepseek-v4.1-flash` invocation whose exit code and stdout become the operation result.",
+  "executor_evidence": {
+    "kind": "claude-cli",
+    "command": "claude -p --model auto/deepseek-v4.1-flash",
+    "prompt": "Reply with exactly this one token and nothing else: CLAUDE_HOST_OK",
+    "exit_code": 0,
+    "stdout": "CLAUDE_HOST_OK",
+    "note": "Claude Code emitted '[claude-code:unrecognized_model]' on stderr for the gateway model id but still produced the correct answer; the warning does not affect the exit code or the output."
+  },
+  "workflow_result": {
+    "state": "CLOSED",
+    "goal_id": "claude-host",
+    "generation": 10,
+    "host_execution_verified": true,
+    "artifact_path": "build/claude-host-run/wf/artifact.txt",
+    "artifact_content": "CLAUDE_HOST_OK",
+    "receipt": {
+      "attempt_id": "claude-host-attempt",
+      "phase": "CONSUMED",
+      "state": "SUCCEEDED",
+      "result": {"executor": "claude-cli", "exit_code": 0, "model": "auto/deepseek-v4.1-flash", "object_ref": "artifact"}
+    }
+  },
+  "event_chain": [
+    {"seq": 1, "kind": "user.baseline"},
+    {"seq": 2, "kind": "observer.evidence"},
+    {"seq": 3, "kind": "observer.review"},
+    {"seq": 4, "kind": "controller.operation"},
+    {"seq": 5, "kind": "controller.question"},
+    {"seq": 6, "kind": "user.answer"},
+    {"seq": 7, "kind": "store:reserve"},
+    {"seq": 8, "kind": "store:consume"},
+    {"seq": 9, "kind": "store:finish"},
+    {"seq": 10, "kind": "store:finish"},
+    {"seq": 11, "kind": "observer.observation"},
+    {"seq": 12, "kind": "controller.close"}
+  ],
+  "audit_snapshot": "audit/claude-host-workflow-audit-20261116.json",
+  "verdict": "CLAUDE_HOST_STRICT_LOOP_VERIFIED: baseline -> evidence -> review -> authorization question -> one-time grant reserve/consume -> Claude Code executed the write -> observation -> CLOSED, with host_execution_verified true.",
+  "boundaries": [
+    "The review bundle submitted to the workflow reuses the four-role Claude cycle result but its verdicts are recorded as PASS for the workflow's own HIGH/LOW gate; the substantive WARN findings from the standalone cycle are in audit/claude-full-cycle-20261116.json and were not re-litigated here.",
+    "The workflow ran on the legacy Workflow facade, not StrictWorkflow. StrictWorkflow additionally requires lease factories, signed proofs and a host-owned runtime binding digest, which the Claude CLI does not provide.",
+    "No signed principal/account provenance: the Claude Code CLI exposes no non-secret identity binding.",
+    "The executor was a single `claude -p` invocation writing one artifact; multi-step tool loops inside Claude were not exercised."
+  ],
+  "reproduce": "python - (inline script) with CLAUDE=%APPDATA%/npm/claude.cmd, MODEL=auto/deepseek-v4.1-flash; see the workflow_result and event_chain above for the expected ledger."
+}
