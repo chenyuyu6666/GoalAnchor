@@ -49,12 +49,12 @@ GoalAnchor 提供 Skill、Python 库、命令行工具和 PI-Desktop 插件。�
 
 | 项目 | 值 |
 |---|---|
-| 当前版本 | `0.9.4` |
-| 发布日期 | 2026-11-14 |
-| GitHub Release | [v0.9.4](https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.9.4) |
-| 发布提交 | 见 `delivery/v0.9.4/release-manifest.json` |
+| 当前版本 | `0.10.2` |
+| 发布日期 | 2026-11-16 |
+| GitHub Release | [v0.10.2](https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.10.2) |
+| 发布提交 | 见 `delivery/v0.10.2/release-manifest.json` |
 | 核心场景 | 58/58 `PASS` |
-| 原生宿主 | 58/58 `NOT_RUN` |
+| 原生宿主 | 58/58 `NOT_RUN`（PI-Desktop 的 Guard 运行时闭环与 closure gate 已获原生证据，见宿主矩阵） |
 
 - `StrictWorkflow` 的离线核心链已覆盖审核、授权问题、一次性 grant、受限执行、UNKNOWN/reconcile、观察和关闭；原生宿主仍按证据记录 `NOT_RUN`、`LIMITED`、`ADVISORY` 或 `UNAVAILABLE`。宿主验收、效率治理和完整 P2b–P7 交付仍未完成。版本历史见 [CHANGELOG](CHANGELOG.md)。
 
@@ -99,7 +99,7 @@ python -c "import goalanchor; print(goalanchor.__version__)"
 也可以从 [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases) 下载 wheel：
 
 ```sh
-python -m pip install goalanchor-0.9.4-py3-none-any.whl
+python -m pip install goalanchor-0.10.2-py3-none-any.whl
 ```
 
 ### 安装 GoalAnchor Skill
