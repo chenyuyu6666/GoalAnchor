@@ -1,0 +1,37 @@
+{
+  "schema": "goalanchor.zcode-enforcement-surface-probe/v1",
+  "date": "2026-11-16",
+  "task_id": "GA-ZCODE-ENFORCEMENT-SURFACE",
+  "question": "Can GoalAnchor enforce tool gating on ZCode without installing a host plugin?",
+  "host": {
+    "name": "ZCode Desktop",
+    "version": "3.16.3 desktop; embedded CLI bundle at D:\\AIWorkspace\\Tools\\ZCode\\resources\\glm\\zcode.cjs (15.7 MB)",
+    "os": "Windows"
+  },
+  "experiment_1_app_server_permission_callback": {
+    "method": "scripts/zcode_permission_probe.py subclasses the existing ProbeClient and, instead of denying every host interaction, records interaction/requestPermission and answers 'allow' so a tool call can proceed. A prompt asking for a Bash call was sent over the app-server NDJSON protocol with provider=magpie, model=auto/deepseek-v4.1-flash, reasoningLevel=medium, mode=build.",
+    "result": {
+      "permission_requests_seen": 0,
+      "user_input_requests_seen": 0,
+      "turn_outcome": "SUCCESS",
+      "result_type": "success",
+      "tool_call_count": 0,
+      "response_text_excerpt": "<｜｜DSML｜｜ calls> <｜｜DSML｜｜ invoke name=\"Bash\"> <｜｜DSML｜｜ parameter name=\"command\" string=\"true\">echo ZCODE_PERM_PROBE</｜｜DSML｜｜ parameter> ... </｜｜DSML｜｜ calls>",
+      "interpretation": "Over the CLI/app-server path the model emits tool calls as DSML TEXT in the assistant message; the host does not execute them and therefore never raises a permission request. tool_call_count is 0 and no tool frame appears."
+    },
+    "conclusion": "The app-server path cannot host a pre-execution approval gate: there is no tool execution, hence no permission callback to answer."
+  },
+  "experiment_2_native_permission_mode": {
+    "method": "Read the ZCode desktop UI accessibility tree for the permission control.",
+    "result": "The composer exposes a native permission-mode control labelled '完全访问' (full access) next to '电脑操作', and the app-server protocol exposes mode settings ('plan'/'build') plus session permission.scope=session. The protocol callback 'interaction/requestPermission' is implemented by the host and the existing probe answers it with deny.",
+    "interpretation": "The host DOES have a native pre-tool approval gate, but it lives inside the desktop host's own execution path. A client that only speaks the CLI/app-server protocol cannot intercept it; only the desktop host itself raises it.",
+    "conclusion": "Zero-plugin enforcement would require the host to route its approval decision to an external party (an MCP server or a plugin), not merely to the user."
+  },
+  "host_mcp_surface": {
+    "evidence": "ZCode's own bundle (resources/glm/zcode.cjs) implements MCP support: a plugin-root '.mcp.json' file, a 'mcpServers' key honoured at user / project / local scope, and an agent-frontmatter 'mcpServers' list ('Agent frontmatter mcpServers must be a list of parent server names'). The host ships the official 'zcode-mcp-app-dev' plugin and keeps mcp-oauth lock files.",
+    "implication": "GoalAnchor could be published as a STANDARD MCP server (stdio), registered by .mcp.json or an agent frontmatter, exposing its gate/review tools to the host. MCP is a published protocol rather than a private host API, so a host upgrade is far less likely to break it than a plugin.",
+    "not_yet_done": "No MCP server implementation exists in the repository yet, and no ZCode MCP registration has been performed or verified."
+  },
+  "verdict": "ZCODE_ENFORCEMENT_WITHOUT_PLUGIN_POSSIBLE_VIA_MCP_NOT_YET_BUILT: the CLI/app-server path has no tool execution and therefore no permission callback to hook; the desktop host has a native approval gate but it is internal; the standards-based route is to publish GoalAnchor as an MCP server and let the host call it. The Skill + CLI protocol layer is already verified on this host (PR #48).",
+  "reproduce": "python scripts/zcode_permission_probe.py --output <new json> --workspace <dir> --prompt 'Use the Bash tool to run exactly: echo ZCODE_PERM_PROBE. Then report the output.'"
+}
