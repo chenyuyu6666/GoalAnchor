@@ -1,0 +1,82 @@
+{
+  "schema": "goalanchor.release-manifest/v1",
+  "version": "0.10.3",
+  "version_type": "MINOR",
+  "version_type_reason": "0.10.0 引入了新的用户可见能力（composer 武装与批准通路）；0.10.0/0.10.1 为未发布中间态，0.10.2 因 GitHub immutable-release 永久锁定该 tag 名而跳过，故首个 0.10 系列发布为 0.10.3",
+  "state": "PUBLISHED_AND_PUBLIC_DOWNLOADS_VERIFIED",
+  "release_commit": "942351025178dbd28c63789b85394c5dbf142bd9",
+  "release_commit_subject": "v0.10.3 PI-Desktop 工具门控真实可用",
+  "tag": {
+    "name": "v0.10.3",
+    "message": "v0.10.3 PI-Desktop 工具门控真实可用",
+    "tag_object_sha": "987771789d61a907be51ac0cd17c5360bf7ba862",
+    "points_directly_at_release_commit": true,
+    "remotes": {
+      "github": "pushed",
+      "gitee": "pushed"
+    }
+  },
+  "github_release": {
+    "id": "RE_kwDOVIlNw84anlaD",
+    "name": "v0.10.3",
+    "url": "https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.10.3",
+    "published_at": "2026-11-16T03:46:38Z",
+    "is_draft": false,
+    "is_prerelease": false
+  },
+  "assets": [
+    {
+      "name": "goalanchor-0.10.3-py3-none-any.whl",
+      "size_bytes": 232866,
+      "sha256": "60b94a7a87fe7dc465ff50e9230c679ee7253b62533bc8cef254771c73eac20e",
+      "public_download_verified": true,
+      "committed_in": "88b5703 chore(delivery)"
+    },
+    {
+      "name": "goalanchor-0.10.3.tar.gz",
+      "size_bytes": 649160,
+      "sha256": "059915be6a33289fe732467c1a2738568d7cd1117e9d8682af7b0a92e1f6835a",
+      "public_download_verified": true,
+      "committed_in": "88b5703 chore(delivery)"
+    }
+  ],
+  "plugin_artifact": {
+    "name": "goalanchor-0.10.3.piplug",
+    "sha256": "905daa5ebd68ba4e",
+    "note": "本地构建产物（build/ 不入库）；插件版本随 wheel 内的 goalanchor/_pi_desktop 分发"
+  },
+  "verification": {
+    "node_tests": "21/21",
+    "pytest": "1305 passed / 0 failed (135.3s, build/pytest-v0103.xml)",
+    "ruff": "PASS",
+    "mypy": "PASS (42 files)",
+    "skill_sync": "PASS",
+    "fixtures": "12/12",
+    "out_of_package_import": "PASS (clean venv, __version__ == 0.10.3)",
+    "public_download_sha256_match": true,
+    "ci": "15/15 (PR #45 for the identical content; this release commit adds only version + docs)"
+  },
+  "host_evidence": {
+    "pi_desktop_guard_loop": "arm -> real confirmation dialog -> approved Bash executed (exitCode 0, stdout GUARD_PROBE_OK, 701ms) -> second attempt re-blocked (session 99f98d1e)",
+    "pi_desktop_closure_gate": "positive Root Fix passed=true; negative Product Closure without artifact manifest -> ARTIFACT_MANIFEST_REQUIRED + recommended_level=Build Success",
+    "reference": "audit/pi-desktop-runtime-20261114.json"
+  },
+  "known_defects": [
+    "Plugin reload or host restart silently resets the guard (module Map cleared); the disappearing per-turn armed notice is the reset signal",
+    "Composer approve relies on the host routing slash text to the palette extension-command path when a runtime is active; idle-session palette commands still fail with RUNTIME_NOT_FOUND"
+  ],
+  "not_verified": [
+    "Strict full lifecycle (UNKNOWN/reconcile/closure) on the desktop host: the plugin exposes only the deterministic gate surface, not the persistent store",
+    "Execution receipt persistence shape",
+    "Trusted principal/account provenance (the host supplies no non-secret identity binding)",
+    "Review-cycle gate on the desktop host",
+    "ZCode / Claude / DSH host loops (external blockers: identity binding / 402 balance / API key)"
+  ],
+  "gitee_mirror": {
+    "refs": "SYNCED (master + v0.10.3 tag)",
+    "release_page": "NOT_CREATED_REQUIRES_ACCESS_TOKEN"
+  },
+  "superseded": {
+    "v0.10.2": "Never published. GitHub's immutable-release ledger permanently locked the v0.10.2 tag name after a release was created without assets and then deleted; re-creating the tag or release is rejected by the platform. The same content was released as v0.10.3."
+  }
+}

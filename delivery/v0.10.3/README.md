@@ -1,8 +1,8 @@
-# v0.10.2 交付目录
+# v0.10.3 交付目录
 
-本目录是 v0.10.2 的权威交付目录。发行包（wheel/sdist）经独立的 `chore(delivery)` 提交在 Release 后入库；tag 内本目录只包含 README 与发布说明。
+本目录是 v0.10.3 的权威交付目录。发行包（wheel/sdist）经独立的 `chore(delivery)` 提交在 Release 后入库；tag 内本目录只包含 README 与发布说明。
 
-GitHub Release：[v0.10.2](https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.10.2)
+GitHub Release：[v0.10.3](https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.10.3)
 
 ## 版本边界
 

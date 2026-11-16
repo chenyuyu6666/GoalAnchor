@@ -1,4 +1,4 @@
-# GoalAnchor v0.10.2
+# GoalAnchor v0.10.3
 
 PI-Desktop 工具门控首次真实可用。0.9.4 记录的「运行时拦截未生效」缺陷已定位根因并修复，完整闭环在宿主上取得可复现证据。
 
@@ -30,7 +30,7 @@ PI-Desktop 工具门控首次真实可用。0.9.4 记录的「运行时拦截未
 
 - Node 测试 **21/21**（含跨工厂调用持久化、会话隔离、缺身份 fail-closed、禁解除、基座系统提示逐字保留、纪元配对三项）
 - pytest **1305 passed / 0 failed**；ruff、mypy（42 文件）、fixtures 12/12 全部通过
-- 插件包：`build/goalanchor-0.10.2.piplug`，SHA-256 `d9653edac7b7f189841fa5a8709cec1280a0f878e362b9ed1598b9ff33f42288`
+- 插件包：`build/goalanchor-0.10.3.piplug`，SHA-256 `d9653edac7b7f189841fa5a8709cec1280a0f878e362b9ed1598b9ff33f42288`
 
 ## 未验证边界（不宣称）
 
