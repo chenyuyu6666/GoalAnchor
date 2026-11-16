@@ -59,9 +59,10 @@
       "evidence": "2026-10-26 deep loop: real four-role review (gpt-6-luna, 128,832 tokens) -> signed approval -> dispatch -> receipt -> observation -> closure=CLOSED with one-shot consumption blocked; UNKNOWN receipt reconciled to SUCCEEDED via observer proof; reconcile->close gap (post-review recovery evidence invalidated live review context) fixed same day via frozen-context validation, real scenario now reaches CLOSED; P6 before/after experiment accepted compact prompt on MEDIUM tier only. All on App Server plus codex exec. Native UI/account provenance remain unverified."
     },
     "claude": {
-      "status": "PARTIAL/BOUNDED",
-      "installed_version": "2.1.309",
-      "evidence": "Fixed no-tool smoke succeeded; sonnet probe returned API Error 402 Insufficient Balance; Strict full-loop dispatch rejected configured gpt-6-luna as unrecognized_model."
+      "status": "PARTIAL/REAL_REVIEW_DISPATCH_VERIFIED_VIA_GATEWAY",
+      "installed_version": "2.1.322 (Claude Code), routed through the local Magpie gateway",
+      "evidence": "2026-11-16: the 402 Insufficient Balance / unrecognized_model blocker recorded earlier is STALE. Magpie already routes Claude Code to non-Anthropic models (applied.json: claude -> auto/deepseek-v4.1-flash[1m], applied 2026-11-12; ~/.claude/settings.json carries auto/gpt-6-astra, auto/gpt-6-luna, auto/gpt-6.1-sol/terra, codex/gpt-6.1-sol). A live smoke returned CLAUDE_SMOKE_OK and goalanchor platforms reports claude available (argv ['claude','-p'], model_flag --model). A full review cycle ran with reviewer, arbiter and meta_reviewer all bound to live Claude Code processes (attempts=1 each, model auto/deepseek-v4.1-flash): the reviewer returned a schema-valid WARN with three OPEN findings that the arbiter and meta_reviewer upheld (outcome WARN, no dispute packet); a separate reviewer-only run returned PASS. Evidence audit/claude-full-cycle-20261116.json.",
+      "limitations": "Multi-agent dispatch over the gateway is verified; a native Strict execution loop (question/authorization/dispatch/receipt/observation/closure) through Claude and signed principal/account provenance are not. 'Claude' here means the Claude Code client, not the Anthropic model family."
     },
     "dsh": {
       "status": "PARTIAL/SKILL_LOADED_AND_FOLLOWED_ON_HOST",
@@ -90,7 +91,7 @@
     "Codex native UI/account provenance remains unverified despite the controlled App Server deep loop",
     "PI-Desktop: Guard runtime loop now verified on the host (arm -> approve via real dialog -> approved Bash executed -> second attempt re-blocked, session 99f98d1e) and the closure gate verified in both directions; remaining gaps are the full Strict lifecycle over the persistent store (not exposed by the desktop plugin), execution receipt persistence shape, trusted principal/account provenance, and the host review-cycle gate",
     "ZCode: the protocol layer is now verified on this host (skill junction-mounted, signed workflow demo reached CLOSED with 12 signed events, CLI gates live); what remains is enforcement (no host plugin) and the Strict store surface; the bridge still deliberately rejects strict_binding pending a trusted Desktop Host runtime identity and review-proof provider",
-    "Claude remains blocked by the 402 account balance and model-routing rejection; its native Strict loop is NOT_RUN",
+    "Claude Code is no longer blocked: Magpie routes it to non-Anthropic models and a full three-role review cycle (reviewer/arbiter/meta_reviewer) ran on live Claude Code processes over the gateway; what remains is a native Strict execution loop through Claude and signed principal/account provenance",
     "DSH: the GoalAnchor Skill is now linked and loaded on the host (slash menu lists it, the model receives the full PLAN/VERIFY/EXECUTE text and follows it) and the bundled python runs the CLI gates; what remains is enforcement (no plugin installed, so unapproved tool calls are not blocked) and the Strict store surface",
     "Full-project Graphify semantic rebuild remains pending; only a scoped graph predating PR #22 is retained",
     "P5 needs more real-model samples per tier and UNKNOWN/reconcile latency coverage",
