@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "goalanchor": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "goalanchor.mcp_server"],
+      "env": {}
+    }
+  }
+}
