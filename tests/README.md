@@ -6,12 +6,15 @@
 
 | 路径 | 内容 |
 |---|---|
-| `test_*.py` | 42 个测试文件，约 15,100 行，覆盖契约、门控、证据、审核、工作流、平台适配与宿主生命周期 |
+| `test_*.py` | 52 个测试文件，约 16,470 行，覆盖契约、门控、证据、审核、工作流、MCP、平台适配与宿主生命周期 |
 | `fixtures/regression/cases.json` | 12 个固定回归场景；每项包含期望通过与期望 finding code |
 | `js/test_pi_desktop.cjs` | PI-Desktop 桥接的 Node 行为测试 |
 | `conftest.py` | 共享夹具与临时目录/进程辅助 |
 
-当前共收集 846 个用例。测试以离线、确定性为原则，不依赖外部模型或网络；平台探测类测试使用受控 fixture。
+2026-11-17 的全量 JUnit（`audit/full-suite-0.10.3-post-mcp.xml`）记录 1,314 个用例，
+0 failure / 0 error / 0 skipped。实际收集数会随测试增加而变化；需要精确基线时应以当次
+JUnit 为准，而不是本文中的历史计数。测试以离线、确定性为原则，平台探测类测试使用受控
+fixture。
 
 ## 运行
 
@@ -23,7 +26,7 @@ python -m pytest -q
 # 固定回归夹具（需要 editable install，子进程会导入 goalanchor）
 python scripts/evaluate_fixtures.py --fixtures tests/fixtures/regression --revision HEAD
 
-# PI-Desktop Node 测试（Node.js 20+）
+# PI-Desktop Node 测试（Node.js 20+；当前 21 项）
 node --test tests/js/test_pi_desktop.cjs
 ```
 

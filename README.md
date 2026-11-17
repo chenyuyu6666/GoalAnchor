@@ -57,6 +57,7 @@ GoalAnchor 提供 Skill、Python 库、命令行工具和 PI-Desktop 插件。�
 | 原生宿主 | 58/58 `NOT_RUN`（PI-Desktop 的 Guard 运行时闭环与 closure gate 已获原生证据，见宿主矩阵） |
 
 - `StrictWorkflow` 的离线核心链已覆盖审核、授权问题、一次性 grant、受限执行、UNKNOWN/reconcile、观察和关闭；原生宿主仍按证据记录 `NOT_RUN`、`LIMITED`、`ADVISORY` 或 `UNAVAILABLE`。宿主验收、效率治理和完整 P2b–P7 交付仍未完成。版本历史见 [CHANGELOG](CHANGELOG.md)。
+- 当前源码还提供 `python -m goalanchor.mcp_server`：通过 stdio/NDJSON JSON-RPC 暴露只读的确定性 gate 与能力查询。该 MCP 面不授权、不做模型审核、不拦截宿主工具；ZCode 等宿主的原生加载仍需单独验收。注册样例见 [`examples/mcp/`](examples/mcp/README.md)。
 
 ## 运行环境
 
@@ -375,7 +376,7 @@ GoalAnchor 本身不是 Agent，也不提供模型。它以三种形态接入外
 | 接入方式 | `python -m goalanchor.pi_desktop build --destination build/pi-desktop --archive build/goalanchor.piplug`，然后在 Plugins 页安装 `.piplug`。**不要**使用 `--target pi` |
 | 申请的宿主权限 | `agent.prompt.inject`（Skill）、`agent.extension`（Hook）、`agent.tool.register`（工具）、`agent.complete`（模型额度）、`session.read`（核对模型身份） |
 | 在方案中的角色 | 唯一提供**工具级**接入的形态：`goalanchor_review` 审核工具、`goalanchor_gate` 门控工具、工具批准 Hook 与会话状态命令 |
-| 支持级别 | 最低接口基线 0.18.0；已实际验证 0.18.0 与 0.19.1 的安装、审核、门控与卸载 |
+| 支持级别 | 最低接口基线 0.18.0。0.18.0 与 0.19.1 已验证安装、审核、门控与卸载路径；0.21.0 有真实审核工具证据；0.22.0 上安装插件 0.10.1，并取得 Guard 运行时闭环和 closure gate 原生证据。完整 Strict store 生命周期、可信 account 溯源与 receipt 持久化仍未验证 |
 
 插件要求宿主进程能找到 Python；Python 内核随插件提供，不需要另外 `pip install`。插件不读取 API key，也不申请网络或文件写入权限。宿主权限模型不是 OS 沙箱。详见[插件指南](goalanchor/_pi_desktop/README.md)；适配规格与验证记录由项目文档中心维护，不随代码分发。
 
@@ -435,7 +436,7 @@ GoalAnchor 本身不是 Agent，也不提供模型。它以三种形态接入外
 ## 版本与兼容性
 
 - 版本遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)：`MAJOR.MINOR.PATCH`。
-- 当前 `0.9.x` 同时提供 legacy `Workflow` 和 `StrictWorkflow`：旧对象、JSON 与历史空证据行为保持兼容。
+- 当前 `0.10.x` 同时提供 legacy `Workflow` 和 `StrictWorkflow`：旧对象、JSON 与历史空证据行为保持兼容。
 - 旧 `ONE_TIME` 授权仍存在已知限制，不能作为严格授权或关闭依据；需要可信门控时使用 `Workflow` / `workflow` 命令。
 - 原生宿主能力仍以逐宿主实测为准；fixture、受控回调和 TextHostAdapter 共享文本测试不替代原生验收。
 - 已发布版本与资产见 [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases)，完整历史见 [CHANGELOG](CHANGELOG.md)。
@@ -450,7 +451,7 @@ GoalAnchor 本身不是 Agent，也不提供模型。它以三种形态接入外
 
 ### 支持周期
 
-- 仅维护**最新一个 MINOR 分支**（当前 `0.9.x`）；缺陷修复与安全修复优先发布在最新版本。
+- 仅维护**最新一个 MINOR 分支**（当前 `0.10.x`）；缺陷修复与安全修复优先发布在最新版本。
 - 旧 MINOR 分支（如 `0.8.x`）不再接受常规修复；如仍在使用，请升级到最新 Release。
 - 发布节奏与资产校验以 [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases) 页面为准；每个版本的交付物都附 `SHA256SUMS.txt` 与 `release-manifest.json`。
 

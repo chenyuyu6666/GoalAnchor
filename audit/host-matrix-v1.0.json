@@ -1,25 +1,36 @@
 {
   "schema": "goalanchor.host-matrix/v1",
-  "baseline": "v0.9.2 / 8a04e9f",
+  "baseline": "v0.10.3 released at 9423510; current master 5d1c857",
   "updated_at": "2026-11-17",
-  "updated_note": "2026-11-17: zcode status aligned with goalanchor-v1.0-status.json (PARTIAL/SKILL_MOUNTED_PROTOCOL_LAYER_VERIFIED, PR #48); codex installed version recorded as 0.167.2 while keeping the version the deep loop was actually verified on explicit.",
+  "updated_note": "2026-11-17: current repository, release, host versions and evidence versions are separated explicitly. Codex is installed at 0.167.2 while its deep loop was verified on 0.163.0; ZCode is installed at 3.18.2/CLI 0.17.1 while its protocol evidence came from 3.16.3/0.17.0; PI-Desktop has UI 0.22.0 and installed plugin 0.10.1.",
   "evidence_rule": "CLI presence, fixtures, protocol simulations and package tests do not prove a native Strict full loop.",
   "hosts": [
     {
       "host": "codex",
-      "version": "0.167.2 installed 2026-11-17 (the deep loop was verified on 0.163.0; the App Server protocol was not re-verified after the upgrade)",
+      "version": "0.167.2 (installed and re-verified 2026-11-17; the 2026-10-26 deep loop was recorded on 0.163.0)",
       "os": "Windows",
       "mode": "app-server",
       "capability": "LIMITED",
       "status": "PARTIAL/VERIFIED_DEEP_LOOP",
       "execution_path": "scripts/verify_codex_workflow_host.py",
-      "evidence": "Built-in probe returned probe=ok; real four-role Codex review dispatch with gpt-6-astra completed WARN, 29,991 tokens; on 2026-10-26 all five App Server scenarios (smoke, question, cancel, decline, accept) completed on gpt-6-luna with real model turns: signed-core question callback answered, interrupt confirmed, escalated-command approval declined and accepted (fixture SUCCEEDED, 1 approved request). Earlier failure root-caused to model routing: gpt-6-astra and codex-family models return HTTP 400 'not supported when using Codex with a ChatGPT account' through the current CC Switch proxy; gpt-6-luna is the supported channel (see audit/codex-appserver-smoke-20261026.json).",
+      "evidence": "Built-in probe returned probe=ok. 2026-11-17 on 0.167.2 with the default Magpie-routed model gpt-6.1-sol: smoke returned GOALANCHOR_HOST_OK; accept reached closure=CLOSED with a second attempt blocked as BLOCKED:ContractValidationError; reconcile went UNKNOWN -> observer reconcile -> SUCCEEDED -> CLOSED; real-review ran four real model roles (reviewer-1, reviewer-2, arbiter, meta, all PASS, 161,083 measured tokens across four independent threads) and then closed with the same one-time re-block. The 2026-10-26 run on 0.163.0 covered the same five scenarios on gpt-6-luna. The observed user_agent changed from 'goalanchor/0.163.0 ... (goalanchor; 0.9.2)' to 'Codex Desktop/0.167.2 ... (goalanchor; 0.10.3)'.",
       "mapped_tests": [
         "tests/test_codex_host.py",
         "tests/test_codex_controller.py"
       ],
-      "deep_loop_evidence": "2026-10-26: (1) real-review scenario — four REAL model roles (reviewer-1/2, arbiter, meta on gpt-6-luna, 128,832 measured exec tokens, arbiter extra findings field tolerated and recorded) drove question/approval/dispatch/receipt/observation/closure=CLOSED with one-shot consumption BLOCKED:ContractValidationError (audit/codex-appserver-realreview-20261026b.json); (2) reconcile scenario — dispatch with forced tiny timeout produced receipt UNKNOWN with no automatic retry, then observer-signed reconcile with correlated evidence flipped it to SUCCEEDED; closure after reconcile was initially blocked by evidence-freeze semantics, then resolved in the same day by frozen-context review validation (audit/codex-appserver-reconcile-20261026b.json shows UNKNOWN->SUCCEEDED->CLOSED); (3) P6 before/after — compact prompt accepted on MEDIUM (-19 tokens, correctness held) and rejected on HIGH (+1390 tokens), decision PARTIAL/BOUNDED (audit/prompt-optimizer-experiment-20261026.json).",
-      "limitations": "Single-pair P6 runs; native UI and account provenance remain unverified."
+      "scenario_evidence": {
+        "smoke": "audit/codex-appserver-smoke-20261117.json",
+        "smoke_20261026_run": "audit/codex-appserver-smoke-20261026.json",
+        "question": "audit/codex-appserver-question-20261026.json",
+        "cancel": "audit/codex-appserver-cancel-20261026.json",
+        "decline": "audit/codex-appserver-decline-20261026.json",
+        "accept_terminal": "audit/codex-appserver-accept-20261117.json",
+        "reconcile_terminal": "audit/codex-appserver-reconcile-20261117.json",
+        "deep_review": "audit/codex-appserver-realreview-20261117.json",
+        "question_cancel_decline_scope": "The question, cancel and decline scenarios were last executed on 0.163.0 with gpt-6-luna and were not repeated on 0.167.2 in this round. The 2026-10-26 smoke record also carries the model-routing root cause: gpt-6-astra and codex-family models returned HTTP 400 'not supported when using Codex with a ChatGPT account' through the then-current proxy, which is why that run used gpt-6-luna."
+      },
+      "deep_loop_evidence": "2026-11-17 on 0.167.2: (1) real-review scenario — four REAL model roles (reviewer-1, reviewer-2, arbiter, meta on gpt-6.1-sol through the Magpie gateway, 161,083 measured exec tokens across four independent threads, the arbiter's extra findings field tolerated and recorded) drove question/approval/dispatch/receipt/observation/closure=CLOSED with one-shot consumption BLOCKED:ContractValidationError (audit/codex-appserver-realreview-20261117.json); (2) reconcile scenario — dispatch with forced tiny timeout produced receipt UNKNOWN with no automatic retry, then observer-signed reconcile with correlated evidence flipped it to SUCCEEDED and the frozen-context validation allowed CLOSED (audit/codex-appserver-reconcile-20261117.json shows UNKNOWN->SUCCEEDED->CLOSED); (3) the 2026-10-26 P6 before/after on gpt-6-luna — compact prompt accepted on MEDIUM (-19 tokens, correctness held) and rejected on HIGH (+1390 tokens), decision PARTIAL/BOUNDED (audit/prompt-optimizer-experiment-20261026.json), not repeated in this round.",
+      "limitations": "Single-pair P6 runs; the question, cancel and decline scenarios still date from 0.163.0; native UI and account provenance remain unverified; turn_status stays TIMEOUT in the real-review scenario exactly as in the 2026-10-26 run because the client stops waiting after the approved dispatch, which is a pre-existing boundary and not a regression."
     },
     {
       "host": "claude",
@@ -27,7 +38,7 @@
       "os": "Windows",
       "mode": "CLI",
       "capability": "ADVISORY",
-      "status": "PARTIAL/STRICT_LOOP_WITH_CLAUDE_EXECUTOR_VERIFIED",
+      "status": "PARTIAL/LEGACY_WORKFLOW_WITH_CLAUDE_EXECUTOR_VERIFIED_STRICT_NOT_VERIFIED",
       "execution_path": "claude -p with the model routed through the local Magpie gateway (127.0.0.1:3425); goalanchor review-cycle for the four-role review, then goalanchor.workflow.Workflow with `claude -p` as the operation executor",
       "evidence": "2026-11-16: the earlier '402 Insufficient Balance / unrecognized_model' blocker is STALE. Claude Code is already routed to non-Anthropic models by Magpie: ~/.config/magpie/applied.json records claude -> model auto/deepseek-v4.1-flash[1m] (applied 2026-11-12) and ~/.claude/settings.json carries auto/gpt-6-astra, auto/gpt-6-luna, auto/gpt-6.1-sol, auto/gpt-6.1-terra and codex/gpt-6.1-sol. A live smoke returned CLAUDE_SMOKE_OK, and goalanchor platforms reports claude available with argv ['claude','-p'] and model_flag --model. A FULL THREE-ROLE review cycle then ran with reviewer, arbiter and meta_reviewer all bound to live Claude Code processes: agent_bindings show platform=claude for every role, attempts=1 each, model auto/deepseek-v4.1-flash; the reviewer returned a schema-valid WARN with three OPEN findings that the arbiter and meta_reviewer upheld (outcome WARN, no dispute packet), while a separate reviewer-only run returned PASS, confirming genuine judgement rather than a fixed string (audit/claude-full-cycle-20261116.json). A complete workflow then ran with a real Claude executor: baseline -> evidence -> review -> authorization question -> one-time grant reserve/consume -> `claude -p` executed the write (exit 0, stdout CLAUDE_HOST_OK) -> observation -> CLOSED, host_execution_verified true, receipt CONSUMED/SUCCEEDED with result.executor=claude-cli (audit/claude-host-workflow-20261116.json + audit/claude-host-workflow-audit-20261116.json, 12 signed events).",
       "mapped_tests": [
@@ -54,13 +65,19 @@
     },
     {
       "host": "zcode",
-      "version": "3.16.3 (desktop); embedded CLI 0.17.0",
+      "version": "3.18.2 desktop / CLI 0.17.1 detected 2026-11-17",
+      "acceptance_version": "app-server protocol re-verified on 3.18.2 / CLI 0.17.1 on 2026-11-17; the desktop four-role review and the Skill/CLI signed workflow demo remain 3.16.3 / CLI 0.17.0 evidence",
       "os": "Windows",
       "mode": "desktop + embedded-cli",
       "capability": "LIMITED",
       "status": "PARTIAL/SKILL_MOUNTED_PROTOCOL_LAYER_VERIFIED",
       "execution_path": "Native desktop UI plus scripts/zcode_protocol_probe.py -> installed resources/glm/zcode.cjs app-server; GoalAnchor Skill junction-mounted at ~/.zcode/skills/goalanchor",
-      "evidence": "Desktop GLM-5.3-Flash returned the fixed smoke marker and real responses from two fresh Reviewers, Arbiter and Meta Reviewer; all rejected the synthetic missing-evidence case. App-server Coding Plan ark-code-latest/low completed one correlated no-tool turn, tokenCount=3140, observed elapsed=17.406s, and closed the test session. See audit/zcode-desktop-review-20261025.json and audit/zcode-protocol-plan-state-20261025.json with event projections.",
+      "evidence": "2026-11-17 on the installed 3.18.2 / CLI 0.17.1 (CLI sha256 dd70b11e996ad9eae4ea607d387349b4ae73ac0e7ccdef1e635b90753ce24e5a, different from the 2026-10-25 binary 97490d0f06a7a225d54d47817acf4b4859cdb268b59f2490caaeda982bef063a): the bounded probe verified a fresh session (PREFLIGHT_VERIFIED) and then completed one correlated no-tool model turn with ark-code-latest/low (turn.completed / resultType=success, tool_call_count=0, tokenCount=2414, elapsed 20.937s, plan_enabled_observed=true, no automatic retry, session closed). Both records are native transport observations and remain strict_proof=false / native_strict_loop_verified=false. Historical desktop evidence from 3.16.3 / CLI 0.17.0: desktop GLM-5.3-Flash returned the fixed smoke marker and real responses from two fresh Reviewers, Arbiter and Meta Reviewer; all rejected the synthetic missing-evidence case; the Skill-mounted signed workflow demo reached CLOSED with 12 signed events. See audit/zcode-desktop-review-20261025.json and audit/zcode-protocol-plan-state-20261025.json with event projections.",
+      "protocol_evidence": {
+        "preflight_20261117": "audit/zcode-protocol-preflight-20261117.json",
+        "send_20261117": "audit/zcode-protocol-send-20261117.json",
+        "send_20261025": "audit/zcode-protocol-final-20261025.json"
+      },
       "mapped_tests": [
         "tests/test_host_contract.py",
         "tests/test_zcode_goalanchor_bridge.py",
@@ -70,7 +87,7 @@
       "final_protocol_observation": "Second independently created no-tool session succeeded; complete input/session/turn and v4 subscription correlations retained; tokenCount=3185, elapsed_seconds=13.937; closed=true.",
       "appserver_bridge_observation": "2026-10-26: scripts/zcode_appserver_bridge.py (new) drove a real GLM Reviewer dispatch over the app-server transport with host-controlled terminal verification; binding-validated FAIL verdict on the synthetic missing-evidence case, toolCallCount=0, tokenCount=3690, session closed (audit/zcode-appserver-bridge-review-20261026.json).",
       "skill_layer_observation": "2026-11-16: GoalAnchor Skill junction-mounted at C:\\Users\\chen\\.zcode\\skills\\goalanchor (same repository copy, junction hash identical to repo). This very session IS ZCode: the skill was listed in the host's available-skills context, the GoalAnchor CLI ran the signed workflow demo to state=CLOSED (12 signed events: baseline -> evidence -> review -> question -> grant reserve/consume -> receipt -> observation -> closure) with zero-write inspection after WAL checkpoint, and the CLI gates (closure/review-cycle) returned live results. Skill+CLI is the zero-coupling protocol layer; enforcement would still require a host plugin.",
-      "limitations": "These are bounded real-host tests with synthetic input, not full native Strict acceptance. UI task/workspace labels are not signed runtime identities; provider/account/server-model provenance and Strict question/authorization/reconcile/closure remain unverified. The one-shot bridge is advisory and rejects Strict requests. The Skill layer (protocol only) is verified on this host, but there is no plugin, so unapproved tool calls are NOT blocked at runtime and the Strict store surface is not exposed. The MCP server exists in the repository (PR #52) but has not been loaded by this host yet.",
+      "limitations": "These are bounded real-host tests with synthetic input, not full native Strict acceptance. The app-server transport layer is now re-verified on the installed 3.18.2 / CLI 0.17.1, but the desktop four-role review and the Skill/CLI signed workflow demo still come from 3.16.3 / CLI 0.17.0. UI task/workspace labels are not signed runtime identities; provider/account/server-model provenance and Strict question/authorization/reconcile/closure remain unverified. The one-shot bridge is advisory and rejects Strict requests. There is no plugin, so unapproved tool calls are NOT blocked at runtime and the Strict store surface is not exposed. The MCP server exists in the repository (PR #52) but has not been loaded by this host yet.",
       "strict_binding_status": "UNAVAILABLE by design: current bridge rejects strict_binding; transport/session correlation does not authenticate principal/account. Host identity/provider boundary references official ZCode auth spec and protocol docs.",
       "identity_authority_source": "https://github.com/zai-org/ZCode/blob/main/docs/coding-plan/zcode-official-server-mcp-client-phase-1-spec.md",
       "protocol_source": "https://github.com/zai-org/ZCode/blob/main/docs/zcode-protocol.md"

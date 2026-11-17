@@ -49,14 +49,15 @@ GoalAnchor provides a Skill, a Python library, a CLI, and a PI-Desktop plugin. I
 
 | Item | Value |
 |---|---|
-| Version | `0.9.4` |
-| Release date | 2026-11-14 |
-| GitHub Release | [v0.9.4](https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.9.4) |
-| Release commit | See `delivery/v0.9.4/release-manifest.json` |
+| Version | `0.10.3` |
+| Release date | 2026-11-16 |
+| GitHub Release | [v0.10.3](https://github.com/chenyuyu6666/GoalAnchor/releases/tag/v0.10.3) |
+| Release commit | See `delivery/v0.10.3/release-manifest.json` |
 | Core scenarios | 58/58 `PASS` |
-| Native hosts | 58/58 `NOT_RUN` |
+| Native hosts | 58/58 `NOT_RUN` (PI-Desktop also has native Guard-loop and closure-gate evidence; see the host matrix) |
 
 - `StrictWorkflow` now covers the offline core chain for review, authorization questions, one-time grants, restricted execution, UNKNOWN/reconcile, observations, and closure. Native hosts remain classified by evidence as `NOT_RUN`, `LIMITED`, `ADVISORY`, or `UNAVAILABLE`; host acceptance, efficiency governance, and the remaining P2b–P7 delivery work are incomplete. See [CHANGELOG](CHANGELOG.md) for release history.
+- The current source also provides `python -m goalanchor.mcp_server`, a stdio/NDJSON JSON-RPC server that exposes read-only deterministic gates and capability lookup. This MCP surface does not grant authority, perform model review, or intercept host tools; native loading by hosts such as ZCode still requires separate acceptance. See [`examples/mcp/`](examples/mcp/README.md).
 
 ## Requirements
 
@@ -99,7 +100,7 @@ python -c "import goalanchor; print(goalanchor.__version__)"
 You can also install a wheel from [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases):
 
 ```sh
-python -m pip install goalanchor-0.9.4-py3-none-any.whl
+python -m pip install goalanchor-0.10.3-py3-none-any.whl
 ```
 
 ### Install the GoalAnchor Skill
@@ -375,7 +376,7 @@ These applications can install and use the Skill but have no built-in dispatcher
 | Integration | `python -m goalanchor.pi_desktop build --destination build/pi-desktop --archive build/goalanchor.piplug`, then install the `.piplug` from the Plugins page. Do **not** use `--target pi` |
 | Requested host permissions | `agent.prompt.inject` (Skill), `agent.extension` (hooks), `agent.tool.register` (tools), `agent.complete` (model quota), `session.read` (identity check) |
 | Role | The only **tool-level** integration: the `goalanchor_review` tool, the `goalanchor_gate` tool, tool-approval hooks, and a session status command |
-| Support level | Minimum public baseline 0.18.0; install, review, gating, and uninstall verified on 0.18.0 and 0.19.1 |
+| Support level | Minimum public baseline 0.18.0. Install, review, gating, and uninstall paths were verified on 0.18.0 and 0.19.1; 0.21.0 has live review-tool evidence, and 0.22.0 with plugin 0.10.1 has native Guard-loop and closure-gate evidence. The full persistent Strict lifecycle, trusted account provenance, and receipt persistence remain unverified |
 
 The plugin requires the host process to find Python; the Python core ships inside the plugin, so no separate `pip install` is needed. It does not read API keys and requests no network or file-write permissions. Host permissions are not an OS sandbox. See the [plugin guide](goalanchor/_pi_desktop/README.md); the compatibility specification and verification record are maintained in the project documentation center, not distributed with the code.
 
@@ -435,7 +436,7 @@ Beyond the built-in dispatchers, any command that reads one JSON line from stdin
 ## Versioning and compatibility
 
 - Versions follow [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`.
-- The current `0.9.x` line provides both legacy `Workflow` and `StrictWorkflow`; legacy objects, JSON, and historical empty-evidence behavior remain compatible.
+- The current `0.10.x` line provides both legacy `Workflow` and `StrictWorkflow`; legacy objects, JSON, and historical empty-evidence behavior remain compatible.
 - Legacy `ONE_TIME` authorization is fail-closed without an explicit consumption ledger and must not be used as strict authorization or closure proof; use the explicit in-process ledger or Strict Workflow for trusted gating.
 - Native host claims require per-host testing. Fixtures, controlled callbacks, and shared TextHostAdapter tests do not replace native acceptance.
 - See [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases) and [CHANGELOG](CHANGELOG.md) for published versions and assets.
@@ -450,7 +451,7 @@ Beyond the built-in dispatchers, any command that reads one JSON line from stdin
 
 ### Support window
 
-- Only the **latest MINOR branch** (currently `0.9.x`) is maintained; fixes and security patches land in the newest release first.
+- Only the **latest MINOR branch** (currently `0.10.x`) is maintained; fixes and security patches land in the newest release first.
 - Older MINOR branches (such as `0.8.x`) receive no routine fixes; upgrade to the latest Release.
 - Release cadence and asset verification are tracked on the [Releases](https://github.com/chenyuyu6666/GoalAnchor/releases) page; every release ships `SHA256SUMS.txt` and a `release-manifest.json`.
 
