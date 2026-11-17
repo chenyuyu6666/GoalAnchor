@@ -5,6 +5,48 @@
 
 ## [未发布]
 
+以下内容属于 `v0.10.3` 之后、尚未进入新版本的维护线，不会出现在已发布
+`v0.10.3` 的 wheel/sdist 中。MCP 与探针已在 `master`；本次文档一致性修正尚在工作树。
+
+### Added
+
+- 零依赖 stdio MCP server：通过 NDJSON JSON-RPC 暴露 `goalanchor_gate` 与
+  `goalanchor_capabilities` 两个只读工具，附带通用与 ZCode 注册样例；新增 9 项单元测试。
+- ZCode 免插件权限面探针：区分 CLI/app-server 无执行钩子、桌面宿主内部审批门与标准 MCP
+  路线；不把模型输出的工具文本记为真实执行。
+- Claude Code 2.1.322、DSH 0.2.2-rc.1 与 ZCode 协议层的真实宿主证据归档。
+
+### Changed
+
+- 状态文件、宿主矩阵、需求验收矩阵、中英文 README、Agent 兼容性说明与验证索引刷新到
+  `master` `5d1c857` / `0.10.3` 基线，并明确区分“当前安装版本”和“深度验收版本”。
+- 新增 v0.10.3 发布资料勘误：插件包实际 SHA-256 为
+  `905daa5e…a20353b6a1`，原发布说明中的 `d9653e…` 是错误值；已发布 tag 与 Release
+  保持原样，勘误只在 tag 后的维护材料中记录。
+
+### Verified
+
+- pytest 1,314 passed / 0 failed / 0 skipped（188.491s，
+  `audit/full-suite-0.10.3-post-mcp.xml`）；Ruff、Mypy 43 文件、Skill sync、fixtures
+  12/12 与 Node 21/21 通过；PR #53 CI 15/15。
+- Codex App Server 协议在当前安装版本 0.167.2 上复验：smoke 返回 `GOALANCHOR_HOST_OK`；
+  accept 场景 `closure=CLOSED` 且无新审批的二次派发 `BLOCKED:ContractValidationError`；
+  reconcile 场景 `UNKNOWN → observer reconcile → SUCCEEDED → CLOSED`；四角色真实审核
+  （reviewer-1/2、arbiter、meta 全 PASS，四个独立 thread，161,083 tokens）后同样闭合。
+  证据为 `audit/codex-appserver-*-20261117.json`。
+- ZCode app-server 传输层在当前安装版本 3.18.2 / CLI 0.17.1 上复验：有界探针预检
+  `PREFLIGHT_VERIFIED`，一次无工具模型回合达到 `turn.completed` / `resultType=success`、
+  0 工具调用、2,414 tokens；CLI 二进制 SHA-256 已变更。证据为
+  `audit/zcode-protocol-{preflight,send}-20261117.json`。桌面四角色审核与签名工作流 demo
+  仍是 3.16.3 / CLI 0.17.0 的证据。
+
+### Known limitations
+
+- MCP server 尚未被 ZCode 等原生宿主实际加载；仅完成进程级单元/手工协议验证。
+- MCP 只读 gate 不授权、不做模型审核，也不阻止宿主自己的未批准工具调用。
+- Codex 的 question/cancel/decline 三个场景，以及 ZCode 的桌面四角色审核与签名工作流
+  demo，尚未在当前安装版本上复跑。
+
 ## [0.10.3] - 2026-11-16
 
 > 版本号由 0.10.2 跳到 0.10.3：GitHub 的 immutable-release 记录永久锁定了 `v0.10.2` 这个 tag 名（首次建 Release 时未带资产，删除后重建被平台拒绝），因此用未被占用的版本号发布同一内容。`0.10.0`、`0.10.1` 均为未发布的中间开发态，不单独发版。

@@ -1,136 +1,174 @@
 {
   "schema": "goalanchor.v1.0-status/v1",
+  "updated_at": "2026-11-17",
   "baseline": {
+    "version": "0.10.3",
+    "commit": "5d1c8570aeef28fd602bed1cac8f197a30e879be",
+    "branch": "master",
+    "release": "v0.10.3",
+    "release_commit": "942351025178dbd28c63789b85394c5dbf142bd9",
+    "note": "Current repository snapshot. The original v1.0 plan baseline is retained separately."
+  },
+  "plan_origin_baseline": {
     "version": "0.9.2",
     "commit": "8a04e9f",
     "branch": "feature/goalanchor-v1-complete",
     "release": "v0.9.2"
   },
-  "status_rule": "Release delivery and controlled-core PASS do not imply native-host or real-model completion.",
+  "status_rule": "Release delivery, core-fixture PASS and controlled offline tests do not imply native-host, native identity or real-runtime completion.",
   "phases": {
     "P0_baseline_and_matrix": "PARTIAL/BOUNDED",
     "P1_strict_append_only_review": "IMPLEMENTED_AND_VERIFIED (offline storage boundary; native provenance remains unverified)",
     "P2_strict_lifecycle": "PARTIAL/BOUNDED (offline semantics complete; real principal/account/session binding awaits native hosts)",
-    "P3_host_neutral_protocol": "IMPLEMENTED_AND_VERIFIED (all five public interfaces exist incl. EfficiencyObservationProvider; native bindings remain PARTIAL)",
-    "P4_native_hosts": "PARTIAL/BOUNDED (Codex App Server controlled deep loop through UNKNOWN/reconcile/closure verified; PI-Desktop now additionally verified for the Guard runtime loop (arm -> real confirmation dialog -> approved execution -> one-time re-block) and the deterministic closure gate in both directions; native UI/account provenance, the Strict lifecycle over a persistent store on the desktop host, and the ZCode/Claude/DSH loops remain incomplete)",
-    "P5_efficiency_baseline": "PARTIAL/BOUNDED (offline baseline + opportunistic samples + 2026-10-26 fixed-task LOW/MEDIUM/HIGH real samples on gpt-6-luna all correct; UNKNOWN/reconcile tier NOT_RUN pending reconcile harness)",
-    "P6_efficiency_components": "PARTIAL/BOUNDED (five components, reuse rule, admission facade and provider done; 2026-10-26 before/after experiment: compact prompt accepted on MEDIUM (-19 tokens, correctness held), rejected on HIGH (+1390); broader before/after coverage awaits real runtime)",
+    "P3_host_neutral_protocol": "IMPLEMENTED_AND_VERIFIED (all five public interfaces exist; native bindings remain PARTIAL)",
+    "P4_native_hosts": "PARTIAL/BOUNDED (Codex has a controlled App Server deep loop on 0.163.0; Claude has a real three-role review and legacy executor loop; DSH and ZCode have Skill+CLI protocol evidence without enforcement; PI-Desktop has a native Guard loop and closure gate with plugin 0.10.1; no host has a fully proven Strict lifecycle with native principal/account provenance)",
+    "P5_efficiency_baseline": "PARTIAL/BOUNDED (offline baseline plus one real LOW/MEDIUM/HIGH sample each on gpt-6-luna; UNKNOWN/reconcile tier NOT_RUN)",
+    "P6_efficiency_components": "PARTIAL/BOUNDED (five components are implemented and tested; before/after evidence accepted a MEDIUM prompt reduction and rejected a HIGH expansion; EfficiencyRuntime is not wired into workflow runtime dispatch)",
     "P7_final_release": "DEFERRED"
   },
   "implemented_and_verified": [
     "Strict baseline and evidence proof binding",
     "Strict review packet, Reviewer/Arbiter/Meta validation and bounded STOP",
-    "AgentRuntime tolerates non-critical future result fields by role-level projection",
-    "Per-round strict_review_chain append records and strict_review_head CAS projection",
-    "Strict review chain/head corruption is detected fail-closed",
-    "Strict review proof/head append-only storage with atomic attestation, replay, competing-writer serialization, two-process single-commit and crash-rollback regressions",
-    "Strict authorization question and one-time grant",
-    "Strict scope grant and revocation",
-    "Strict accepted-risk record and second-round disposition",
-    "Strict execution receipt, one-time consumption, idempotent attempt",
-    "Strict UNKNOWN and observer reconcile",
-    "Strict cancellation, observation and closure",
-    "Strict question transition and presentation proof",
-    "Strict resume transport is bound and leaves recovery pending reconcile",
-    "Strict observation reuse requires unchanged criterion and signed source",
-    "Host-neutral public interfaces: host capability descriptor, TrustedRuntimeBindingProvider, TrustedReviewProofProvider, review delivery proof, EfficiencyObservationProvider",
-    "EfficiencyRuntime fail-closed admission facade with UNKNOWN token handling and provider-fed observations",
+    "Strict review proof/head append-only storage with CAS, replay, competing-writer and crash-rollback regressions",
+    "Strict authorization question, scope grant, revoke and accepted-risk handling",
+    "Strict execution receipt, one-time consumption, idempotent attempt, cancellation, observation and closure",
+    "Strict UNKNOWN and trusted observer reconcile",
+    "Host-neutral public interfaces for capability, runtime binding, review proof, delivery proof and efficiency observation",
     "Legacy Workflow compatibility regression suite",
-    "Offline efficiency governance primitives and deterministic baseline",
-    "Codex App Server controlled deep loop: real four-role review dispatch, approval callback, execution receipt, observation, closure, and UNKNOWN/reconcile/closure; native UI/account provenance remains unverified"
+    "Offline efficiency governance primitives, baseline and fail-closed admission facade",
+    "Zero-dependency stdio MCP server with read-only deterministic gate and capability tools; implemented and unit-tested, not yet loaded by a native host"
   ],
   "verification": {
-    "pytest": "LOCAL PASS (1305 passed / exit 0 at PR #22 merge, per the 2026-10-26 handoff). No local full-suite rerun after PR #22. CI still reran the Python test/fixtures matrix for PR #23 and PR #24; both passed 15/15. The 1298-test XML is the earlier Strict proof slice, not the merge-time full-suite count.",
+    "pytest": "PASS: 1314 passed / 0 failed / 0 skipped in 188.491s on 5f535ef; JUnit evidence audit/full-suite-0.10.3-post-mcp.xml. Current 5d1c857 changes audit evidence only; PR #53 CI passed 15/15.",
     "ruff": "PASS",
-    "mypy": "PASS (42 source files)",
+    "mypy": "PASS (43 source files)",
     "skill_sync": "PASS",
+    "node": "PASS (21/21)",
+    "fixtures": "PASS (12/12 aligned)",
+    "ci": "PASS (15/15 on PR #53 / 5d1c857)",
     "phase6_offline_benchmark": "5/5 aligned",
-    "native_host_matrix": "Codex App Server deep loop verified through question/approval/dispatch/receipt/observation/closure and UNKNOWN/reconcile/closure. PI-Desktop now additionally has the Guard runtime loop verified on the host (arm -> real confirmation dialog -> approved Bash executed -> second attempt re-blocked) and the closure gate verified in both directions; the overall matrix remains PARTIAL/BOUNDED because the Strict lifecycle over the persistent store is not exposed by the desktop plugin, execution receipt persistence is unverified, principal/account provenance is unavailable, and the ZCode/Claude/DSH loops remain incomplete.",
-    "efficiency_token_usage": "29,991 measured Codex review tokens; 3 fixed-task gpt-6-luna LOW/MEDIUM/HIGH samples are correct with tokens and elapsed time recorded; ZCode 3,140 tokens are a separate opportunistic sample. Repeat sampling and UNKNOWN/reconcile tier remain pending.",
-    "efficiency_baseline_artifact": "audit/efficiency-baseline-v1.0.json (20 local + 2 opportunistic host samples); audit/real-efficiency-samples-20261026.json (3 fixed-task real samples, one per LOW/MEDIUM/HIGH tier, all correct). These are initial observations, not a stable broad baseline.",
-    "graphify": "PARTIAL: scoped ZCode AST/semantic graph from 2026-10-25 is retained but predates PR #22; full-project semantic rebuild remains pending because Ollama is not installed/on PATH. The scoped graph now lives in Doc/03_验证与测试/2026-10-25_ZCode协议验收/graphify-slice/ (workspace evidence center, not shipped in the repository).",
-    "pi_desktop_runtime_evidence": "audit/pi-desktop-runtime-20261107.json: PI-Desktop UI v0.21.0 live session, Tool Hook installed, host-completion, exact plugin_local_goalanchor_goalanchor_review invocation PASS at LOW/1 round; native Strict full loop and identity provenance NOT_RUN.",
-    "remote_sync_evidence": "Doc/03_验证与测试/2026-11-12_远端同步审计/remote-sync-20261112.json: canonical GitHub master, Gitee mirror divergence, local handoff branch and release state."
+    "core_scenarios": "58/58 PASS",
+    "native_case_mapping": "58/58 NOT_RUN; core-fixture PASS is not native-host acceptance",
+    "efficiency_token_usage": "29,991 measured Codex review tokens; three fixed-task gpt-6-luna samples (LOW/MEDIUM/HIGH) are correct and include token/time records; ZCode 3,140 tokens are a separate opportunistic sample",
+    "efficiency_baseline_artifact": "audit/efficiency-baseline-v1.0.json contains 20 deterministic local samples and explicitly records token_status=UNKNOWN where token data was unavailable",
+    "graphify": "PARTIAL: no root graphify-out/graph.json and Ollama is absent from PATH; the retained ZCode slice predates PR #22 and is navigation-only",
+    "remote_sync": "Local, GitHub and Gitee master refs all resolve to 5d1c8570aeef28fd602bed1cac8f197a30e879be with 0 ahead / 0 behind; Gitee retains an extra v0.10.2 tag for content GitHub cannot re-address"
   },
   "host_matrix": {
     "codex": {
       "status": "PARTIAL/VERIFIED_DEEP_LOOP",
-      "installed_version": "0.163.0",
-      "evidence": "2026-10-26 deep loop: real four-role review (gpt-6-luna, 128,832 tokens) -> signed approval -> dispatch -> receipt -> observation -> closure=CLOSED with one-shot consumption blocked; UNKNOWN receipt reconciled to SUCCEEDED via observer proof; reconcile->close gap (post-review recovery evidence invalidated live review context) fixed same day via frozen-context validation, real scenario now reaches CLOSED; P6 before/after experiment accepted compact prompt on MEDIUM tier only. All on App Server plus codex exec. Native UI/account provenance remain unverified."
+      "installed_version": "0.167.2 installed and re-verified 2026-11-17",
+      "capability": "LIMITED",
+      "verified": [
+        "On 0.167.2: real four-role review (gpt-6.1-sol, 161,083 tokens across four independent threads), signed approval, dispatch, receipt, observation and CLOSED",
+        "On 0.167.2: UNKNOWN -> observer reconcile -> SUCCEEDED -> CLOSED and one-time consumption re-block",
+        "On 0.167.2: smoke returned GOALANCHOR_HOST_OK through the App Server transport"
+      ],
+      "not_verified": [
+        "question, cancel and decline scenarios on 0.167.2 (still recorded from 0.163.0)",
+        "Native UI and signed account provenance"
+      ],
+      "evidence": "audit/codex-appserver-smoke-20261117.json, audit/codex-appserver-accept-20261117.json, audit/codex-appserver-reconcile-20261117.json, audit/codex-appserver-realreview-20261117.json"
     },
     "claude": {
-      "status": "PARTIAL/STRICT_LOOP_WITH_CLAUDE_EXECUTOR_VERIFIED",
-      "installed_version": "2.1.322 (Claude Code), routed through the local Magpie gateway",
-      "evidence": "2026-11-16: the 402 Insufficient Balance / unrecognized_model blocker recorded earlier is STALE. Magpie already routes Claude Code to non-Anthropic models (applied.json: claude -> auto/deepseek-v4.1-flash[1m], applied 2026-11-12; ~/.claude/settings.json carries auto/gpt-6-astra, auto/gpt-6-luna, auto/gpt-6.1-sol/terra, codex/gpt-6.1-sol). A live smoke returned CLAUDE_SMOKE_OK and goalanchor platforms reports claude available (argv ['claude','-p'], model_flag --model). A full review cycle ran with reviewer, arbiter and meta_reviewer all bound to live Claude Code processes (attempts=1 each, model auto/deepseek-v4.1-flash): the reviewer returned a schema-valid WARN with three OPEN findings that the arbiter and meta_reviewer upheld (outcome WARN, no dispute packet); a separate reviewer-only run returned PASS (audit/claude-full-cycle-20261116.json). A complete workflow then ran with `claude -p` as the operation executor: baseline -> evidence -> review -> authorization -> one-time grant reserve/consume -> Claude executed the write (exit 0, stdout CLAUDE_HOST_OK) -> observation -> CLOSED, host_execution_verified true, receipt CONSUMED/SUCCEEDED with result.executor=claude-cli (audit/claude-host-workflow-20261116.json, 12 signed events).",
-      "limitations": "Verified: three-role review dispatch and a full workflow loop with a real Claude executor. NOT verified: StrictWorkflow proper (needs lease factories, signed proofs and a host-owned runtime binding digest the CLI does not provide), signed principal/account provenance, and multi-step tool loops inside Claude. 'Claude' means the Claude Code client; the model family served through the gateway is not Anthropic."
+      "status": "PARTIAL/LEGACY_WORKFLOW_WITH_CLAUDE_EXECUTOR_VERIFIED_STRICT_NOT_VERIFIED",
+      "installed_version": "2.1.322, routed through the local Magpie gateway",
+      "capability": "ADVISORY",
+      "verified": [
+        "Three live Claude Code roles completed reviewer, arbiter and meta review",
+        "A legacy Workflow with a real claude -p executor reached CLOSED with host execution and receipt evidence"
+      ],
+      "not_verified": [
+        "StrictWorkflow lease, signed proof and host-owned runtime binding",
+        "Signed principal/account provenance",
+        "Multi-step tool loops inside Claude"
+      ],
+      "evidence": "audit/claude-full-cycle-20261116.json and audit/claude-host-workflow-20261116.json"
     },
     "dsh": {
       "status": "PARTIAL/SKILL_LOADED_AND_FOLLOWED_ON_HOST",
-      "installed_version": "0.2.2-rc.1 desktop (cordis plugin host, hostProtocolVersion 4)",
-      "evidence": "2026-11-16: GoalAnchor Skill linked into ~/.dsh/skills via a directory junction (no plugin, no host API coupling). Session b3e9a5de: the slash menu listed goalanchor, invoking it produced <skill_content name=\"goalanchor\"> with the full PLAN/VERIFY/EXECUTE rule text and Base directory ~/.dsh/skills/goalanchor, and the model followed the skill's static-only PLAN discipline across 61 pwsh / 29 read / 9 glob / 9 grep calls. The bundled runtime python (3.12.14) imports goalanchor 0.10.3 and the closure gate returned passed=true for a real Root Fix record.",
-      "limitations": "Skill-only and advisory: model-visible skill loading and rule compliance are verified, but there is no installed plugin on this host, so unapproved tool calls are NOT blocked at runtime and the Strict store surface is not exposed."
+      "installed_version": "0.2.2-rc.1 desktop",
+      "capability": "ADVISORY",
+      "verified": [
+        "The host listed and loaded the GoalAnchor Skill and the model followed its PLAN/VERIFY/EXECUTE rules in session b3e9a5de",
+        "The bundled Python imports goalanchor 0.10.3 and a CLI closure gate produced a real result"
+      ],
+      "not_verified": [
+        "Runtime enforcement of unapproved tools",
+        "Strict store access or native Strict review proof"
+      ],
+      "evidence": "2026-11-16 DSH host-session evidence and the current project handoff"
     },
     "zcode": {
       "status": "PARTIAL/SKILL_MOUNTED_PROTOCOL_LAYER_VERIFIED",
-      "installed_version": "3.16.3 desktop; embedded CLI 0.17.0",
-      "evidence": "Desktop GLM-5.3-Flash smoke and real four-role missing-evidence rejection succeeded. App-server ark-code-latest/low produced correlated turn.completed/resultType=success, zero tool calls, tokenCount=3140 and verified session close. 2026-11-16: the GoalAnchor Skill was junction-mounted at ~/.zcode/skills/goalanchor (hash identical to the repository copy) and the protocol layer ran ON this host: the signed workflow demo reached state=CLOSED with 12 signed events (baseline -> evidence -> review -> question -> grant reserve/consume -> receipt -> observation -> closure) and zero-write inspection after a WAL checkpoint. The CLI gates (closure/review-cycle) also returned live results in this session.",
-      "strict_binding_status": "UNAVAILABLE by design: scripts/zcode_appserver_bridge.py rejects strict_binding. The installed bridge correlates session/input/turn and terminal completion but does not authenticate principal/account. Official ZCode docs assign identity/provider resolution to the Desktop Host; the Agent process is not the identity authority, and secrets are not included in conversation snapshots. A future Strict adapter needs a host-owned non-secret identity binding and trusted review-proof callback, not model output, environment labels, or exposed credentials.",
-      "identity_authority_source": "https://github.com/zai-org/ZCode/blob/main/docs/coding-plan/zcode-official-server-mcp-client-phase-1-spec.md",
-      "protocol_source": "https://github.com/zai-org/ZCode/blob/main/docs/zcode-protocol.md"
+      "installed_version": "3.18.2 desktop; embedded CLI 0.17.1 re-verified 2026-11-17",
+      "acceptance_version": "App-server protocol re-verified on 3.18.2 / CLI 0.17.1; the desktop four-role review and signed Skill/CLI workflow demo remain 3.16.3 / CLI 0.17.0 evidence",
+      "capability": "LIMITED",
+      "verified": [
+        "On 3.16.3 / 0.17.0: desktop model smoke, four-role rejection, correlated no-tool app-server turn and Skill mount",
+        "On 3.16.3 / 0.17.0: signed workflow demo reached CLOSED with 12 signed events and live CLI gates",
+        "On 3.18.2 / 0.17.1: bounded probe preflight verified a fresh session, and one correlated no-tool model turn reached turn.completed / resultType=success with 0 tool calls and 2,414 tokens"
+      ],
+      "not_verified": [
+        "Desktop four-role review and signed workflow demo on the installed 3.18.2 / 0.17.1",
+        "MCP server loading by ZCode",
+        "Runtime enforcement and Strict store access"
+      ],
+      "strict_binding_status": "UNAVAILABLE by design: identity/provider resolution belongs to the Desktop Host; the bridge must not promote model output or environment labels into principal/account proof",
+      "evidence": "audit/zcode-protocol-preflight-20261117.json, audit/zcode-protocol-send-20261117.json, audit/zcode-desktop-review-20261025.json"
     },
     "pi_desktop": {
       "status": "PARTIAL/GUARD_RUNTIME_LOOP_VERIFIED_CLOSURE_GATE_VERIFIED_STRICT_STORE_NOT_EXPOSED",
-      "installed_version": "0.22.0 UI (file ProductVersion 0.22.0.0); plugin 0.6.0 -> 0.9.3 on 2026-11-13 -> 0.10.1 on 2026-11-15",
+      "installed_version": "0.22.0 UI; installed plugin 0.10.1",
       "capability": "LIMITED",
-      "evidence": "2026-11-13: plugin installed through the host Plugins page; manifest, runtime and registry all reported 0.9.3 (ready/enabled); /goalanchor.capabilities returned a live report; one LOW-risk single-round review COMPLETED with verdict WARN (plugin.log ok=true). 2026-11-14/15 (plugin 0.10.0 -> 0.10.1): Guard runtime loop verified end to end on the host - unapproved Bash attempt BLOCKED by the tool_call hook (transcript tool_call entry, 5 ms); composer '/goalanchor-approve <record>.json' routed by the host to the palette extension-command path showed a real ui.confirm dialog with the full contract; the human click granted the exact operations; the approved Bash EXECUTED (exitCode 0, stdout GUARD_PROBE_OK, 701 ms); a second identical attempt was BLOCKED (one-time consumption). 2026-11-16: native closure gate verified both ways - valid Root Fix claim passed=true; over-claimed Product Closure without artifact manifest failed closed (ARTIFACT_MANIFEST_REQUIRED, recommended_level=Build Success). See audit/pi-desktop-runtime-20261114.json.",
-      "limitations": "Verified on the host: install/capability report, one LOW review round, Guard runtime blocking, exact approval with a real dialog, one-time consumption, and the closure gate in both directions. NOT verified: the full Strict lifecycle chain (UNKNOWN/reconcile/closure over the persistent store) because the desktop plugin exposes only the deterministic gate surface, not the store; execution receipt persistence shape; trusted principal/account provenance (no non-secret identity binding from the host); review-cycle gate on the host.",
-      "guard_runtime_probe": "RESOLVED 2026-11-15: the earlier 'not effective' reading had two causes, both fixed - composer slash text reached the model as a prompt while the guard was never armed, and the host rebuilds the extension runtime per turn so the factory-local GuardState lost arming. Fixed by a module-level session-keyed GuardState, a before_agent_start arm hook and epoch-paired grant survival (PR #38-#42); guard.cjs unchanged. Full arm -> approve -> execute -> re-block loop proven with transcript entries (session 99f98d1e)."
+      "verified": [
+        "Native Guard loop: block -> real confirmation dialog -> exact approval -> execution -> second attempt re-block",
+        "Native closure gate in both directions, including ARTIFACT_MANIFEST_REQUIRED fail-closed behavior"
+      ],
+      "not_verified": [
+        "Full Strict lifecycle over the persistent store",
+        "Execution receipt persistence shape",
+        "Trusted principal/account provenance",
+        "Host review-cycle gate"
+      ],
+      "evidence": "audit/pi-desktop-runtime-20261114.json"
     }
   },
   "remaining": [
-    "Codex native UI/account provenance remains unverified despite the controlled App Server deep loop",
-    "PI-Desktop: Guard runtime loop now verified on the host (arm -> approve via real dialog -> approved Bash executed -> second attempt re-blocked, session 99f98d1e) and the closure gate verified in both directions; remaining gaps are the full Strict lifecycle over the persistent store (not exposed by the desktop plugin), execution receipt persistence shape, trusted principal/account provenance, and the host review-cycle gate",
-    "ZCode: the protocol layer is now verified on this host (skill junction-mounted, signed workflow demo reached CLOSED with 12 signed events, CLI gates live); what remains is enforcement (no host plugin) and the Strict store surface; the bridge still deliberately rejects strict_binding pending a trusted Desktop Host runtime identity and review-proof provider",
-    "Claude Code is no longer blocked: Magpie routes it to non-Anthropic models and a full three-role review cycle (reviewer/arbiter/meta_reviewer) ran on live Claude Code processes over the gateway; the workflow loop with a Claude executor is now also verified (CLOSED, host_execution_verified true); what remains is StrictWorkflow proper (lease/signed-proof/runtime-binding requirements the CLI cannot supply) and signed principal/account provenance",
-    "DSH: the GoalAnchor Skill is now linked and loaded on the host (slash menu lists it, the model receives the full PLAN/VERIFY/EXECUTE text and follows it) and the bundled python runs the CLI gates; what remains is enforcement (no plugin installed, so unapproved tool calls are not blocked) and the Strict store surface",
-    "Full-project Graphify semantic rebuild remains pending; only a scoped graph predating PR #22 is retained",
-    "P5 needs more real-model samples per tier and UNKNOWN/reconcile latency coverage",
-    "P6 needs broader PromptOptimizer before/after trials while preserving correctness and security gates",
-    "P7 requires final packaging, release manifest, annotated tag and GitHub Release after every in-scope requirement is IMPLEMENTED_AND_VERIFIED; the v0.9.3 patch release is published, but no v1.0 tag exists",
-    "Gitee Release page for v0.9.3 is not created yet: it needs a Gitee access token that the local credential store does not hold (only an account password is present)"
+    "Repeat Codex App Server acceptance on installed 0.167.2 and verify native UI/account provenance",
+    "Repeat ZCode protocol acceptance on installed 3.18.2 / CLI 0.17.1 and test native MCP loading",
+    "Expose or otherwise validate the persistent Strict lifecycle on PI-Desktop, DSH and ZCode",
+    "Obtain host-owned non-secret principal/account bindings and trusted review-proof callbacks",
+    "Wire EfficiencyRuntime into workflow runtime dispatch and collect broader real samples",
+    "Complete the UNKNOWN/reconcile efficiency tier and broader PromptOptimizer before/after trials",
+    "Rebuild a full-project Graphify graph when Ollama or another supported semantic backend is available",
+    "Create Gitee Release pages for v0.9.3, v0.9.4 and v0.10.3 after an access token is available",
+    "Keep P7 DEFERRED until all in-scope requirements reach IMPLEMENTED_AND_VERIFIED"
   ],
   "current_snapshot": {
-    "commit": "0776f6ee9a98432c0eb2e18c4bc3859b0850134b",
+    "commit": "5d1c8570aeef28fd602bed1cac8f197a30e879be",
     "branch": "master",
-    "package_version": "0.9.3",
-    "latest_merged_pull_request": "https://github.com/chenyuyu6666/GoalAnchor/pull/28",
-    "merged_pull_requests": [
-      "https://github.com/chenyuyu6666/GoalAnchor/pull/22",
-      "https://github.com/chenyuyu6666/GoalAnchor/pull/23",
-      "https://github.com/chenyuyu6666/GoalAnchor/pull/24",
-      "https://github.com/chenyuyu6666/GoalAnchor/pull/25",
-      "https://github.com/chenyuyu6666/GoalAnchor/pull/26",
-      "https://github.com/chenyuyu6666/GoalAnchor/pull/27",
-      "https://github.com/chenyuyu6666/GoalAnchor/pull/28"
-    ],
-    "github_master": "0776f6ee9a98432c0eb2e18c4bc3859b0850134b",
-    "gitee_master": "0776f6ee9a98432c0eb2e18c4bc3859b0850134b",
-    "gitee_relation": {
-      "merge_base": "0776f6ee9a98432c0eb2e18c4bc3859b0850134b",
-      "gitee_unique_commits": 0,
-      "master_commits_not_in_gitee": 0,
-      "fast_forward_possible": true,
-      "classification": "IN_SYNC",
-      "reconciled_at": "2026-11-13",
-      "reconciliation_method": "Single-direction mirror per CONTRIBUTING.md:19. Gitee had 2 unique README commits that were a degradation (498 lines -> 198 lines, table of contents dropped, Chinese quotes replaced with straight quotes); they were discarded with an explicit --force-with-lease push rather than cherry-picked, so the canonical GitHub README is preserved. Backup kept locally at branch backup/gitee-readme-20261113. v* tags were synced individually; git push --mirror was not used (CONTRIBUTING.md:20)."
-    },
-    "local_handoff_branch": {
-      "branch": "docs/pi-desktop-runtime-acceptance-20261107",
-      "commit": "13b5946025cbc2ce123241eb01651e075801f4c7",
-      "commits_ahead_of_master": 0,
-      "pushed": true,
-      "merged_as": "https://github.com/chenyuyu6666/GoalAnchor/pull/25"
-    },
-    "release": "v0.9.3 published on GitHub (Release ID 443739062) with GitHub/Gitee master and v0.9.3 tag in sync. Gitee Release page for v0.9.3 is not yet created; it requires a Gitee access token that is not available in the local credential store. No v1.0 tag exists."
+    "package_version": "0.10.3",
+    "worktree": "LOCAL DOCUMENTATION CHANGES; no runtime code changes",
+    "latest_merged_pull_request": "https://github.com/chenyuyu6666/GoalAnchor/pull/53",
+    "post_release_commits": 17,
+    "github_master": "5d1c8570aeef28fd602bed1cac8f197a30e879be",
+    "gitee_master": "5d1c8570aeef28fd602bed1cac8f197a30e879be",
+    "remote_relation": "IN_SYNC / 0 ahead / 0 behind",
+    "release": {
+      "tag": "v0.10.3",
+      "tag_object": "987771789d61a907be51ac0cd17c5360bf7ba862",
+      "release_commit": "942351025178dbd28c63789b85394c5dbf142bd9",
+      "github_release_id": "RE_kwDOVIlNw84anlaD",
+      "published_at": "2026-11-16T03:46:38Z",
+      "wheel_sha256": "60b94a7a87fe7dc465ff50e9230c679ee7253b62533bc8cef254771c73eac20e",
+      "sdist_sha256": "059915be6a33289fe732467c1a2738568d7cd1117e9d8682af7b0a92e1f6835a",
+      "gitee_release_pages_missing": [
+        "v0.9.3",
+        "v0.9.4",
+        "v0.10.3"
+      ],
+      "v1_0_tag": "ABSENT"
+    }
   }
 }

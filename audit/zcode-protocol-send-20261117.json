@@ -1,0 +1,52 @@
+{
+  "schema": "goalanchor.zcode-protocol-probe/v1",
+  "status": "PARTIAL/BOUNDED",
+  "outcome": "SUCCESS",
+  "reason": null,
+  "failure": null,
+  "strict_proof": false,
+  "native_strict_loop_verified": false,
+  "session_id": "sess_9cd1d1ab-9f63-41d1-8450-8b6909fcbea0",
+  "input_id": "goalanchor-probe-5e3344bc-6330-4503-a3b8-0c110e1b255b",
+  "turn_id": "turn_1a150409-7837-4a05-80ed-806016c96f67",
+  "requested_model": {
+    "providerId": "6dccdae9-11dc-40c7-a024-a0502e9751fd",
+    "modelId": "ark-code-latest",
+    "options": {
+      "reasoningLevel": "low"
+    }
+  },
+  "binding_verified": true,
+  "requested_mode": "plan",
+  "mode": "plan",
+  "permission_mode": "build",
+  "plan_enabled_observed": true,
+  "mode_update": {
+    "attempted": false,
+    "confirmed": false,
+    "may_persist_workspace_mode": false,
+    "scope": "isolated_probe_workspace"
+  },
+  "send_count": 1,
+  "automatic_retry": false,
+  "stop_sent": false,
+  "denied_interactions": 0,
+  "terminal": {
+    "outcome": "SUCCESS",
+    "result_type": "success",
+    "event_id": "5682cf18-fb52-40ed-8dcc-c3f056d7c45d",
+    "tool_call_count": 0,
+    "token_count": 2414
+  },
+  "cleanup": {
+    "attempted": true,
+    "closed": true
+  },
+  "elapsed_seconds": 20.937,
+  "evidence_boundary": "Native transport observation only; no authorization or review proof issued.",
+  "cli_path": "D:\\AIWorkspace\\Tools\\ZCode\\resources\\glm\\zcode.cjs",
+  "cli_sha256": "dd70b11e996ad9eae4ea607d387349b4ae73ac0e7ccdef1e635b90753ce24e5a",
+  "provider_config_passed": true,
+  "event_projection_path": "Doc/03_验证与测试/2026-11-17_ZCode协议复验/raw/zcode-protocol-send-20261117.events.jsonl",
+  "event_projection_path_note": "Workspace-root-relative (workspace root D:\\Project\\GoalAnchor). The raw event stream lives in the Doc evidence center and is not shipped inside the repository."
+}

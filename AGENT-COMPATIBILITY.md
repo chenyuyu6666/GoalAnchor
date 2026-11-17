@@ -47,8 +47,10 @@ GoalAnchor 负责角色绑定、Reviewer 并行、Arbiter 汇总、Meta Reviewer
 - 提示词由 GoalAnchor 按角色渲染并注入共享 `ReviewContext` 指纹；平台输出兼容直接
   JSON、信封包装（如 `{"result": "<json 文本>"}`）和正文夹带 JSON 三种形态；`codex exec`
   的提示词回显/转写不会干扰解析（优先取最后一个带结果字段的 JSON）。
-- 已在真实平台验证：claude（Claude Code 2.1.272）与 codex（codex-cli 0.154.0）作为
-  Reviewer 全链路通过；平台偶发失败会以退出码 2 + stderr 详情显式报错，不自动重试。
+- 2026-11-17 本机当前安装版本为 Claude Code 2.1.322 与 Codex CLI 0.167.2。Claude Code
+  2.1.322 已完成真实三角色审核，并用真实 `claude -p` 作为 legacy `Workflow` 执行器跑到
+  `CLOSED`；Codex 的 App Server 深层闭环是在 0.163.0 上完成的，0.167.2 升级后仍需复验。
+  平台偶发失败会以退出码 2 + stderr 详情显式报错，不自动重试。
 - 同一轮 Reviewer 强制绑定不同 profile 并发执行；`LOW/MEDIUM/HIGH/CRITICAL` 分别需要
   1/2/2/3 个 `reviewer` profile——LOW 不再免审（单审可信度不足），非 LOW 风险一律多审。
 - 无头结果附带 `agent_bindings` 审计数组（agent_id → profile → 平台 → 轮次）。
@@ -64,6 +66,7 @@ GoalAnchor 负责角色绑定、Reviewer 并行、Arbiter 汇总、Meta Reviewer
 | Codex | `$CODEX_HOME/skills` 或 `~/.codex/skills` | `.agents/skills` |
 | Claude Code | `~/.claude/skills` | `.claude/skills` |
 | DSH | `$DSH_HOME/skills` 或 `~/.dsh/skills` | `.dsh/skills` |
+| Zcode | 宿主配置的 Skill 根目录；安装时必须显式提供 `--destination` | 宿主配置的 `.zcode/skills` |
 | Cursor | `~/.cursor/skills` | `.cursor/skills` |
 | Gemini CLI | `~/.gemini/skills` | `.gemini/skills` |
 | OpenCode | `~/.config/opencode/skills` | `.opencode/skills` |
@@ -107,15 +110,25 @@ python -m goalanchor check --target claude --scope project --project-root . --so
 
 `skills/goalanchor/SKILL.md` 可作为 Codex Skill 包安装。`agents/openai.yaml` 是可选的 Codex 界面元数据，其他宿主可以忽略它；规则正文不依赖这个文件。
 在 Codex 中按 `$goalanchor` 调用；不再使用旧的 `$plan-audit`。
+本机 CLI 已在 2026-11-17 升级到 0.167.2，并已用默认模型 `gpt-6.1-sol` 复验 App Server
+协议：smoke、accept（含一次性消费再拦）、reconcile（UNKNOWN→SUCCEEDED→CLOSED）与四角色
+真实审核闭环全部通过。question/cancel/decline 三个场景仍是 0.163.0 证据。宿主 user_agent
+已变为 `Codex Desktop/0.167.2 ... (goalanchor; 0.10.3)`。
 
 ### Claude Code
 
 项目级入口是 `.claude/skills/goalanchor/SKILL.md`，用户级入口是 `~/.claude/skills/goalanchor/SKILL.md`。通过 `/goalanchor` 直接调用，或由 `description` 触发自动加载。
+当前 Claude Code 2.1.322 经本地 Magpie 网关完成真实三角色审核与 legacy `Workflow`
+执行闭环。该证据不构成 StrictWorkflow 完成：CLI 不提供本实现所需的签名 runtime binding、
+principal/account 来源和宿主审核投递证明。
 
 ### DSH
 
 项目级入口是 `.dsh/skills/goalanchor/SKILL.md`，用户级入口是 `$DSH_HOME/skills/goalanchor/SKILL.md`。Skill 名必须保持 kebab-case；不使用 DSH 专用插件 API，因此可作为普通文件 Skill 加载。
 DSH 的 Skill 名为 `goalanchor`；通过宿主的 Skill 加载入口选择该名称。
+2026-11-16 在 DSH 0.2.2-rc.1 真实会话中验证了菜单发现、完整 Skill 文本注入和
+PLAN/VERIFY/EXECUTE 规则遵守，宿主自带 Python 也能运行 CLI gate。该宿主机当前没有
+基于 `tool_call` 的公开强制层，因此“Skill 被遵守”不等于“未批准工具无法绕过”。
 
 ### Zcode
 
@@ -125,7 +138,11 @@ Zcode 自己提供；只需把命名 Agent 映射到 `reviewer`、`arbiter` 和 
 
 Windows 桌面安装可能不注册 `zcode` PATH 命令。检测时应同时检查安装注册表、开始菜单和
 安装目录中的 `resources/glm/zcode.cjs`，不能把 `Get-Command zcode` 失败解释为未安装。
-本机 3.16.3 桌面版的 CLI 报告版本为 0.17.0；两者分别记录。
+本机当前为 3.18.2 桌面版，CLI 报告 0.17.1；两者分别记录。2026-11-17 已在新版本上
+复跑有界协议验收：预检 `PREFLIGHT_VERIFIED`，一次无工具模型回合达到
+`turn.completed` / `resultType=success`、0 工具调用、2,414 tokens、20.9s；CLI 二进制
+SHA-256 已从 10 月的 `97490d0f…` 变为 `dd70b11e…`。桌面四角色审核与签名工作流 demo
+仍是 3.16.3 / CLI 0.17.0 的证据。
 
 `scripts/zcode_protocol_probe.py` 是仓库内的有界原生协议验收工具（不随 wheel 安装）。
 执行 `python scripts/zcode_protocol_probe.py --help` 查看参数：显式指定 CLI、隔离工作目录、
@@ -150,6 +167,10 @@ App Server 的 Coding Plan `ark-code-latest/low` 完成一次关联终态、零�
 原生 UI 的真实模型答复另作证据，不能用离线 fake CLI 测试替代。
 Strict question、approval、reconcile 和 closure 强制能力仍需独立验收。
 
+当前源码另有零依赖的 `python -m goalanchor.mcp_server`，通过 MCP 暴露只读 gate 和能力
+查询；它不授权、不做模型审核、也不拦截宿主工具。ZCode 的 MCP 注册样例已存在，但宿主
+实际加载尚未验证。
+
 ### 其他 Agent
 
 优先使用 `.agents/skills/goalanchor/SKILL.md` 或工具文档指定的等价目录。若宿主只支持自定义目录，使用 `--target custom --destination`，并保留 `SKILL.md` 文件名和 `name: goalanchor`。
@@ -171,9 +192,11 @@ PI-Desktop 与 Pi CLI 分开适配；桌面不会自动导入 `~/.pi`。使用
 后续版本按公开 API 能力检测，不依赖固定安装路径、私有 IPC 或数据库。
 
 已验证 0.18.0 发行包的 manifest/Skill 描述投影及实际 ExtensionRunner 加载、命令、工具 Hook、
-Python 预检和会话重建清零。后续真实桌面验收覆盖 0.18.0 的安装/LOW 审核，以及
-0.19.1 的原生安装、LOW 审核、确认窗口、单次写入、拒绝变化参数、Stop 和卸载清理。
-仅在所列范围宣称实测；未知后续版本接受非关键新增字段，必需接口不兼容时明确拒绝。
+Python 预检和会话重建清零；0.18.0 与 0.19.1 的真实安装、审核、门控和卸载路径也已验收。
+当前 PI-Desktop 0.22.0 上安装的是插件 0.10.1：真实对话框批准、一次性消费、Guard 运行时
+闭环和 closure gate 双向行为已有宿主证据。完整 Strict store 生命周期、可信 account
+溯源和执行 receipt 持久化仍未验证。仅在所列范围宣称实测；未知后续版本接受非关键新增
+字段，必需接口不兼容时明确拒绝。
 
 审核复用原有 Reviewer/Arbiter/Meta 及两轮策略，通过当前模型独立 completion 执行；
 0.18.0 不提供公开的可见子会话派发。门控由用户 `/goalanchor-guard on` 主动启用，
