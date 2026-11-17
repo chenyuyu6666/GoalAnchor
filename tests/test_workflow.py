@@ -6,6 +6,11 @@ from pathlib import Path
 import pytest
 
 from goalanchor.core import ContractValidationError
+from goalanchor.efficiency_governance import (
+    BudgetGovernor,
+    EfficiencyObservation,
+    EfficiencyRuntime,
+)
 from goalanchor.questions import Question, QuestionOption
 from goalanchor.review_delivery import build_packets
 from goalanchor.review_service import ArbiterResult, MetaReviewResult, ReviewerResult, ReviewVerdict
@@ -24,7 +29,13 @@ from goalanchor.workflow_store import WorkflowStore
 NOW = "2026-10-16T01:00:00+08:00"
 
 
-def setup_workflow(tmp_path: Path):
+def setup_workflow(
+    tmp_path: Path,
+    *,
+    efficiency_runtime=None,
+    efficiency_observation_provider=None,
+    clock=None,
+):
     user = EventAuthority(b"u" * 32, "trusted-ui")
     observer = EventAuthority(b"o" * 32, "trusted-runner")
     runtime = Workflow(
@@ -32,7 +43,9 @@ def setup_workflow(tmp_path: Path):
         user,
         observer,
         WorkflowPolicy(str(tmp_path), ("write_text",)),
-        clock=lambda: NOW,
+        clock=clock or (lambda: NOW),
+        efficiency_runtime=efficiency_runtime,
+        efficiency_observation_provider=efficiency_observation_provider,
     )
     baseline = Baseline(
         "G1",
@@ -125,6 +138,174 @@ def approve(runtime, op, user):
     payload = {"answer_id": "answer-" + record.question.question_id, "selected": ["approve"], "custom": None}
     event = user.sign("user.answer", record.question.fingerprint, payload, at=NOW)
     return runtime.answer(record.question.question_id, event)
+
+
+class FixedEfficiencyProvider:
+    def __init__(self, observation=None, on_latest=None):
+        self.observation = observation
+        self.on_latest = on_latest
+
+    def latest(self):
+        if self.on_latest is not None:
+            callback = self.on_latest
+            self.on_latest = None
+            callback()
+        return self.observation
+
+
+def efficiency_observation(op, **overrides):
+    values = {
+        "dependency_count": 0,
+        "risk": "HIGH",
+        "blocking_uncertainty": False,
+        "evidence_change_count": 0,
+        "operation": op.tool,
+        "operation_fingerprint": op.fingerprint,
+        "tokens_used": 10,
+        "elapsed_seconds": 1.0,
+    }
+    values.update(overrides)
+    return EfficiencyObservation(**values)
+
+
+def admit_efficiency_workflow(tmp_path: Path, provider: FixedEfficiencyProvider):
+    runtime = EfficiencyRuntime(budget=BudgetGovernor(token_budget=100, time_budget_seconds=10))
+    return setup_workflow(
+        tmp_path,
+        efficiency_runtime=runtime,
+        efficiency_observation_provider=provider,
+    )
+
+
+def test_efficiency_admission_allows_matching_observation(tmp_path: Path) -> None:
+    provider = FixedEfficiencyProvider()
+    runtime, baseline, user, observer = admit_efficiency_workflow(tmp_path, provider)
+    assert review(runtime, observer)["status"] == "PASSED"
+    op = operation(tmp_path, baseline)
+    approve(runtime, op, user)
+    provider.observation = efficiency_observation(op)
+    calls = []
+    receipt = runtime.execute(
+        "O1",
+        "efficiency-pass",
+        lambda actual: calls.append(actual.fingerprint) or {"exit_code": 0},
+    )
+    assert receipt["state"] == "SUCCEEDED"
+    assert calls == [op.fingerprint]
+
+
+@pytest.mark.parametrize(
+    ("overrides", "reason"),
+    [
+        ({"tokens_used": None}, "UNKNOWN_USAGE"),
+        ({"tokens_used": 101}, "TOKEN_BUDGET_EXCEEDED"),
+        ({"elapsed_seconds": 11}, "TIME_BUDGET_EXCEEDED"),
+        ({"operation_fingerprint": "0" * 64}, "fingerprint"),
+    ],
+)
+def test_efficiency_admission_denies_before_dispatch_and_preserves_grant(tmp_path: Path, overrides, reason) -> None:
+    provider = FixedEfficiencyProvider()
+    runtime, baseline, user, observer = admit_efficiency_workflow(tmp_path, provider)
+    review(runtime, observer)
+    op = operation(tmp_path, baseline)
+    approve(runtime, op, user)
+    provider.observation = efficiency_observation(op, **overrides)
+    calls = []
+    with pytest.raises(ContractValidationError, match=reason):
+        runtime.execute("O1", "efficiency-denied", lambda actual: calls.append(actual.fingerprint) or {"exit_code": 0})
+    assert calls == []
+    assert runtime.store.get("receipt", "efficiency-denied") is None
+    assert {item["state"] for item in runtime.store.list("grant", baseline.goal_id)} == {"ACTIVE"}
+
+
+def test_efficiency_admission_requires_a_provider_and_observation(tmp_path: Path) -> None:
+    provider = FixedEfficiencyProvider()
+    runtime, baseline, user, observer = admit_efficiency_workflow(tmp_path, provider)
+    review(runtime, observer)
+    op = operation(tmp_path, baseline)
+    approve(runtime, op, user)
+    with pytest.raises(ContractValidationError, match="unavailable"):
+        runtime.execute("O1", "efficiency-missing", lambda _: pytest.fail("must not dispatch"))
+
+    user_authority = EventAuthority(b"u" * 32, "trusted-ui")
+    observer_authority = EventAuthority(b"o" * 32, "trusted-runner")
+    with pytest.raises(ContractValidationError, match="provided together"):
+        Workflow(
+            WorkflowStore(tmp_path / "mismatch.db"),
+            user_authority,
+            observer_authority,
+            WorkflowPolicy(str(tmp_path), ("write_text",)),
+            efficiency_runtime=EfficiencyRuntime(
+                budget=BudgetGovernor(token_budget=100, time_budget_seconds=10)
+            ),
+        )
+
+
+def test_unauthorized_retries_do_not_consume_efficiency_repeat_budget(tmp_path: Path) -> None:
+    provider = FixedEfficiencyProvider()
+    runtime, baseline, user, observer = admit_efficiency_workflow(tmp_path, provider)
+    review(runtime, observer)
+    op = operation(tmp_path, baseline)
+    runtime.register_operation(op)
+    runtime.request_authorization(op.operation_id)
+    provider.observation = efficiency_observation(op)
+    for attempt in range(4):
+        with pytest.raises(ContractValidationError):
+            runtime.execute(
+                "O1",
+                f"unauthorized-{attempt}",
+                lambda _: pytest.fail("must not dispatch"),
+            )
+    approve(runtime, op, user)
+    assert runtime.execute("O1", "authorized-after-retries", lambda _: {"exit_code": 0})["state"] == "SUCCEEDED"
+
+
+def test_expired_grant_retries_do_not_consume_efficiency_repeat_budget(tmp_path: Path) -> None:
+    state = {"now": NOW}
+    provider = FixedEfficiencyProvider()
+    runtime = EfficiencyRuntime(budget=BudgetGovernor(token_budget=100, time_budget_seconds=10))
+    runtime_workflow, baseline, user, observer = setup_workflow(
+        tmp_path,
+        efficiency_runtime=runtime,
+        efficiency_observation_provider=provider,
+        clock=lambda: state["now"],
+    )
+    review(runtime_workflow, observer)
+    op = operation(tmp_path, baseline)
+    approve(runtime_workflow, op, user)
+    provider.observation = efficiency_observation(op)
+    state["now"] = "2026-10-16T03:00:00+08:00"
+    for attempt in range(4):
+        with pytest.raises(ContractValidationError, match="expired"):
+            runtime_workflow.execute(
+                "O1",
+                f"expired-{attempt}",
+                lambda _: pytest.fail("must not dispatch"),
+            )
+    state["now"] = NOW
+    assert runtime_workflow.execute(
+        "O1", "fresh-after-expiry", lambda _: {"exit_code": 0}
+    )["state"] == "SUCCEEDED"
+
+
+def test_efficiency_provider_cannot_extend_a_legacy_grant(tmp_path: Path) -> None:
+    state = {"now": "2026-10-16T01:59:59+08:00"}
+    provider = FixedEfficiencyProvider(on_latest=lambda: state.update(now="2026-10-16T02:00:01+08:00"))
+    runtime = EfficiencyRuntime(budget=BudgetGovernor(token_budget=100, time_budget_seconds=10))
+    workflow, baseline, user, observer = setup_workflow(
+        tmp_path,
+        efficiency_runtime=runtime,
+        efficiency_observation_provider=provider,
+        clock=lambda: state["now"],
+    )
+    review(workflow, observer)
+    op = operation(tmp_path, baseline)
+    approve(workflow, op, user)
+    provider.observation = efficiency_observation(op)
+    with pytest.raises(ContractValidationError, match="expired"):
+        workflow.execute("O1", "provider-overrun", lambda _: pytest.fail("must not dispatch"))
+    state["now"] = NOW
+    assert workflow.execute("O1", "provider-overrun-retry", lambda _: {"exit_code": 0})["state"] == "SUCCEEDED"
 
 
 def test_strict_chain_executes_once_and_closes_only_with_observation(tmp_path: Path) -> None:

@@ -197,6 +197,7 @@ def evidence_binding(runtime: StrictWorkflow, baseline: Baseline, snapshot: Evid
 def make_world(
     tmp_path, *, clock=None, event_verifier=None, runtime_provider=None, allowed_tools=("write_text",),
     operation_path_schemas=None, question_ttl_seconds=None,
+    efficiency_runtime=None, efficiency_observation_provider=None,
 ):
     user = EventAuthority(b"u" * 32, "trusted-ui")
     observer = EventAuthority(b"o" * 32, "trusted-runner")
@@ -210,6 +211,10 @@ def make_world(
         runtime_options["operation_path_schemas"] = operation_path_schemas
     if question_ttl_seconds is not None:
         runtime_options["question_ttl_seconds"] = question_ttl_seconds
+    if efficiency_runtime is not None:
+        runtime_options["efficiency_runtime"] = efficiency_runtime
+    if efficiency_observation_provider is not None:
+        runtime_options["efficiency_observation_provider"] = efficiency_observation_provider
     workflow = StrictWorkflow(
         store,
         user,

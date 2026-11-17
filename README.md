@@ -183,6 +183,13 @@ context = ReviewContext(
 
 `StrictWorkflow` 是与旧 `Workflow` 并列的增量 API。它需要 `store`、`user_authority`、`observer_authority`、`policy` 四个位置参数，并通过关键字参数注入 `trusted_event_verifier` / `trusted_runtime_binding_provider`。模型或 Agent 不能提供 principal、session 或 host facts。可用 `goalanchor workflow demo --directory <新目录>` 在本地离线体验完整门控链路；信任边界要点见下文[安全](#安全)一节。
 
+`Workflow` 和 `StrictWorkflow` 都接受成对的可选关键字参数
+`efficiency_runtime` 与 `efficiency_observation_provider`。启用后，每次 `execute` 和
+`resume_transport` 都会在调用 executor 前校验观测是否绑定当前 tool、operation
+fingerprint 与 review risk，并执行复杂度、预算和重复操作准入。缺失观测、UNKNOWN
+token、超预算或重复操作会阻止派发；legacy 一次性授权不会被消费。未注入时行为与旧
+API 一致。
+
 旧 `Workflow` 的对象、JSON 和历史空证据行为保持兼容；旧审核、旧 grant、legacy `CLOSED` 和 legacy `VerificationResult` 不会变成 Strict 证明。
 
 legacy `ONE_TIME` 授权必须经过显式消费入口：无 `OneTimeAuthorizationLedger` 时，`check_action_authorization()` 返回 `LEGACY_UNVERIFIED`；进程内 ledger 只保证同一进程的一次性消费，跨进程或可信持久化场景请使用 Strict Workflow。

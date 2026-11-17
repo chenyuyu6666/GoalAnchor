@@ -6,6 +6,7 @@ import pytest
 
 from goalanchor.efficiency_governance import (
     BudgetGovernor,
+    EfficiencyObservation,
     EfficiencyRuntime,
     ProgressWatchdog,
     PromptOptimizer,
@@ -137,8 +138,6 @@ class _FixedProvider:
 
 
 def _observation(**overrides):
-    from goalanchor.efficiency_governance import EfficiencyObservation
-
     fields = {
         "dependency_count": 0,
         "risk": "LOW",
@@ -187,3 +186,25 @@ def test_admit_observation_flags_repeated_operation_from_provider() -> None:
     assert first is not None and first.allowed is True
     assert second is not None
     assert second.allowed is False and second.reason == "REPEATED_OPERATION"
+
+
+@pytest.mark.parametrize(
+    "overrides,message",
+    [
+        ({"operation": "other"}, "operation"),
+        ({"operation_fingerprint": "0" * 64}, "fingerprint"),
+        ({"risk": "HIGH"}, "risk"),
+    ],
+)
+def test_admit_observation_rejects_observation_that_is_not_bound_to_the_workflow_operation(
+    overrides, message
+) -> None:
+    runtime = EfficiencyRuntime(budget=BudgetGovernor(token_budget=100, time_budget_seconds=10))
+    provider = _FixedProvider(_observation(**overrides))
+    with pytest.raises(ValueError, match=message):
+        runtime.admit_observation(
+            provider,
+            expected_operation="review",
+            expected_operation_fingerprint="ctx-fixed",
+            expected_risk="LOW",
+        )
