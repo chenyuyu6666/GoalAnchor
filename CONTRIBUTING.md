@@ -127,6 +127,8 @@ v0.3.2 简化多人协作流程
 - 发布聚合提交正文包含四段：影响范围 / 关键决策 / 验证 / 风险与后续；该提交只做版本与文档同步，不混入构建产物。
 - tag 直接指向发布聚合提交（不是 PR 合并提交）；tag message 为 `vX.Y.Z <发布说明>`，与提交标题一致。
 - 发布包走独立的 `chore(delivery)` 提交；`delivery/<ver>/` 在 tag 内只放 `README.md` 与 `release-notes.md`，`release-manifest.json` 在 Release 完成后回填。
+- tag 后不向 `delivery/<ver>/` 追加新文件。发布资料勘误放在 `Doc/03_验证与测试/`，由当前
+  `CHANGELOG.md` 或任务记录引用。
 
 发布示例：
 
