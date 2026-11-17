@@ -1,12 +1,13 @@
 {
   "schema": "goalanchor.host-matrix/v1",
   "baseline": "v0.9.2 / 8a04e9f",
-  "updated_at": "2026-11-12",
+  "updated_at": "2026-11-17",
+  "updated_note": "2026-11-17: zcode status aligned with goalanchor-v1.0-status.json (PARTIAL/SKILL_MOUNTED_PROTOCOL_LAYER_VERIFIED, PR #48); codex installed version recorded as 0.167.2 while keeping the version the deep loop was actually verified on explicit.",
   "evidence_rule": "CLI presence, fixtures, protocol simulations and package tests do not prove a native Strict full loop.",
   "hosts": [
     {
       "host": "codex",
-      "version": "0.163.0",
+      "version": "0.167.2 installed 2026-11-17 (the deep loop was verified on 0.163.0; the App Server protocol was not re-verified after the upgrade)",
       "os": "Windows",
       "mode": "app-server",
       "capability": "LIMITED",
@@ -57,8 +58,8 @@
       "os": "Windows",
       "mode": "desktop + embedded-cli",
       "capability": "LIMITED",
-      "status": "PARTIAL/BOUNDED",
-      "execution_path": "Native desktop UI plus scripts/zcode_protocol_probe.py -> installed resources/glm/zcode.cjs app-server",
+      "status": "PARTIAL/SKILL_MOUNTED_PROTOCOL_LAYER_VERIFIED",
+      "execution_path": "Native desktop UI plus scripts/zcode_protocol_probe.py -> installed resources/glm/zcode.cjs app-server; GoalAnchor Skill junction-mounted at ~/.zcode/skills/goalanchor",
       "evidence": "Desktop GLM-5.3-Flash returned the fixed smoke marker and real responses from two fresh Reviewers, Arbiter and Meta Reviewer; all rejected the synthetic missing-evidence case. App-server Coding Plan ark-code-latest/low completed one correlated no-tool turn, tokenCount=3140, observed elapsed=17.406s, and closed the test session. See audit/zcode-desktop-review-20261025.json and audit/zcode-protocol-plan-state-20261025.json with event projections.",
       "mapped_tests": [
         "tests/test_host_contract.py",
@@ -69,7 +70,7 @@
       "final_protocol_observation": "Second independently created no-tool session succeeded; complete input/session/turn and v4 subscription correlations retained; tokenCount=3185, elapsed_seconds=13.937; closed=true.",
       "appserver_bridge_observation": "2026-10-26: scripts/zcode_appserver_bridge.py (new) drove a real GLM Reviewer dispatch over the app-server transport with host-controlled terminal verification; binding-validated FAIL verdict on the synthetic missing-evidence case, toolCallCount=0, tokenCount=3690, session closed (audit/zcode-appserver-bridge-review-20261026.json).",
       "skill_layer_observation": "2026-11-16: GoalAnchor Skill junction-mounted at C:\\Users\\chen\\.zcode\\skills\\goalanchor (same repository copy, junction hash identical to repo). This very session IS ZCode: the skill was listed in the host's available-skills context, the GoalAnchor CLI ran the signed workflow demo to state=CLOSED (12 signed events: baseline -> evidence -> review -> question -> grant reserve/consume -> receipt -> observation -> closure) with zero-write inspection after WAL checkpoint, and the CLI gates (closure/review-cycle) returned live results. Skill+CLI is the zero-coupling protocol layer; enforcement would still require a host plugin.",
-      "limitations": "These are bounded real-host tests with synthetic input, not full native Strict acceptance. UI task/workspace labels are not signed runtime identities; provider/account/server-model provenance and Strict question/authorization/reconcile/closure remain unverified. The one-shot bridge is advisory and rejects Strict requests.",
+      "limitations": "These are bounded real-host tests with synthetic input, not full native Strict acceptance. UI task/workspace labels are not signed runtime identities; provider/account/server-model provenance and Strict question/authorization/reconcile/closure remain unverified. The one-shot bridge is advisory and rejects Strict requests. The Skill layer (protocol only) is verified on this host, but there is no plugin, so unapproved tool calls are NOT blocked at runtime and the Strict store surface is not exposed. The MCP server exists in the repository (PR #52) but has not been loaded by this host yet.",
       "strict_binding_status": "UNAVAILABLE by design: current bridge rejects strict_binding; transport/session correlation does not authenticate principal/account. Host identity/provider boundary references official ZCode auth spec and protocol docs.",
       "identity_authority_source": "https://github.com/zai-org/ZCode/blob/main/docs/coding-plan/zcode-official-server-mcp-client-phase-1-spec.md",
       "protocol_source": "https://github.com/zai-org/ZCode/blob/main/docs/zcode-protocol.md"
