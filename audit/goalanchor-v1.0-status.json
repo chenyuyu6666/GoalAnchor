@@ -23,7 +23,7 @@
     "P3_host_neutral_protocol": "IMPLEMENTED_AND_VERIFIED (all five public interfaces exist; native bindings remain PARTIAL)",
     "P4_native_hosts": "PARTIAL/BOUNDED (Codex has a controlled App Server deep loop on 0.163.0; Claude has a real three-role review and legacy executor loop; DSH and ZCode have Skill+CLI protocol evidence without enforcement; PI-Desktop has a native Guard loop and closure gate with plugin 0.10.1; no host has a fully proven Strict lifecycle with native principal/account provenance)",
     "P5_efficiency_baseline": "PARTIAL/BOUNDED (offline baseline plus one real LOW/MEDIUM/HIGH sample each on gpt-6-luna; UNKNOWN/reconcile tier NOT_RUN)",
-    "P6_efficiency_components": "PARTIAL/BOUNDED (five components are implemented and tested; before/after evidence accepted a MEDIUM prompt reduction and rejected a HIGH expansion; EfficiencyRuntime is not wired into workflow runtime dispatch)",
+    "P6_efficiency_components": "PARTIAL/BOUNDED (EfficiencyRuntime is optionally injected into Workflow/StrictWorkflow execute and resume_transport boundaries with matched observation binding and fail-closed admission; no native observation provider, persisted admission evidence or cross-process budget state yet)",
     "P7_final_release": "DEFERRED"
   },
   "implemented_and_verified": [
@@ -36,10 +36,11 @@
     "Host-neutral public interfaces for capability, runtime binding, review proof, delivery proof and efficiency observation",
     "Legacy Workflow compatibility regression suite",
     "Offline efficiency governance primitives, baseline and fail-closed admission facade",
+    "Optional EfficiencyRuntime admission at legacy and strict execute/resume_transport boundaries",
     "Zero-dependency stdio MCP server with read-only deterministic gate and capability tools; implemented and unit-tested, not yet loaded by a native host"
   ],
   "verification": {
-    "pytest": "PASS: 1314 passed / 0 failed / 0 skipped in 188.491s on 5f535ef; JUnit evidence audit/full-suite-0.10.3-post-mcp.xml. Current 5d1c857 changes audit evidence only; PR #53 CI passed 15/15.",
+    "pytest": "PASS: 1338 passed / 0 failed / 0 skipped in 181.729s; JUnit evidence audit/full-suite-efficiency-runtime.xml. The prior 1314-test run remains historical in audit/full-suite-0.10.3-post-mcp.xml.",
     "ruff": "PASS",
     "mypy": "PASS (43 source files)",
     "skill_sync": "PASS",
@@ -139,7 +140,7 @@
     "Repeat ZCode protocol acceptance on installed 3.18.2 / CLI 0.17.1 and test native MCP loading",
     "Expose or otherwise validate the persistent Strict lifecycle on PI-Desktop, DSH and ZCode",
     "Obtain host-owned non-secret principal/account bindings and trusted review-proof callbacks",
-    "Wire EfficiencyRuntime into workflow runtime dispatch and collect broader real samples",
+    "Provide a native EfficiencyObservationProvider and persist or externally export admission decisions; collect broader real samples and cross-process budget evidence",
     "Complete the UNKNOWN/reconcile efficiency tier and broader PromptOptimizer before/after trials",
     "Rebuild a full-project Graphify graph when Ollama or another supported semantic backend is available",
     "Create Gitee Release pages for v0.9.3, v0.9.4 and v0.10.3 after an access token is available",
@@ -149,7 +150,7 @@
     "commit": "5d1c8570aeef28fd602bed1cac8f197a30e879be",
     "branch": "master",
     "package_version": "0.10.3",
-    "worktree": "LOCAL DOCUMENTATION CHANGES; no runtime code changes",
+    "worktree": "not cached; inspect git status",
     "latest_merged_pull_request": "https://github.com/chenyuyu6666/GoalAnchor/pull/53",
     "post_release_commits": 17,
     "github_master": "5d1c8570aeef28fd602bed1cac8f197a30e879be",

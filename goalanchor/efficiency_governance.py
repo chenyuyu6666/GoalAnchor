@@ -206,10 +206,28 @@ class EfficiencyRuntime:
             True, "WITHIN_BUDGET", complexity, tokens_used, elapsed_seconds, False, token_status
         )
 
-    def admit_observation(self, provider: EfficiencyObservationProvider) -> EfficiencyDecision | None:
+    def admit_observation(
+        self,
+        provider: EfficiencyObservationProvider,
+        *,
+        expected_operation: str | None = None,
+        expected_operation_fingerprint: str | None = None,
+        expected_risk: str | None = None,
+    ) -> EfficiencyDecision | None:
         observation = provider.latest()
         if observation is None:
             return None
+        if not isinstance(observation, EfficiencyObservation):
+            raise ValueError("observation must be an EfficiencyObservation")
+        if expected_operation is not None and observation.operation != expected_operation:
+            raise ValueError("observation operation does not match the workflow operation")
+        if (
+            expected_operation_fingerprint is not None
+            and observation.operation_fingerprint != expected_operation_fingerprint
+        ):
+            raise ValueError("observation fingerprint is stale")
+        if expected_risk is not None and observation.risk != expected_risk:
+            raise ValueError("observation risk does not match the active review")
         return self.admit(
             dependency_count=observation.dependency_count,
             risk=observation.risk,

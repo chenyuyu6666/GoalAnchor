@@ -15,6 +15,10 @@
 - ZCode 免插件权限面探针：区分 CLI/app-server 无执行钩子、桌面宿主内部审批门与标准 MCP
   路线；不把模型输出的工具文本记为真实执行。
 - Claude Code 2.1.322、DSH 0.2.2-rc.1 与 ZCode 协议层的真实宿主证据归档。
+- `Workflow` / `StrictWorkflow` 可选接入效率准入：成对注入 `efficiency_runtime` 与
+  `efficiency_observation_provider`；派发前校验观测绑定的 tool、operation fingerprint
+  与 review risk。缺失观测、UNKNOWN token、超预算、超时、重复操作或证据错绑均 fail-closed，
+  且在一次性授权消费前阻断。
 
 ### Changed
 
@@ -29,6 +33,9 @@
 - pytest 1,314 passed / 0 failed / 0 skipped（188.491s，
   `audit/full-suite-0.10.3-post-mcp.xml`）；Ruff、Mypy 43 文件、Skill sync、fixtures
   12/12 与 Node 21/21 通过；PR #53 CI 15/15。
+- Efficiency runtime 切片：pytest `1,338 passed / 0 failed / 0 skipped`
+  （181.729s，`audit/full-suite-efficiency-runtime.xml`）；Ruff、Mypy 43 文件与 Skill
+  sync 通过。
 - Codex App Server 协议在当前安装版本 0.167.2 上复验：smoke 返回 `GOALANCHOR_HOST_OK`；
   accept 场景 `closure=CLOSED` 且无新审批的二次派发 `BLOCKED:ContractValidationError`；
   reconcile 场景 `UNKNOWN → observer reconcile → SUCCEEDED → CLOSED`；四角色真实审核
@@ -46,6 +53,8 @@
 - MCP 只读 gate 不授权、不做模型审核，也不阻止宿主自己的未批准工具调用。
 - Codex 的 question/cancel/decline 三个场景，以及 ZCode 的桌面四角色审核与签名工作流
   demo，尚未在当前安装版本上复跑。
+- EfficiencyRuntime 已接入操作边界，但尚无真实宿主观测提供者、持久化准入记录或跨进程
+  预算状态；效率结论继续为 `PARTIAL/BOUNDED`。
 
 ## [0.10.3] - 2026-11-16
 

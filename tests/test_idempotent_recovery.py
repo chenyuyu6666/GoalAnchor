@@ -11,6 +11,11 @@ import pytest
 from test_workflow import NOW, approve, operation, review, setup_workflow
 
 from goalanchor.core import ContractValidationError
+from goalanchor.efficiency_governance import (
+    BudgetGovernor,
+    EfficiencyObservation,
+    EfficiencyRuntime,
+)
 from goalanchor.workflow import Workflow, WorkflowPolicy
 from goalanchor.workflow_protocol import EventAuthority, EvidenceSnapshot, canonical, fingerprint
 from goalanchor.workflow_store import WorkflowStore
@@ -37,8 +42,23 @@ class IdempotentBackend:
         return {"exit_code": 0, "object_ref": "artifact", "backend": self.name, "key": key}
 
 
-def pending(tmp_path, *, tested_changes=None, resource=False, scope=False, second_backend=False):
-    runtime, base, user, observer = setup_workflow(tmp_path)
+def pending(
+    tmp_path,
+    *,
+    tested_changes=None,
+    resource=False,
+    scope=False,
+    second_backend=False,
+    efficiency_runtime=None,
+    efficiency_observation_provider=None,
+    clock=None,
+):
+    runtime, base, user, observer = setup_workflow(
+        tmp_path,
+        efficiency_runtime=efficiency_runtime,
+        efficiency_observation_provider=efficiency_observation_provider,
+        clock=clock,
+    )
     op = replace(operation(tmp_path, base), arguments_json=canonical({
         "text": "done", "idempotency_key": "K1", "backend": "fixture-backend"}))
     if resource:
@@ -84,6 +104,17 @@ def pending(tmp_path, *, tested_changes=None, resource=False, scope=False, secon
         runtime.register_operation(op)
     else:
         approve(runtime, op, user)
+    if efficiency_observation_provider is not None:
+        efficiency_observation_provider.observation = EfficiencyObservation(
+            dependency_count=0,
+            risk="HIGH",
+            blocking_uncertainty=False,
+            evidence_change_count=0,
+            operation=op.tool,
+            operation_fingerprint=op.fingerprint,
+            tokens_used=10,
+            elapsed_seconds=1.0,
+        )
     def lost(actual):
         backend.send(actual)
         raise TimeoutError("backend applied effect; reply lost")
@@ -183,6 +214,55 @@ def test_t37_resume_requires_original_permission_still_valid(tmp_path, change):
     with pytest.raises(ContractValidationError):
         resume(runtime, user, observer, request, proof, backend.send)
     assert backend.transports == ["K1"]
+
+
+def test_efficiency_admission_blocks_recovery_before_backend_transport(tmp_path):
+    class Provider:
+        observation = None
+
+        def latest(self):
+            return self.observation
+
+    provider = Provider()
+    efficiency = EfficiencyRuntime(budget=BudgetGovernor(token_budget=100, time_budget_seconds=10))
+    runtime, _, user, observer, _, backend, request, proof = pending(
+        tmp_path,
+        efficiency_runtime=efficiency,
+        efficiency_observation_provider=provider,
+    )
+    provider.observation = replace(provider.observation, tokens_used=None)
+    with pytest.raises(ContractValidationError, match="UNKNOWN_USAGE"):
+        resume(runtime, user, observer, request, proof, backend.send)
+    assert backend.transports == ["K1"]
+    assert runtime.store.get("recovery", "A1") is None
+
+
+def test_efficiency_provider_cannot_outlive_recovery_proof(tmp_path):
+    state = {"now": NOW}
+
+    class Provider:
+        observation = None
+        advance = False
+
+        def latest(self):
+            if self.advance:
+                state["now"] = DEADLINE
+            return self.observation
+
+    provider = Provider()
+    efficiency = EfficiencyRuntime(budget=BudgetGovernor(token_budget=100, time_budget_seconds=10))
+    runtime, _, user, observer, _, backend, request, proof = pending(
+        tmp_path,
+        efficiency_runtime=efficiency,
+        efficiency_observation_provider=provider,
+        clock=lambda: state["now"],
+    )
+    state["now"] = "2026-10-16T01:29:59+08:00"
+    provider.advance = True
+    with pytest.raises(ContractValidationError, match="expired"):
+        resume(runtime, user, observer, request, proof, backend.send)
+    assert backend.transports == ["K1"]
+    assert runtime.store.get("recovery", "A1") is None
 
 
 def test_t37_two_tested_backends_cannot_exchange_original_key(tmp_path):

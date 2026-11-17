@@ -8,6 +8,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from .core import ContractValidationError
+from .efficiency_governance import EfficiencyObservationProvider, EfficiencyRuntime
 from .questions import Question, QuestionAnswer, QuestionOption, QuestionRecord
 from .review_delivery import build_packets, validate_receipts
 from .review_service import (
@@ -42,19 +43,59 @@ class Workflow:
         observer_authority: EventAuthority,
         policy: WorkflowPolicy,
         *,
+        efficiency_runtime: EfficiencyRuntime | None = None,
+        efficiency_observation_provider: EfficiencyObservationProvider | None = None,
         clock: Callable[[], str] = utc_now,
     ) -> None:
+        if (efficiency_runtime is None) != (efficiency_observation_provider is None):
+            raise ContractValidationError(
+                "efficiency runtime and observation provider must be provided together"
+            )
         self.store = store
         self.user_authority = user_authority
         self.observer_authority = observer_authority
         self.policy = policy
         self.clock = clock
+        self._efficiency_runtime = efficiency_runtime
+        self._efficiency_observation_provider = efficiency_observation_provider
 
     def _get(self, kind: str, key: str) -> Payload:
         value = self.store.get(kind, key)
         if value is None:
             raise ContractValidationError(f"missing {kind} record: {key}")
         return value
+
+    def _efficiency_error(self, code: str, message: str) -> Exception:
+        return ContractValidationError(f"{code}: {message}")
+
+    def _admit_efficiency(self, operation: Operation, review: Payload) -> None:
+        if self._efficiency_runtime is None:
+            return
+        provider = self._efficiency_observation_provider
+        if provider is None:
+            raise self._efficiency_error("UNAVAILABLE", "efficiency observation provider is unavailable")
+        try:
+            expected_risk = review["history"][-1]["risk"]
+            decision = self._efficiency_runtime.admit_observation(
+                provider,
+                expected_operation=operation.tool,
+                expected_operation_fingerprint=operation.fingerprint,
+                expected_risk=expected_risk,
+            )
+        except ValueError as exc:
+            raise self._efficiency_error(
+                "UNTRUSTED", f"efficiency observation is invalid: {exc}"
+            ) from exc
+        except (KeyError, AttributeError, TypeError) as exc:
+            raise self._efficiency_error("UNTRUSTED", "efficiency review binding is invalid") from exc
+        except Exception as exc:
+            raise self._efficiency_error("UNAVAILABLE", "efficiency observation provider failed") from exc
+        if decision is None:
+            raise self._efficiency_error("UNAVAILABLE", "efficiency observation is unavailable")
+        if not decision.allowed:
+            raise self._efficiency_error(
+                "UNAVAILABLE", f"efficiency admission denied: {decision.reason}"
+            )
 
     def _goal(self, goal_id: str, *, active: bool = True) -> Payload:
         goal = self._get("goal", goal_id)
@@ -816,6 +857,12 @@ class Workflow:
                 }
             ):
                 raise ContractValidationError("authorization source association mismatch")
+        now = parse_time(self.clock())
+        if parse_time(grant["expires_at"]) <= now:
+            raise ContractValidationError("grant expired before efficiency admission")
+        if parent is not None and parse_time(parent["expires_at"]) <= now:
+            raise ContractValidationError("parent scope expired before efficiency admission")
+        self._admit_efficiency(operation, review)
         expected = {
             ("goal", operation.goal_id): self.store.fingerprint(goal),
             ("review", operation.goal_id): self.store.fingerprint(review),
@@ -939,6 +986,8 @@ class Workflow:
         if snapshot.expires_at is not None:
             deadlines.append(snapshot.expires_at)
         valid_until = self._grant_deadline(operation.goal_id, review, min(deadlines, key=parse_time))
+        self._admit_efficiency(operation, review)
+        valid_until = self._grant_deadline(operation.goal_id, review, valid_until)
         recovery = {**request, "goal_id": operation.goal_id, "state": "UNKNOWN", "phase": "RESERVED",
                     "transport_right": False, "source_event_id": event.event_id, "proof": proof.to_dict(),
                     "valid_until": valid_until}

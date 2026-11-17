@@ -15,6 +15,11 @@ from test_strict_baseline_evidence import (
     write_evidence,
 )
 
+from goalanchor.efficiency_governance import (
+    BudgetGovernor,
+    EfficiencyObservation,
+    EfficiencyRuntime,
+)
 from goalanchor.integration import ReviewFinding
 from goalanchor.review_delivery import build_packets
 from goalanchor.review_service import ArbiterResult, MetaReviewResult, ReviewerResult, ReviewRisk, ReviewVerdict
@@ -87,8 +92,15 @@ def _ready_runtime(tmp_path):
     return runtime, observer
 
 
-def _ready_operation_runtime(tmp_path):
-    runtime, baseline, user, observer, provider, _ = make_world(tmp_path)
+def _ready_operation_runtime(
+    tmp_path, *, efficiency_runtime=None, efficiency_observation_provider=None, clock=None
+):
+    runtime, baseline, user, observer, provider, _ = make_world(
+        tmp_path,
+        efficiency_runtime=efficiency_runtime,
+        efficiency_observation_provider=efficiency_observation_provider,
+        clock=clock,
+    )
     baseline = replace(baseline, decision_dependencies={"operation:item-1": ("item-1",)})
     write_baseline(runtime, baseline, baseline_event(runtime, baseline), provider)
     write_evidence(runtime, baseline, observer, provider)
@@ -262,6 +274,248 @@ def test_strict_authorization_question_and_one_time_grant(tmp_path):
     closure = runtime.close(baseline.goal_id)
     assert closure["state"] == "CLOSED"
     assert runtime.close(baseline.goal_id) == closure
+
+
+class _StrictEfficiencyProvider:
+    def __init__(self, observation=None, on_latest=None):
+        self.observation = observation
+        self.on_latest = on_latest
+
+    def latest(self):
+        if self.on_latest is not None:
+            callback = self.on_latest
+            self.on_latest = None
+            callback()
+        return self.observation
+
+
+def _strict_efficiency_runtime():
+    return EfficiencyRuntime(budget=BudgetGovernor(token_budget=100, time_budget_seconds=10))
+
+
+def _strict_observation(operation, **overrides):
+    values = {
+        "dependency_count": 0,
+        "risk": "MEDIUM",
+        "blocking_uncertainty": False,
+        "evidence_change_count": 0,
+        "operation": operation.tool,
+        "operation_fingerprint": operation.fingerprint,
+        "tokens_used": 10,
+        "elapsed_seconds": 1.0,
+    }
+    values.update(overrides)
+    return EfficiencyObservation(**values)
+
+
+def test_strict_efficiency_admission_runs_before_grant_consumption(tmp_path):
+    efficiency_provider = _StrictEfficiencyProvider()
+    runtime, baseline, user, observer = _ready_operation_runtime(
+        tmp_path,
+        efficiency_runtime=_strict_efficiency_runtime(),
+        efficiency_observation_provider=efficiency_provider,
+    )
+    bundle = _bundle(runtime)
+    event = observer.sign("observer.review", runtime.review_context("goal-1").fingerprint, bundle, at=NOW)
+    runtime.submit_review("goal-1", bundle, event)
+    question = runtime.request_authorization("op-1")
+    runtime.answer(
+        question.question.question_id,
+        user.sign(
+            "user.answer",
+            question.question.fingerprint,
+            {"answer_id": "approve-1", "selected": ["approve"], "custom": None},
+            at=NOW,
+        ),
+    )
+    operations = runtime.store.list("strict_operation", baseline.goal_id)
+    operation = Operation.from_dict(operations[0]["operation"])
+    efficiency_provider.observation = _strict_observation(operation, tokens_used=None)
+    calls = []
+    with pytest.raises(StrictWorkflowError) as captured:
+        runtime.execute(
+            "op-1",
+            "efficiency-denied",
+            lambda actual: calls.append(actual.operation_id) or {"exit_code": 0},
+        )
+    assert captured.value.code == "UNAVAILABLE"
+    assert calls == []
+    assert runtime.store.get("strict_receipt", "efficiency-denied") is None
+    assert {item["state"] for item in runtime.store.list("strict_grant", baseline.goal_id)} == {"ACTIVE"}
+
+
+def test_strict_efficiency_admission_allows_matching_observation(tmp_path):
+    efficiency_provider = _StrictEfficiencyProvider()
+    runtime, baseline, user, observer = _ready_operation_runtime(
+        tmp_path,
+        efficiency_runtime=_strict_efficiency_runtime(),
+        efficiency_observation_provider=efficiency_provider,
+    )
+    bundle = _bundle(runtime)
+    event = observer.sign("observer.review", runtime.review_context("goal-1").fingerprint, bundle, at=NOW)
+    runtime.submit_review("goal-1", bundle, event)
+    question = runtime.request_authorization("op-1")
+    runtime.answer(
+        question.question.question_id,
+        user.sign(
+            "user.answer",
+            question.question.fingerprint,
+            {"answer_id": "approve-1", "selected": ["approve"], "custom": None},
+            at=NOW,
+        ),
+    )
+    operation = Operation.from_dict(runtime.store.list("strict_operation", baseline.goal_id)[0]["operation"])
+    efficiency_provider.observation = _strict_observation(operation)
+    calls = []
+    receipt = runtime.execute(
+        "op-1",
+        "efficiency-pass",
+        lambda actual: calls.append(actual.operation_id) or {"exit_code": 0},
+    )
+    assert receipt["state"] == "SUCCEEDED"
+    assert calls == ["op-1"]
+
+
+def test_strict_efficiency_configuration_uses_strict_error_code(tmp_path):
+    with pytest.raises(StrictWorkflowError) as captured:
+        make_world(tmp_path, efficiency_runtime=_strict_efficiency_runtime())
+    assert captured.value.code == "UNAVAILABLE"
+
+
+def test_strict_unauthorized_retries_do_not_consume_efficiency_repeat_budget(tmp_path):
+    efficiency_provider = _StrictEfficiencyProvider()
+    runtime, baseline, user, observer = _ready_operation_runtime(
+        tmp_path,
+        efficiency_runtime=_strict_efficiency_runtime(),
+        efficiency_observation_provider=efficiency_provider,
+    )
+    bundle = _bundle(runtime)
+    runtime.submit_review(
+        "goal-1",
+        bundle,
+        observer.sign("observer.review", runtime.review_context("goal-1").fingerprint, bundle, at=NOW),
+    )
+    runtime.request_authorization("op-1")
+    operation = Operation.from_dict(runtime.store.list("strict_operation", baseline.goal_id)[0]["operation"])
+    efficiency_provider.observation = _strict_observation(operation)
+    for attempt in range(4):
+        with pytest.raises(StrictWorkflowError) as captured:
+            runtime.execute(
+                "op-1",
+                f"strict-unauthorized-{attempt}",
+                lambda _: pytest.fail("must not dispatch"),
+            )
+        assert captured.value.code == "UNTRUSTED"
+    question = runtime.request_authorization("op-1")
+    runtime.answer(
+        question.question.question_id,
+        user.sign(
+            "user.answer",
+            question.question.fingerprint,
+            {"answer_id": "approve-after-retry", "selected": ["approve"], "custom": None},
+            at=NOW,
+        ),
+    )
+    assert runtime.execute(
+        "op-1",
+        "strict-authorized-after-retries",
+        lambda _: {"exit_code": 0},
+    )["state"] == "SUCCEEDED"
+
+
+def test_strict_expired_grant_retries_do_not_consume_efficiency_repeat_budget(tmp_path):
+    state = {"now": NOW}
+    efficiency_provider = _StrictEfficiencyProvider()
+    runtime, baseline, user, observer = _ready_operation_runtime(
+        tmp_path,
+        efficiency_runtime=_strict_efficiency_runtime(),
+        efficiency_observation_provider=efficiency_provider,
+        clock=lambda: state["now"],
+    )
+    bundle = _bundle(runtime)
+    runtime.submit_review(
+        "goal-1",
+        bundle,
+        observer.sign("observer.review", runtime.review_context("goal-1").fingerprint, bundle, at=NOW),
+    )
+    question = runtime.request_authorization("op-1")
+    runtime.answer(
+        question.question.question_id,
+        user.sign(
+            "user.answer",
+            question.question.fingerprint,
+            {"answer_id": "approve-expired", "selected": ["approve"], "custom": None},
+            at=NOW,
+        ),
+    )
+    operation = Operation.from_dict(runtime.store.list("strict_operation", baseline.goal_id)[0]["operation"])
+    grant_id = runtime.store.list("strict_grant", baseline.goal_id)[0]["authorization_id"]
+    original_grant = runtime.store.get("strict_grant", grant_id)
+
+    def set_grant_expiry(expires_at):
+        current = runtime.store.get("strict_grant", grant_id)
+        changed = {**current, "expires_at": expires_at}
+        event = observer.sign("controller.test.grant.expiry", grant_id, changed, at=NOW)
+        runtime.store.commit(
+            [("strict_grant", grant_id, changed)],
+            {("strict_grant", grant_id): runtime.store.fingerprint(current)},
+            event.event_id,
+            event.to_dict(),
+        )
+
+    set_grant_expiry("2026-10-16T01:00:05+08:00")
+    efficiency_provider.observation = _strict_observation(operation)
+    state["now"] = "2026-10-16T01:00:06+08:00"
+    for attempt in range(4):
+        with pytest.raises(StrictWorkflowError) as captured:
+            runtime.execute(
+                "op-1",
+                f"strict-expired-{attempt}",
+                lambda _: pytest.fail("must not dispatch"),
+            )
+        assert captured.value.code == "STALE"
+    state["now"] = NOW
+    set_grant_expiry(original_grant["expires_at"])
+    assert runtime.execute(
+        "op-1",
+        "strict-fresh-after-expiry",
+        lambda _: {"exit_code": 0},
+    )["state"] == "SUCCEEDED"
+
+
+def test_strict_efficiency_provider_cannot_extend_grant(tmp_path):
+    state = {"now": "2026-10-17T00:59:59+08:00"}
+    efficiency_provider = _StrictEfficiencyProvider(
+        on_latest=lambda: state.update(now="2026-10-17T01:00:01+08:00")
+    )
+    runtime, baseline, user, observer = _ready_operation_runtime(
+        tmp_path,
+        efficiency_runtime=_strict_efficiency_runtime(),
+        efficiency_observation_provider=efficiency_provider,
+        clock=lambda: state["now"],
+    )
+    bundle = _bundle(runtime)
+    runtime.submit_review(
+        "goal-1",
+        bundle,
+        observer.sign("observer.review", runtime.review_context("goal-1").fingerprint, bundle, at=NOW),
+    )
+    question = runtime.request_authorization("op-1")
+    runtime.answer(
+        question.question.question_id,
+        user.sign(
+            "user.answer",
+            question.question.fingerprint,
+            {"answer_id": "approve-overrun", "selected": ["approve"], "custom": None},
+            at=NOW,
+        ),
+    )
+    operation = Operation.from_dict(runtime.store.list("strict_operation", baseline.goal_id)[0]["operation"])
+    efficiency_provider.observation = _strict_observation(operation)
+    with pytest.raises(StrictWorkflowError) as captured:
+        runtime.execute("op-1", "strict-provider-overrun", lambda _: pytest.fail("must not dispatch"))
+    assert captured.value.code == "STALE"
+    assert runtime.store.get("strict_receipt", "strict-provider-overrun") is None
 
 
 def test_strict_reconciled_unknown_can_close_without_review_evidence_drift(tmp_path):
@@ -478,8 +732,14 @@ def test_strict_resume_transport_requires_new_binding_and_leaves_reconcile_state
     assert captured.value.code == "UNTRUSTED"
 
 
-def test_strict_resume_transport_positive_path_is_bounded_until_reconcile(tmp_path):
-    runtime, baseline, user, observer, provider, _ = make_world(tmp_path)
+def _prepare_strict_resume(tmp_path, *, efficiency_provider=None, clock=None):
+    runtime_options = {}
+    if efficiency_provider is not None:
+        runtime_options.update(
+            efficiency_runtime=_strict_efficiency_runtime(),
+            efficiency_observation_provider=efficiency_provider,
+        )
+    runtime, baseline, user, observer, provider, _ = make_world(tmp_path, clock=clock, **runtime_options)
     baseline = replace(baseline, decision_dependencies={"operation:item-1": ("item-1",)})
     write_baseline(runtime, baseline, baseline_event(runtime, baseline), provider)
     operation = Operation(
@@ -518,6 +778,8 @@ def test_strict_resume_transport_positive_path_is_bounded_until_reconcile(tmp_pa
         user.sign("user.answer", question.question.fingerprint,
                   {"answer_id": "approve", "selected": ["approve"], "custom": None}, at=NOW),
     )
+    if efficiency_provider is not None:
+        efficiency_provider.observation = _strict_observation(operation)
     receipt = runtime.execute(
         operation.operation_id, "attempt-resume-positive", lambda _: (_ for _ in ()).throw(RuntimeError("unknown"))
     )
@@ -530,6 +792,13 @@ def test_strict_resume_transport_positive_path_is_bounded_until_reconcile(tmp_pa
         "backend": "backend-1", "key": "key-1", "valid_until": "2026-10-17T01:00:00+08:00",
         "test_evidence_id": "idem-positive",
     }
+    return runtime, baseline, user, observer, operation, request, proof_payload, receipt
+
+
+def test_strict_resume_transport_positive_path_is_bounded_until_reconcile(tmp_path):
+    runtime, baseline, user, observer, operation, request, proof_payload, receipt = (
+        _prepare_strict_resume(tmp_path)
+    )
     recovered = runtime.resume_transport(
         "attempt-resume-positive",
         user.sign("user.resume", "attempt-resume-positive", request, at=NOW),
@@ -538,6 +807,49 @@ def test_strict_resume_transport_positive_path_is_bounded_until_reconcile(tmp_pa
     )
     assert receipt["state"] == "UNKNOWN"
     assert recovered["state"] == "AWAITING_RECONCILIATION"
+
+
+@pytest.mark.parametrize("change", ["unknown-token", "fingerprint", "repeat", "expired"])
+def test_strict_resume_efficiency_denial_has_no_persistent_side_effect(tmp_path, change):
+    state = {"now": NOW}
+    efficiency_provider = _StrictEfficiencyProvider()
+    runtime, baseline, user, observer, _, request, proof_payload, receipt = (
+        _prepare_strict_resume(
+            tmp_path,
+            efficiency_provider=efficiency_provider,
+            clock=lambda: state["now"],
+        )
+    )
+    if change == "unknown-token":
+        efficiency_provider.observation = replace(efficiency_provider.observation, tokens_used=None)
+    elif change == "fingerprint":
+        efficiency_provider.observation = replace(
+            efficiency_provider.observation, operation_fingerprint="0" * 64
+        )
+    elif change == "expired":
+        proof_payload["valid_until"] = "2026-10-16T01:00:01+08:00"
+        state["now"] = "2026-10-16T01:00:00+08:00"
+        efficiency_provider.on_latest = lambda: state.update(
+            now="2026-10-16T01:00:02+08:00"
+        )
+    else:
+        runtime._efficiency_runtime.watchdog.repeat_threshold = 1
+    events_before = runtime.store.read_events()
+    grants_before = runtime.store.list("strict_grant", baseline.goal_id)
+    receipt_before = runtime.store.get("strict_receipt", receipt["attempt_id"])
+    with pytest.raises(StrictWorkflowError) as captured:
+        runtime.resume_transport(
+            receipt["attempt_id"],
+            user.sign("user.resume", receipt["attempt_id"], request, at=NOW),
+            observer.sign("observer.idempotency", receipt["attempt_id"], proof_payload, at=NOW),
+            lambda _: pytest.fail("must not dispatch"),
+        )
+    expected_code = "UNTRUSTED" if change == "fingerprint" else "STALE" if change == "expired" else "UNAVAILABLE"
+    assert captured.value.code == expected_code
+    assert runtime.store.read_events() == events_before
+    assert runtime.store.list("strict_grant", baseline.goal_id) == grants_before
+    assert runtime.store.get("strict_receipt", receipt["attempt_id"]) == receipt_before
+    assert runtime.store.list("strict_recovery", receipt["goal_id"]) == ()
 
 
 def test_strict_reuse_observation_requires_unchanged_criterion_and_signed_source(tmp_path):

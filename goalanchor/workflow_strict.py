@@ -17,6 +17,7 @@ from threading import RLock
 from typing import Any, NoReturn, TypeGuard
 
 from .core import ContractValidationError
+from .efficiency_governance import EfficiencyObservationProvider, EfficiencyRuntime
 from .host_contract import validate_host_binding
 from .questions import Question, QuestionAnswer, QuestionOption, QuestionRecord
 from .review_delivery import build_packets, validate_receipts
@@ -127,11 +128,26 @@ class StrictWorkflow(Workflow):
         trusted_event_verifier: TrustedEventProofProvider | None = None,
         trusted_review_verifier: TrustedReviewProofProvider | None = None,
         trusted_runtime_binding_provider: TrustedRuntimeBindingProvider | None = None,
+        efficiency_runtime: EfficiencyRuntime | None = None,
+        efficiency_observation_provider: EfficiencyObservationProvider | None = None,
         operation_path_schemas: Mapping[str, Sequence[str]] | None = None,
         question_ttl_seconds: int = 86400,
         clock: Callable[[], str] = utc_now,
     ) -> None:
-        super().__init__(store, user_authority, observer_authority, policy, clock=clock)
+        if (efficiency_runtime is None) != (efficiency_observation_provider is None):
+            raise self._strict_error(
+                "UNAVAILABLE",
+                "efficiency runtime and observation provider must be provided together",
+            )
+        super().__init__(
+            store,
+            user_authority,
+            observer_authority,
+            policy,
+            efficiency_runtime=efficiency_runtime,
+            efficiency_observation_provider=efficiency_observation_provider,
+            clock=clock,
+        )
         self._event_signature_cache: OrderedDict[tuple[int, str, str, str], bool] = OrderedDict()
         self._event_signature_cache_lock = RLock()
         if type(question_ttl_seconds) is not int or not 1 <= question_ttl_seconds <= 604800:
@@ -174,6 +190,9 @@ class StrictWorkflow(Workflow):
 
     def _strict_error(self, code: str, message: str) -> StrictWorkflowError:
         return StrictWorkflowError(message, code)
+
+    def _efficiency_error(self, code: str, message: str) -> Exception:
+        return self._strict_error(code, message)
 
     def _verify_cached_event_signature(
         self,
@@ -2757,6 +2776,18 @@ class StrictWorkflow(Workflow):
             guard.expected[("strict_grant", grant["parent_id"])] = fingerprint(parent)
         if parse_time(grant["expires_at"]) <= now:
             raise self._strict_error("STALE", "Strict one-time grant expired")
+        if parent is not None and parse_time(parent["expires_at"]) <= now:
+            raise self._strict_error("STALE", "Parent scope expired before efficiency admission")
+        if guard is not None and parse_time(guard.expires_at) <= now:
+            raise self._strict_error("STALE", "Strict review expired before efficiency admission")
+        self._admit_efficiency(operation, review)
+        admitted_at = parse_time(self.clock())
+        if parse_time(grant["expires_at"]) <= admitted_at:
+            raise self._strict_error("STALE", "Strict one-time grant expired")
+        if parent is not None and parse_time(parent["expires_at"]) <= admitted_at:
+            raise self._strict_error("STALE", "Parent scope expired during efficiency admission")
+        if guard is not None and parse_time(guard.expires_at) <= admitted_at:
+            raise self._strict_error("STALE", "Strict review expired during efficiency admission")
         if guard is not None:
             deadlines = [guard.expires_at, grant["expires_at"]]
             if parent is not None:
@@ -2920,6 +2951,30 @@ class StrictWorkflow(Workflow):
             guard = replace(guard, expires_at=self._deadline(guard.expires_at, attestation["valid_until"]))
         if deadline <= parse_time(self.clock()):
             raise self._strict_error("STALE", "Strict recovery dependency expired")
+        efficiency_grant = self.store.get("strict_grant", receipt["authorization_id"])
+        if self._efficiency_runtime is not None:
+            if efficiency_grant is None or parse_time(efficiency_grant["expires_at"]) <= parse_time(self.clock()):
+                raise self._strict_error("STALE", "Strict recovery grant expired before efficiency admission")
+            if efficiency_grant.get("parent_id"):
+                efficiency_parent = self.store.get("strict_grant", efficiency_grant["parent_id"])
+                if efficiency_parent is None or parse_time(efficiency_parent["expires_at"]) <= parse_time(self.clock()):
+                    raise self._strict_error("STALE", "Strict parent scope expired before efficiency admission")
+        self._admit_efficiency(
+            operation,
+            self.store.get("strict_review_record", receipt["goal_id"]) or {},
+        )
+        admitted_at = parse_time(self.clock())
+        if self._efficiency_runtime is not None:
+            if efficiency_grant is None or parse_time(efficiency_grant["expires_at"]) <= admitted_at:
+                raise self._strict_error("STALE", "Strict recovery grant expired during efficiency admission")
+            if efficiency_grant.get("parent_id"):
+                efficiency_parent = self.store.get("strict_grant", efficiency_grant["parent_id"])
+                if efficiency_parent is None or parse_time(efficiency_parent["expires_at"]) <= admitted_at:
+                    raise self._strict_error("STALE", "Strict parent scope expired during efficiency admission")
+            if guard is not None and parse_time(guard.expires_at) <= admitted_at:
+                raise self._strict_error("STALE", "Strict review expired during recovery admission")
+            if deadline <= admitted_at:
+                raise self._strict_error("STALE", "Strict recovery proof expired during efficiency admission")
         recovery = {
             "attempt_id": attempt_id,
             "recovery_id": request["recovery_id"],

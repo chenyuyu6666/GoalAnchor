@@ -183,6 +183,14 @@ Nonempty digests must cover every evidence reference exactly once and be 64-char
 
 `StrictWorkflow` is an incremental API alongside legacy `Workflow`. It takes `store`, `user_authority`, `observer_authority`, and `policy` positionally, plus keyword providers such as `trusted_event_verifier` and `trusted_runtime_binding_provider`. Models or Agents must not supply principal, session, or host facts. Use `goalanchor workflow demo --directory <new directory>` to try the full gating chain offline; see the trust-boundary table under [Security](#security).
 
+Both `Workflow` and `StrictWorkflow` accept the optional paired keywords
+`efficiency_runtime` and `efficiency_observation_provider`. When enabled, `execute` and
+`resume_transport` validate that the host observation is bound to the current tool,
+operation fingerprint, and review risk before invoking the executor, then apply
+complexity, budget, and repeat-operation admission. Missing observations, UNKNOWN token
+usage, exceeded budgets, or repeated operations block dispatch without consuming a
+legacy one-time authorization. When omitted, the existing API behavior is unchanged.
+
 Legacy `Workflow` objects, JSON, and historical empty-evidence behavior remain compatible. Legacy reviews, grants, `CLOSED`, and `VerificationResult` do not become Strict proof.
 
 Legacy `ONE_TIME` authorization requires an explicit consumption entry point: without a `OneTimeAuthorizationLedger`, `check_action_authorization()` returns `LEGACY_UNVERIFIED`. The in-process ledger only guarantees one-time use within one process; use Strict Workflow for trusted durable or cross-process consumption.
