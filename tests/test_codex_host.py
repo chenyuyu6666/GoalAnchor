@@ -52,7 +52,8 @@ def test_efficiency_probe_record_redacts_the_local_home_path(tmp_path: Path) -> 
         home=tmp_path,
     )
     assert str(tmp_path) not in rendered
-    assert json.loads(rendered)["message"] == "open %USERPROFILE%\\config.toml"
+    expected = f"open {Path('%USERPROFILE%') / 'config.toml'}"
+    assert json.loads(rendered)["message"] == expected
 
 
 def client():
