@@ -6,13 +6,13 @@
 
 | 路径 | 内容 |
 |---|---|
-| `test_*.py` | 52 个测试文件，约 16,470 行，覆盖契约、门控、证据、审核、工作流、MCP、平台适配与宿主生命周期 |
+| `test_*.py` | 53 个测试文件，覆盖契约、门控、证据、审核、工作流、MCP、效率宿主 provider、平台适配与宿主生命周期 |
 | `fixtures/regression/cases.json` | 12 个固定回归场景；每项包含期望通过与期望 finding code |
 | `js/test_pi_desktop.cjs` | PI-Desktop 桥接的 Node 行为测试 |
 | `conftest.py` | 共享夹具与临时目录/进程辅助 |
 
-2026-11-17 EfficiencyRuntime 切片的全量 JUnit
-（`audit/full-suite-efficiency-runtime.xml`）记录 1,338 个用例，0 failure / 0 error /
+2026-11-18 EfficiencyRuntime + host provider 切片的全量 JUnit
+（`audit/full-suite-efficiency-host.xml`）记录 1,376 个用例，0 failure / 0 error /
 0 skipped。实际收集数会随测试增加而变化；需要精确基线时应以当次 JUnit 为准，而不是
 本文中的历史计数。测试以离线、确定性为原则，平台探测类测试使用受控 fixture。
 

@@ -12,7 +12,7 @@ import shutil
 import subprocess
 import threading
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import Future, TimeoutError
 from pathlib import Path
 from typing import Any
@@ -62,7 +62,8 @@ class CodexClient:
     """One subprocess; concurrent requests and explicit server-request responses."""
 
     def __init__(self, argv: Sequence[str] | None = None, cwd: str | Path | None = None,
-                 timeout: float = 30, env: Mapping[str, str] | None = None):
+                 timeout: float = 30, env: Mapping[str, str] | None = None,
+                 event_observers: Sequence[Callable[[Mapping[str, Any]], None]] = ()):
         self.timeout = self._duration(timeout)
         command = list(argv) if argv is not None else _argv()
         if not command or any(not isinstance(x, str) or not x or '\0' in x for x in command):
@@ -78,6 +79,9 @@ class CodexClient:
         self._failure: CodexTransportError | None = None
         self._initialized: dict[str, Any] | None = None
         self._closed = False
+        self._event_observers = list(event_observers)
+        if any(not callable(observer) for observer in self._event_observers):
+            raise CodexTransportError('Event observer must be callable')
         try:
             self._process = subprocess.Popen(
                 command, cwd=cwd, env=dict(env) if env is not None else None,
@@ -193,6 +197,16 @@ class CodexClient:
                                      parse_constant=_constant, parse_float=_float)
                 if not isinstance(message, dict):
                     raise ValueError('non-object message')
+                if 'method' in message:
+                    with self._lock:
+                        observers = tuple(self._event_observers)
+                    for observer in observers:
+                        try:
+                            observer(message)
+                        except Exception:
+                            # Observation is advisory to transport. Missing or malformed
+                            # measurements remain unavailable and workflow admission fails closed.
+                            pass
                 with self._lock:
                     if 'method' in message:
                         if not isinstance(message['method'], str):
@@ -262,6 +276,12 @@ class CodexClient:
                 return self._events.get(timeout=min(.05, remaining))
             except queue.Empty:
                 pass
+
+    def add_event_observer(self, observer: Callable[[Mapping[str, Any]], None]) -> None:
+        if not callable(observer):
+            raise CodexTransportError('Event observer must be callable')
+        with self._lock:
+            self._event_observers.append(observer)
 
     def respond(self, request_id: int | str, result: dict[str, Any]) -> None:
         if type(request_id) not in (int, str):

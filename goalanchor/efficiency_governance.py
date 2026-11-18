@@ -149,6 +149,18 @@ class EfficiencyObservation:
     elapsed_seconds: float
 
 
+@dataclass(frozen=True)
+class EfficiencyObservationContext:
+    """Workflow-owned semantic fields for a host-measured observation."""
+
+    dependency_count: int
+    risk: str
+    blocking_uncertainty: bool
+    evidence_change_count: int
+    operation: str
+    operation_fingerprint: str
+
+
 class EfficiencyObservationProvider(Protocol):
     """Host-neutral supplier of the latest measured efficiency observation.
 
@@ -157,6 +169,12 @@ class EfficiencyObservationProvider(Protocol):
     """
 
     def latest(self) -> EfficiencyObservation | None: ...
+
+
+class ContextBoundEfficiencyObservationProvider(EfficiencyObservationProvider, Protocol):
+    """Provider that binds exact workflow semantics before returning a measurement."""
+
+    def bind_context(self, context: EfficiencyObservationContext) -> None: ...
 
 
 @dataclass
@@ -248,6 +266,7 @@ __all__ = [
     "ComplexityResult",
     "EfficiencyDecision",
     "EfficiencyObservation",
+    "EfficiencyObservationContext",
     "EfficiencyObservationProvider",
     "EfficiencyRuntime",
     "ProgressWatchdog",

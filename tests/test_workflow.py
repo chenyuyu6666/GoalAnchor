@@ -9,8 +9,10 @@ from goalanchor.core import ContractValidationError
 from goalanchor.efficiency_governance import (
     BudgetGovernor,
     EfficiencyObservation,
+    EfficiencyObservationContext,
     EfficiencyRuntime,
 )
+from goalanchor.efficiency_host import RecordedUsageEfficiencyObservationProvider
 from goalanchor.questions import Question, QuestionOption
 from goalanchor.review_delivery import build_packets
 from goalanchor.review_service import ArbiterResult, MetaReviewResult, ReviewerResult, ReviewVerdict
@@ -192,6 +194,27 @@ def test_efficiency_admission_allows_matching_observation(tmp_path: Path) -> Non
     )
     assert receipt["state"] == "SUCCEEDED"
     assert calls == [op.fingerprint]
+
+
+def test_workflow_binds_semantic_context_for_host_measured_provider(tmp_path: Path) -> None:
+    provider = RecordedUsageEfficiencyObservationProvider(clock=lambda: 10.0)
+    runtime, baseline, user, observer = admit_efficiency_workflow(tmp_path, provider)
+    review(runtime, observer)
+    op = operation(tmp_path, baseline)
+    approve(runtime, op, user)
+    provider.bind_context(
+        EfficiencyObservationContext(
+            dependency_count=1,
+            risk="HIGH",
+            blocking_uncertainty=False,
+            evidence_change_count=1,
+            operation=op.tool,
+            operation_fingerprint=op.fingerprint,
+        )
+    )
+    provider.record(tokens_used=10, elapsed_seconds=1.0, source="workflow-test")
+    receipt = runtime.execute("O1", "context-bound", lambda _: {"exit_code": 0})
+    assert receipt["state"] == "SUCCEEDED"
 
 
 @pytest.mark.parametrize(

@@ -19,11 +19,17 @@
   `efficiency_observation_provider`；派发前校验观测绑定的 tool、operation fingerprint
   与 review risk。缺失观测、UNKNOWN token、超预算、超时、重复操作或证据错绑均 fail-closed，
   且在一次性授权消费前阻断。
+- 新增 `efficiency_host` 宿主测量桥接：`RecordedUsageEfficiencyObservationProvider`
+  将真实 token/耗时绑定 Workflow 语义；`CodexTurnUsageTracker` 从 App Server
+  `thread/tokenUsage/updated` 读取宿主累计 token，以单调时钟在准入时重算耗时，并按
+  thread 独立保存累计基线。Codex live probe（0.169.0）实测
+  36,217 tokens / 4.281s，并得到 `MEASURED / WITHIN_BUDGET`。
 
 ### Changed
 
 - 状态文件、宿主矩阵、需求验收矩阵、中英文 README、Agent 兼容性说明与验证索引刷新到
-  `master` `5d1c857` / `0.10.3` 基线，并明确区分“当前安装版本”和“深度验收版本”。
+  `master` PR #55 后的 `d79f0c1` / `0.10.3` 基线，并明确区分“当前安装版本”和
+  “深度验收版本”。
 - 新增 v0.10.3 发布资料勘误：插件包实际 SHA-256 为
   `905daa5e…a20353b6a1`，原发布说明中的 `d9653e…` 是错误值；已发布 tag 与 Release
   保持原样，勘误只在 tag 后的维护材料中记录。
@@ -33,10 +39,10 @@
 - pytest 1,314 passed / 0 failed / 0 skipped（188.491s，
   `audit/full-suite-0.10.3-post-mcp.xml`）；Ruff、Mypy 43 文件、Skill sync、fixtures
   12/12 与 Node 21/21 通过；PR #53 CI 15/15。
-- Efficiency runtime 切片：pytest `1,338 passed / 0 failed / 0 skipped`
-  （181.729s，`audit/full-suite-efficiency-runtime.xml`）；Ruff、Mypy 43 文件与 Skill
+- Efficiency runtime/host-provider 切片：pytest `1,376 passed / 0 failed / 0 skipped`
+  （174.705s，`audit/full-suite-efficiency-host.xml`）；Ruff、Mypy 44 文件与 Skill
   sync 通过。
-- Codex App Server 协议在当前安装版本 0.167.2 上复验：smoke 返回 `GOALANCHOR_HOST_OK`；
+- Codex App Server 协议在 0.167.2 上复验：smoke 返回 `GOALANCHOR_HOST_OK`；
   accept 场景 `closure=CLOSED` 且无新审批的二次派发 `BLOCKED:ContractValidationError`；
   reconcile 场景 `UNKNOWN → observer reconcile → SUCCEEDED → CLOSED`；四角色真实审核
   （reviewer-1/2、arbiter、meta 全 PASS，四个独立 thread，161,083 tokens）后同样闭合。
@@ -53,8 +59,11 @@
 - MCP 只读 gate 不授权、不做模型审核，也不阻止宿主自己的未批准工具调用。
 - Codex 的 question/cancel/decline 三个场景，以及 ZCode 的桌面四角色审核与签名工作流
   demo，尚未在当前安装版本上复跑。
-- EfficiencyRuntime 已接入操作边界，但尚无真实宿主观测提供者、持久化准入记录或跨进程
-  预算状态；效率结论继续为 `PARTIAL/BOUNDED`。
+- EfficiencyRuntime 已接入操作边界，Codex App Server 也已提供真实 tokenUsage/耗时
+  观测；仍缺持久化准入记录、跨进程预算状态和同回合派发前 forecast，因此效率结论
+  继续为 `PARTIAL/BOUNDED`。
+- Codex 的 tokenUsage 事件在审批回调之后才到达；同回合命令执行前没有可信 token
+  测量，启用效率准入时会以 `UNAVAILABLE` fail closed，不能把回合后数据倒填为执行前事实。
 
 ## [0.10.3] - 2026-11-16
 

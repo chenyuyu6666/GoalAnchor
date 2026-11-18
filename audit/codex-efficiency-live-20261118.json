@@ -1,0 +1,383 @@
+{
+  "level": "real-host-model-smoke",
+  "scenario": "efficiency",
+  "approval_provider": "none",
+  "native_ui_verified": false,
+  "approved_requests": 0,
+  "platform": "windows",
+  "model": "group/domestic-group",
+  "host_binding": {
+    "host": "codex",
+    "user_agent": "Codex Desktop/0.169.0 (Windows 10.0.26300; x86_64) dumb (goalanchor; 0.10.3)",
+    "model": "group/domestic-group",
+    "mode": "app-server-command-approval",
+    "hook_enabled": true,
+    "hook_trust": "controller-owned"
+  },
+  "turn_id": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+  "efficiency_enabled": true,
+  "turn_status": "completed",
+  "efficiency_observation": {
+    "dependency_count": 0,
+    "risk": "LOW",
+    "blocking_uncertainty": false,
+    "evidence_change_count": 0,
+    "operation": "host-turn",
+    "operation_fingerprint": "codex-efficiency-probe",
+    "tokens_used": 36217,
+    "elapsed_seconds": 4.281000000075437
+  },
+  "efficiency_decision": {
+    "allowed": true,
+    "reason": "WITHIN_BUDGET",
+    "complexity": {
+      "score": 0,
+      "level": "LOW",
+      "signals": {
+        "dependencies": 0,
+        "risk": 0,
+        "blocking_uncertainty": 0,
+        "evidence_changes": 0
+      }
+    },
+    "tokens_used": 36217,
+    "elapsed_seconds": 4.281000000075437,
+    "progress_alert": false,
+    "token_status": "MEASURED"
+  },
+  "methods": [
+    "remoteControl/status/changed",
+    "account/updated",
+    "thread/started",
+    "warning",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "warning",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated",
+    "thread/status/changed",
+    "turn/started",
+    "mcpServer/startupStatus/updated",
+    "item/started",
+    "item/completed",
+    "item/started",
+    "item/reasoning/summaryPartAdded",
+    "item/reasoning/summaryTextDelta",
+    "item/reasoning/summaryTextDelta",
+    "item/reasoning/summaryTextDelta",
+    "item/reasoning/summaryTextDelta",
+    "item/reasoning/summaryTextDelta",
+    "item/reasoning/summaryTextDelta",
+    "item/reasoning/summaryTextDelta",
+    "item/reasoning/summaryTextDelta",
+    "item/reasoning/summaryTextDelta",
+    "item/reasoning/summaryTextDelta",
+    "item/reasoning/summaryTextDelta",
+    "item/reasoning/summaryTextDelta",
+    "item/completed",
+    "item/started",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/agentMessage/delta",
+    "item/completed",
+    "thread/tokenUsage/updated",
+    "thread/status/changed",
+    "turn/completed"
+  ],
+  "diagnostics": [
+    {
+      "method": "warning",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "message": "Under-development features enabled: async_compaction, local_thread_store_compression. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in %USERPROFILE%\\.codex\\config.toml."
+      }
+    },
+    {
+      "method": "warning",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "message": "Configured service tier `priority` is not advertised as supported for model `group/domestic-group` and will be omitted from requests."
+      }
+    },
+    {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a1ed0d-1b4d-7d22-aa9e-bc5d447ccaa6",
+          "clientId": null,
+          "content": [
+            {
+              "type": "text",
+              "text": "Do not call tools. Reply exactly GOALANCHOR_HOST_OK.",
+              "text_elements": []
+            }
+          ],
+          "startedAtMs": 1794978421581,
+          "completedAtMs": null
+        },
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "startedAtMs": 1794978421581
+      }
+    },
+    {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a1ed0d-1b4d-7d22-aa9e-bc5d447ccaa6",
+          "clientId": null,
+          "content": [
+            {
+              "type": "text",
+              "text": "Do not call tools. Reply exactly GOALANCHOR_HOST_OK.",
+              "text_elements": []
+            }
+          ],
+          "startedAtMs": 1794978421581,
+          "completedAtMs": 1794978421581
+        },
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "contentTokenCount": null,
+        "completedAtMs": 1794978421581
+      }
+    },
+    {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "reasoning",
+          "id": "rs_02179497842407700000000000000000000ffffac1589773b2527",
+          "summary": [],
+          "content": [],
+          "startedAtMs": 1794978423582,
+          "completedAtMs": null
+        },
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "startedAtMs": 1794978423582
+      }
+    },
+    {
+      "method": "item/reasoning/summaryPartAdded",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "rs_02179497842407700000000000000000000ffffac1589773b2527",
+        "summaryIndex": 0
+      }
+    },
+    {
+      "method": "item/reasoning/summaryTextDelta",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "rs_02179497842407700000000000000000000ffffac1589773b2527",
+        "delta": "The",
+        "summaryIndex": 0
+      }
+    },
+    {
+      "method": "item/reasoning/summaryTextDelta",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "rs_02179497842407700000000000000000000ffffac1589773b2527",
+        "delta": " user says",
+        "summaryIndex": 0
+      }
+    },
+    {
+      "method": "item/reasoning/summaryTextDelta",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "rs_02179497842407700000000000000000000ffffac1589773b2527",
+        "delta": " \"",
+        "summaryIndex": 0
+      }
+    },
+    {
+      "method": "item/reasoning/summaryTextDelta",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "rs_02179497842407700000000000000000000ffffac1589773b2527",
+        "delta": "Do not call tools.",
+        "summaryIndex": 0
+      }
+    },
+    {
+      "method": "item/reasoning/summaryTextDelta",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "rs_02179497842407700000000000000000000ffffac1589773b2527",
+        "delta": " Reply exactly GOALAN",
+        "summaryIndex": 0
+      }
+    },
+    {
+      "method": "item/reasoning/summaryTextDelta",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "rs_02179497842407700000000000000000000ffffac1589773b2527",
+        "delta": "CHOR_HOST_OK.\"",
+        "summaryIndex": 0
+      }
+    },
+    {
+      "method": "item/reasoning/summaryTextDelta",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "rs_02179497842407700000000000000000000ffffac1589773b2527",
+        "delta": " I should just repl",
+        "summaryIndex": 0
+      }
+    },
+    {
+      "method": "item/reasoning/summaryTextDelta",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "rs_02179497842407700000000000000000000ffffac1589773b2527",
+        "delta": "y exactl",
+        "summaryIndex": 0
+      }
+    },
+    {
+      "method": "item/reasoning/summaryTextDelta",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "rs_02179497842407700000000000000000000ffffac1589773b2527",
+        "delta": "y that, without",
+        "summaryIndex": 0
+      }
+    },
+    {
+      "method": "item/reasoning/summaryTextDelta",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "rs_02179497842407700000000000000000000ffffac1589773b2527",
+        "delta": " tool",
+        "summaryIndex": 0
+      }
+    },
+    {
+      "method": "item/reasoning/summaryTextDelta",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "rs_02179497842407700000000000000000000ffffac1589773b2527",
+        "delta": " calls",
+        "summaryIndex": 0
+      }
+    },
+    {
+      "method": "item/reasoning/summaryTextDelta",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "rs_02179497842407700000000000000000000ffffac1589773b2527",
+        "delta": ".",
+        "summaryIndex": 0
+      }
+    },
+    {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "reasoning",
+          "id": "rs_02179497842407700000000000000000000ffffac1589773b2527",
+          "summary": [
+            "The user says \"Do not call tools. Reply exactly GOALANCHOR_HOST_OK.\" I should just reply exactly that, without tool calls."
+          ],
+          "content": [],
+          "startedAtMs": 1794978423582,
+          "completedAtMs": 1794978423752
+        },
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "contentTokenCount": null,
+        "completedAtMs": 1794978423752
+      }
+    },
+    {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "moderation": null,
+          "id": "msg_02179497842437600000000000000000000ffffac15fd6c6925ea",
+          "text": "",
+          "phase": "final_answer",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null,
+          "startedAtMs": 1794978423752,
+          "completedAtMs": null
+        },
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "startedAtMs": 1794978423752
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "msg_02179497842437600000000000000000000ffffac15fd6c6925ea",
+        "delta": "GO"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "msg_02179497842437600000000000000000000ffffac15fd6c6925ea",
+        "delta": "AL"
+      }
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "params": {
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "itemId": "msg_02179497842437600000000000000000000ffffac15fd6c6925ea",
+        "delta": "ANCHOR_HOST_OK"
+      }
+    },
+    {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "moderation": null,
+          "id": "msg_02179497842437600000000000000000000ffffac15fd6c6925ea",
+          "text": "GOALANCHOR_HOST_OK",
+          "phase": "final_answer",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null,
+          "startedAtMs": 1794978423752,
+          "completedAtMs": 1794978423838
+        },
+        "threadId": "01a1ed0d-0dd9-79a0-ac0f-1d23b13c6392",
+        "turnId": "01a1ed0d-1394-7993-aeb7-3f4d21220ed3",
+        "contentTokenCount": null,
+        "completedAtMs": 1794978423838
+      }
+    }
+  ]
+}

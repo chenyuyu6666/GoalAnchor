@@ -1,12 +1,17 @@
 """Subprocess protocol simulations; these are not native Codex acceptance tests."""
 import concurrent.futures
+import importlib.util
+import json
 import queue
 import sys
 import time
+from pathlib import Path
 
 import pytest
 
 from goalanchor.codex_host import CodexClient, CodexTransportError, command_approval, user_question_payload
+
+ROOT = Path(__file__).resolve().parents[1]
 
 SERVER = r'''
 import json, sys, time
@@ -36,6 +41,21 @@ for line in sys.stdin:
 '''
 
 
+def test_efficiency_probe_record_redacts_the_local_home_path(tmp_path: Path) -> None:
+    script = ROOT / "scripts" / "verify_codex_workflow_host.py"
+    spec = importlib.util.spec_from_file_location("verify_codex_workflow_host_under_test", script)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    rendered = module._render_record(
+        {"message": f"open {tmp_path / 'config.toml'}"},
+        home=tmp_path,
+    )
+    assert str(tmp_path) not in rendered
+    expected = f"open {Path('%USERPROFILE%') / 'config.toml'}"
+    assert json.loads(rendered)["message"] == expected
+
+
 def client():
     return CodexClient([sys.executable, '-u', '-c', SERVER], timeout=2)
 
@@ -55,6 +75,27 @@ def test_interleaving_and_explicit_cancel():
         assert c.next_event()['params']['result'] == {'decision': 'cancel'}
         with pytest.raises(CodexTransportError):
             c.respond(approval['id'], {'decision': 'accept'})
+
+
+def test_event_observers_receive_events_and_cannot_break_transport():
+    seen = []
+
+    def bad_observer(event):
+        raise RuntimeError("ignored observer failure")
+
+    def observer(event):
+        seen.append(event.get("method"))
+
+    with CodexClient(
+        [sys.executable, '-u', '-c', SERVER],
+        timeout=2,
+        event_observers=(bad_observer, observer),
+    ) as c:
+        c.request('interleave', {})
+        assert c.next_event()['method'] == 'notice'
+        assert c.next_event()['method'].endswith('requestApproval')
+    assert 'notice' in seen
+    assert 'item/commandExecution/requestApproval' in seen
 
 
 @pytest.mark.parametrize('failure', ['nan', 'oversized', 'queue_full'])

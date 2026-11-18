@@ -1,13 +1,13 @@
 {
   "schema": "goalanchor.host-matrix/v1",
-  "baseline": "v0.10.3 released at 9423510; current master 5d1c857",
-  "updated_at": "2026-11-17",
-  "updated_note": "2026-11-17: current repository, release, host versions and evidence versions are separated explicitly. Codex is installed at 0.167.2 while its deep loop was verified on 0.163.0; ZCode is installed at 3.18.2/CLI 0.17.1 while its protocol evidence came from 3.16.3/0.17.0; PI-Desktop has UI 0.22.0 and installed plugin 0.10.1.",
+  "baseline": "v0.10.3 released at 9423510; current master d79f0c1",
+  "updated_at": "2026-11-18",
+  "updated_note": "2026-11-18: current repository, release, host versions and evidence versions are separated explicitly. Codex is installed at 0.169.0, its App Server deep loop was re-verified on 0.167.2, and the original loop was recorded on 0.163.0; ZCode is installed at 3.18.2/CLI 0.17.1 while its protocol evidence came from 3.16.3/0.17.0; PI-Desktop has UI 0.22.0 and installed plugin 0.10.1.",
   "evidence_rule": "CLI presence, fixtures, protocol simulations and package tests do not prove a native Strict full loop.",
   "hosts": [
     {
       "host": "codex",
-      "version": "0.167.2 (installed and re-verified 2026-11-17; the 2026-10-26 deep loop was recorded on 0.163.0)",
+      "version": "0.169.0 installed 2026-11-18; deep loop re-verified on 0.167.2; original deep loop recorded on 0.163.0",
       "os": "Windows",
       "mode": "app-server",
       "capability": "LIMITED",
@@ -27,10 +27,11 @@
         "accept_terminal": "audit/codex-appserver-accept-20261117.json",
         "reconcile_terminal": "audit/codex-appserver-reconcile-20261117.json",
         "deep_review": "audit/codex-appserver-realreview-20261117.json",
+        "efficiency_usage": "audit/codex-efficiency-live-20261118.json",
         "question_cancel_decline_scope": "The question, cancel and decline scenarios were last executed on 0.163.0 with gpt-6-luna and were not repeated on 0.167.2 in this round. The 2026-10-26 smoke record also carries the model-routing root cause: gpt-6-astra and codex-family models returned HTTP 400 'not supported when using Codex with a ChatGPT account' through the then-current proxy, which is why that run used gpt-6-luna."
       },
       "deep_loop_evidence": "2026-11-17 on 0.167.2: (1) real-review scenario — four REAL model roles (reviewer-1, reviewer-2, arbiter, meta on gpt-6.1-sol through the Magpie gateway, 161,083 measured exec tokens across four independent threads, the arbiter's extra findings field tolerated and recorded) drove question/approval/dispatch/receipt/observation/closure=CLOSED with one-shot consumption BLOCKED:ContractValidationError (audit/codex-appserver-realreview-20261117.json); (2) reconcile scenario — dispatch with forced tiny timeout produced receipt UNKNOWN with no automatic retry, then observer-signed reconcile with correlated evidence flipped it to SUCCEEDED and the frozen-context validation allowed CLOSED (audit/codex-appserver-reconcile-20261117.json shows UNKNOWN->SUCCEEDED->CLOSED); (3) the 2026-10-26 P6 before/after on gpt-6-luna — compact prompt accepted on MEDIUM (-19 tokens, correctness held) and rejected on HIGH (+1390 tokens), decision PARTIAL/BOUNDED (audit/prompt-optimizer-experiment-20261026.json), not repeated in this round.",
-      "limitations": "Single-pair P6 runs; the question, cancel and decline scenarios still date from 0.163.0; native UI and account provenance remain unverified; turn_status stays TIMEOUT in the real-review scenario exactly as in the 2026-10-26 run because the client stops waiting after the approved dispatch, which is a pre-existing boundary and not a regression."
+      "limitations": "Single-pair P6 runs; the question, cancel and decline scenarios still date from 0.163.0; native UI and account provenance remain unverified; turn_status stays TIMEOUT in the real-review scenario exactly as in the 2026-10-26 run because the client stops waiting after the approved dispatch, which is a pre-existing boundary and not a regression. A live 0.169.0 efficiency probe with model group/domestic-group captured 36,217 host-reported tokens and recalculated elapsed time at admission to 4.281s, then admitted a LOW synthetic workflow context. Codex emits thread/tokenUsage/updated after the approval callback, so same-turn pre-dispatch measurement remains UNAVAILABLE and efficiency-enabled command admission fails closed."
     },
     {
       "host": "claude",
