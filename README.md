@@ -190,6 +190,13 @@ fingerprint 与 review risk，并执行复杂度、预算和重复操作准入�
 token、超预算或重复操作会阻止派发；legacy 一次性授权不会被消费。未注入时行为与旧
 API 一致。
 
+`goalanchor.efficiency_host` 提供宿主测量桥接：
+`RecordedUsageEfficiencyObservationProvider` 接收实际 token/耗时并绑定 Workflow 传入的
+operation、fingerprint、risk 与证据语义；`CodexTurnUsageTracker` 从
+`thread/tokenUsage/updated` 读取宿主报告并计算单调耗时。Codex 当前在审批回调之后才发出
+该事件，因此“同回合执行前实测”仍为 `UNAVAILABLE`，启用效率准入的命令派发会 fail
+closed，而不是使用伪造估值。
+
 旧 `Workflow` 的对象、JSON 和历史空证据行为保持兼容；旧审核、旧 grant、legacy `CLOSED` 和 legacy `VerificationResult` 不会变成 Strict 证明。
 
 legacy `ONE_TIME` 授权必须经过显式消费入口：无 `OneTimeAuthorizationLedger` 时，`check_action_authorization()` 返回 `LEGACY_UNVERIFIED`；进程内 ledger 只保证同一进程的一次性消费，跨进程或可信持久化场景请使用 Strict Workflow。

@@ -1,9 +1,9 @@
 {
   "schema": "goalanchor.v1.0-status/v1",
-  "updated_at": "2026-11-17",
+  "updated_at": "2026-11-18",
   "baseline": {
     "version": "0.10.3",
-    "commit": "5d1c8570aeef28fd602bed1cac8f197a30e879be",
+    "commit": "d79f0c15796926a9f585a12cc4d939be4fb2beed",
     "branch": "master",
     "release": "v0.10.3",
     "release_commit": "942351025178dbd28c63789b85394c5dbf142bd9",
@@ -21,9 +21,9 @@
     "P1_strict_append_only_review": "IMPLEMENTED_AND_VERIFIED (offline storage boundary; native provenance remains unverified)",
     "P2_strict_lifecycle": "PARTIAL/BOUNDED (offline semantics complete; real principal/account/session binding awaits native hosts)",
     "P3_host_neutral_protocol": "IMPLEMENTED_AND_VERIFIED (all five public interfaces exist; native bindings remain PARTIAL)",
-    "P4_native_hosts": "PARTIAL/BOUNDED (Codex has a controlled App Server deep loop on 0.163.0; Claude has a real three-role review and legacy executor loop; DSH and ZCode have Skill+CLI protocol evidence without enforcement; PI-Desktop has a native Guard loop and closure gate with plugin 0.10.1; no host has a fully proven Strict lifecycle with native principal/account provenance)",
+    "P4_native_hosts": "PARTIAL/BOUNDED (Codex has a controlled App Server deep loop re-verified on 0.167.2 and is currently installed at 0.169.0; Claude has a real three-role review and legacy executor loop; DSH and ZCode have Skill+CLI protocol evidence without enforcement; PI-Desktop has a native Guard loop and closure gate with plugin 0.10.1; no host has a fully proven Strict lifecycle with native principal/account provenance)",
     "P5_efficiency_baseline": "PARTIAL/BOUNDED (offline baseline plus one real LOW/MEDIUM/HIGH sample each on gpt-6-luna; UNKNOWN/reconcile tier NOT_RUN)",
-    "P6_efficiency_components": "PARTIAL/BOUNDED (EfficiencyRuntime is optionally injected into Workflow/StrictWorkflow execute and resume_transport boundaries with matched observation binding and fail-closed admission; no native observation provider, persisted admission evidence or cross-process budget state yet)",
+    "P6_efficiency_components": "PARTIAL/BOUNDED (EfficiencyRuntime is optionally injected into Workflow/StrictWorkflow execute and resume_transport boundaries with matched observation binding and fail-closed admission; Codex App Server usage is captured through a native event provider, while persisted admission evidence and cross-process budget state remain unimplemented)",
     "P7_final_release": "DEFERRED"
   },
   "implemented_and_verified": [
@@ -37,39 +37,45 @@
     "Legacy Workflow compatibility regression suite",
     "Offline efficiency governance primitives, baseline and fail-closed admission facade",
     "Optional EfficiencyRuntime admission at legacy and strict execute/resume_transport boundaries",
+    "Host-measured efficiency observation from Codex App Server tokenUsage and monotonic elapsed time, bound to exact workflow semantics",
     "Zero-dependency stdio MCP server with read-only deterministic gate and capability tools; implemented and unit-tested, not yet loaded by a native host"
   ],
   "verification": {
-    "pytest": "PASS: 1338 passed / 0 failed / 0 skipped in 181.729s; JUnit evidence audit/full-suite-efficiency-runtime.xml. The prior 1314-test run remains historical in audit/full-suite-0.10.3-post-mcp.xml.",
+    "pytest": "PASS: 1376 passed / 0 failed / 0 skipped in 174.705s; JUnit evidence audit/full-suite-efficiency-host.xml. The prior 1360, 1359, 1356, 1338 and 1314-test runs remain historical.",
     "ruff": "PASS",
-    "mypy": "PASS (43 source files)",
+    "mypy": "PASS (44 source files)",
     "skill_sync": "PASS",
     "node": "PASS (21/21)",
     "fixtures": "PASS (12/12 aligned)",
-    "ci": "PASS (15/15 on PR #53 / 5d1c857)",
+    "ci": "PASS (15/15 on PR #55 / d79f0c1)",
     "phase6_offline_benchmark": "5/5 aligned",
     "core_scenarios": "58/58 PASS",
     "native_case_mapping": "58/58 NOT_RUN; core-fixture PASS is not native-host acceptance",
     "efficiency_token_usage": "29,991 measured Codex review tokens; three fixed-task gpt-6-luna samples (LOW/MEDIUM/HIGH) are correct and include token/time records; ZCode 3,140 tokens are a separate opportunistic sample",
+    "efficiency_host_provider": "Codex App Server 0.169.0 tokenUsage event was captured live on 2026-11-18: model group/domestic-group reported 36,217 tokens; elapsed time is recalculated from the monotonic turn start at admission and was 4.281s in this run. LOW synthetic workflow context admitted with WITHIN_BUDGET. Because tokenUsage arrives after the approval callback, same-turn pre-dispatch observation remains UNAVAILABLE and efficiency-enabled dispatch fails closed.",
     "efficiency_baseline_artifact": "audit/efficiency-baseline-v1.0.json contains 20 deterministic local samples and explicitly records token_status=UNKNOWN where token data was unavailable",
     "graphify": "PARTIAL: no root graphify-out/graph.json and Ollama is absent from PATH; the retained ZCode slice predates PR #22 and is navigation-only",
-    "remote_sync": "Local, GitHub and Gitee master refs all resolve to 5d1c8570aeef28fd602bed1cac8f197a30e879be with 0 ahead / 0 behind; Gitee retains an extra v0.10.2 tag for content GitHub cannot re-address"
+    "remote_sync": "Before the GA-EFF-HOST-01 branch, local, GitHub and Gitee master refs all resolve to d79f0c15796926a9f585a12cc4d939be4fb2beed with 0 ahead / 0 behind; Gitee retains an extra v0.10.2 tag for content GitHub cannot re-address"
   },
   "host_matrix": {
     "codex": {
       "status": "PARTIAL/VERIFIED_DEEP_LOOP",
-      "installed_version": "0.167.2 installed and re-verified 2026-11-17",
+      "installed_version": "0.169.0 installed 2026-11-18; deep loop re-verified 2026-11-17 on 0.167.2",
       "capability": "LIMITED",
       "verified": [
         "On 0.167.2: real four-role review (gpt-6.1-sol, 161,083 tokens across four independent threads), signed approval, dispatch, receipt, observation and CLOSED",
         "On 0.167.2: UNKNOWN -> observer reconcile -> SUCCEEDED -> CLOSED and one-time consumption re-block",
         "On 0.167.2: smoke returned GOALANCHOR_HOST_OK through the App Server transport"
+        ,
+        "On 0.169.0: the live efficiency probe parsed host-emitted tokenUsage and fed a MEASURED/WITHIN_BUDGET observation into EfficiencyRuntime"
       ],
       "not_verified": [
-        "question, cancel and decline scenarios on 0.167.2 (still recorded from 0.163.0)",
+        "full deep loop, including question, cancel and decline scenarios, on installed 0.169.0",
         "Native UI and signed account provenance"
+        ,
+        "Same-turn pre-dispatch token measurement for command approval; Codex emits tokenUsage after the approval callback"
       ],
-      "evidence": "audit/codex-appserver-smoke-20261117.json, audit/codex-appserver-accept-20261117.json, audit/codex-appserver-reconcile-20261117.json, audit/codex-appserver-realreview-20261117.json"
+      "evidence": "audit/codex-appserver-smoke-20261117.json, audit/codex-appserver-accept-20261117.json, audit/codex-appserver-reconcile-20261117.json, audit/codex-appserver-realreview-20261117.json, audit/codex-efficiency-live-20261118.json"
     },
     "claude": {
       "status": "PARTIAL/LEGACY_WORKFLOW_WITH_CLAUDE_EXECUTOR_VERIFIED_STRICT_NOT_VERIFIED",
@@ -136,7 +142,7 @@
     }
   },
   "remaining": [
-    "Repeat Codex App Server acceptance on installed 0.167.2 and verify native UI/account provenance",
+    "Repeat the full Codex App Server acceptance on installed 0.169.0 and verify native UI/account provenance",
     "Repeat ZCode protocol acceptance on installed 3.18.2 / CLI 0.17.1 and test native MCP loading",
     "Expose or otherwise validate the persistent Strict lifecycle on PI-Desktop, DSH and ZCode",
     "Obtain host-owned non-secret principal/account bindings and trusted review-proof callbacks",
@@ -147,14 +153,14 @@
     "Keep P7 DEFERRED until all in-scope requirements reach IMPLEMENTED_AND_VERIFIED"
   ],
   "current_snapshot": {
-    "commit": "5d1c8570aeef28fd602bed1cac8f197a30e879be",
+    "commit": "d79f0c15796926a9f585a12cc4d939be4fb2beed",
     "branch": "master",
     "package_version": "0.10.3",
     "worktree": "not cached; inspect git status",
-    "latest_merged_pull_request": "https://github.com/chenyuyu6666/GoalAnchor/pull/53",
-    "post_release_commits": 17,
-    "github_master": "5d1c8570aeef28fd602bed1cac8f197a30e879be",
-    "gitee_master": "5d1c8570aeef28fd602bed1cac8f197a30e879be",
+    "latest_merged_pull_request": "https://github.com/chenyuyu6666/GoalAnchor/pull/55",
+    "post_release_commits": 19,
+    "github_master": "d79f0c15796926a9f585a12cc4d939be4fb2beed",
+    "gitee_master": "d79f0c15796926a9f585a12cc4d939be4fb2beed",
     "remote_relation": "IN_SYNC / 0 ahead / 0 behind",
     "release": {
       "tag": "v0.10.3",

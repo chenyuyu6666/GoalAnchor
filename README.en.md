@@ -191,6 +191,14 @@ complexity, budget, and repeat-operation admission. Missing observations, UNKNOW
 usage, exceeded budgets, or repeated operations block dispatch without consuming a
 legacy one-time authorization. When omitted, the existing API behavior is unchanged.
 
+`goalanchor.efficiency_host` supplies the host-measurement bridge:
+`RecordedUsageEfficiencyObservationProvider` binds measured tokens and elapsed time to the
+workflow-provided operation, fingerprint, risk, and evidence semantics, while
+`CodexTurnUsageTracker` consumes `thread/tokenUsage/updated` and derives elapsed time from
+a monotonic clock. Codex emits that event after the approval callback, so same-turn
+pre-dispatch measurement remains `UNAVAILABLE`; efficiency-enabled command dispatch fails
+closed instead of inventing an estimate.
+
 Legacy `Workflow` objects, JSON, and historical empty-evidence behavior remain compatible. Legacy reviews, grants, `CLOSED`, and `VerificationResult` do not become Strict proof.
 
 Legacy `ONE_TIME` authorization requires an explicit consumption entry point: without a `OneTimeAuthorizationLedger`, `check_action_authorization()` returns `LEGACY_UNVERIFIED`. The in-process ledger only guarantees one-time use within one process; use Strict Workflow for trusted durable or cross-process consumption.

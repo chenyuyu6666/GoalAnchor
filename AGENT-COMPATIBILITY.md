@@ -47,9 +47,9 @@ GoalAnchor 负责角色绑定、Reviewer 并行、Arbiter 汇总、Meta Reviewer
 - 提示词由 GoalAnchor 按角色渲染并注入共享 `ReviewContext` 指纹；平台输出兼容直接
   JSON、信封包装（如 `{"result": "<json 文本>"}`）和正文夹带 JSON 三种形态；`codex exec`
   的提示词回显/转写不会干扰解析（优先取最后一个带结果字段的 JSON）。
-- 2026-11-17 本机当前安装版本为 Claude Code 2.1.322 与 Codex CLI 0.167.2。Claude Code
+- 2026-11-18 本机当前安装版本为 Claude Code 2.1.322 与 Codex CLI 0.169.0。Claude Code
   2.1.322 已完成真实三角色审核，并用真实 `claude -p` 作为 legacy `Workflow` 执行器跑到
-  `CLOSED`；Codex 的 App Server 深层闭环是在 0.163.0 上完成的，0.167.2 升级后仍需复验。
+  `CLOSED`；Codex App Server 深层闭环已在 0.167.2 复验，当前 0.169.0 仍需重跑完整闭环。
   平台偶发失败会以退出码 2 + stderr 详情显式报错，不自动重试。
 - 同一轮 Reviewer 强制绑定不同 profile 并发执行；`LOW/MEDIUM/HIGH/CRITICAL` 分别需要
   1/2/2/3 个 `reviewer` profile——LOW 不再免审（单审可信度不足），非 LOW 风险一律多审。
@@ -113,7 +113,12 @@ python -m goalanchor check --target claude --scope project --project-root . --so
 本机 CLI 已在 2026-11-17 升级到 0.167.2，并已用默认模型 `gpt-6.1-sol` 复验 App Server
 协议：smoke、accept（含一次性消费再拦）、reconcile（UNKNOWN→SUCCEEDED→CLOSED）与四角色
 真实审核闭环全部通过。question/cancel/decline 三个场景仍是 0.163.0 证据。宿主 user_agent
-已变为 `Codex Desktop/0.167.2 ... (goalanchor; 0.10.3)`。
+在 2026-11-18 自动更新到 0.169.0；当前 user_agent 为
+`Codex Desktop/0.169.0 ... (goalanchor; 0.10.3)`。0.169.0 的 live efficiency probe 从
+真实 `thread/tokenUsage/updated` 取得 36,217 tokens / 4.281s，并由 provider 返回
+`MEASURED / WITHIN_BUDGET`。但该事件发生在审批请求
+之后，不能作为同回合命令执行前的预算测量；需要额外宿主 forecast 时，当前正确结果是
+`UNAVAILABLE` 并 fail closed。
 
 ### Claude Code
 

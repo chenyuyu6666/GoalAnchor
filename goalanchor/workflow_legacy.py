@@ -8,7 +8,11 @@ from datetime import timedelta
 from pathlib import Path
 
 from .core import ContractValidationError
-from .efficiency_governance import EfficiencyObservationProvider, EfficiencyRuntime
+from .efficiency_governance import (
+    EfficiencyObservationContext,
+    EfficiencyObservationProvider,
+    EfficiencyRuntime,
+)
 from .questions import Question, QuestionAnswer, QuestionOption, QuestionRecord
 from .review_delivery import build_packets, validate_receipts
 from .review_service import (
@@ -75,7 +79,19 @@ class Workflow:
         if provider is None:
             raise self._efficiency_error("UNAVAILABLE", "efficiency observation provider is unavailable")
         try:
-            expected_risk = review["history"][-1]["risk"]
+            bundle = review["history"][-1]
+            expected_risk = bundle["risk"]
+            context = EfficiencyObservationContext(
+                dependency_count=len(bundle["context"]["evidence_refs"]),
+                risk=expected_risk,
+                blocking_uncertainty=False,
+                evidence_change_count=len(review["history"]),
+                operation=operation.tool,
+                operation_fingerprint=operation.fingerprint,
+            )
+            bind_context = getattr(provider, "bind_context", None)
+            if callable(bind_context):
+                bind_context(context)
             decision = self._efficiency_runtime.admit_observation(
                 provider,
                 expected_operation=operation.tool,

@@ -7,10 +7,39 @@ import secrets
 import shutil
 import tempfile
 import time
+from collections.abc import Mapping
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
 from goalanchor.codex_host import CodexClient
+from goalanchor.efficiency_governance import (
+    BudgetGovernor,
+    EfficiencyObservationContext,
+    EfficiencyObservationProvider,
+    EfficiencyRuntime,
+)
+from goalanchor.efficiency_host import CodexTurnUsageTracker
+
+
+def _redact_home_paths(value: Any, home: Path) -> Any:
+    replacements = (str(home), str(home).replace("\\", "/"))
+    if isinstance(value, str):
+        for path in replacements:
+            value = value.replace(path, "%USERPROFILE%")
+        return value
+    if isinstance(value, Mapping):
+        return {key: _redact_home_paths(item, home) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_redact_home_paths(item, home) for item in value]
+    return value
+
+
+def _render_record(record: dict[str, Any], *, home: Path | None = None) -> str:
+    return json.dumps(
+        _redact_home_paths(record, home if home is not None else Path.home()),
+        indent=2,
+    )
 
 
 def answer_fixture(client: CodexClient, request: dict, directory: str) -> dict:
@@ -44,7 +73,9 @@ def answer_fixture(client: CodexClient, request: dict, directory: str) -> dict:
 
 def approve_fixture(client: CodexClient, request: dict, directory: str, host_binding: str,
                     dispatch_timeout: float = 60, verify_one_shot: bool = True,
-                    review_model: str | None = None) -> dict:
+                    review_model: str | None = None,
+                    efficiency_runtime: EfficiencyRuntime | None = None,
+                    efficiency_observation_provider: EfficiencyObservationProvider | None = None) -> dict:
     """Explicit test fixture, not a real user's authorization or model review."""
     from goalanchor.codex_controller import CodexController
     from goalanchor.codex_host import CodexTransportError, command_approval
@@ -77,7 +108,9 @@ def approve_fixture(client: CodexClient, request: dict, directory: str, host_bin
     user = EventAuthority(secrets.token_bytes(32), "explicit-test-user-fixture")
     observer = EventAuthority(secrets.token_bytes(32), "host-controller")
     runtime = Workflow(WorkflowStore(Path(directory).parent / "controller.db"), user, observer,
-                       WorkflowPolicy(directory, ("codex.command",), host_binding=host_binding))
+                       WorkflowPolicy(directory, ("codex.command",), host_binding=host_binding),
+                       efficiency_runtime=efficiency_runtime,
+                       efficiency_observation_provider=efficiency_observation_provider)
     base = Baseline("host-smoke", 1, "Print a fixed marker", "Approve exact callback once", (
         Criterion("exit", "Observed command exit code is zero", canonical(0), "host-command"),
     ), required_operations=("host-command",))
@@ -125,6 +158,10 @@ def approve_fixture(client: CodexClient, request: dict, directory: str, host_bin
               "approval_outcome": controller.approval_outcomes.get(request["id"], "NOT_ATTEMPTED")}
     if review_meta:
         result["real_review"] = review_meta
+    if efficiency_observation_provider is not None:
+        observation = efficiency_observation_provider.latest()
+        if observation is not None:
+            result["efficiency_observation"] = asdict(observation)
     if receipt["state"] == "SUCCEEDED":
         runtime.observe(base.goal_id, observer.sign("observer.observation", base.fingerprint, {
             "goal_id": base.goal_id, "baseline_digest": base.fingerprint, "criterion_id": "exit",
@@ -251,7 +288,15 @@ def _real_review_bundle(model: str, ctx, cwd: str) -> tuple[dict, dict]:
     return bundle, meta
 
 
-def reconcile_fixture(client: CodexClient, request: dict, directory: str, host_binding: str) -> dict:
+def reconcile_fixture(
+    client: CodexClient,
+    request: dict,
+    directory: str,
+    host_binding: str,
+    *,
+    efficiency_runtime: EfficiencyRuntime | None = None,
+    efficiency_observation_provider: EfficiencyObservationProvider | None = None,
+) -> dict:
     """Force dispatch to UNKNOWN via a tiny timeout, then reconcile with observer proof."""
     from goalanchor.codex_controller import CodexController
     from goalanchor.codex_host import command_approval
@@ -273,7 +318,9 @@ def reconcile_fixture(client: CodexClient, request: dict, directory: str, host_b
     user = EventAuthority(secrets.token_bytes(32), "explicit-test-user-fixture")
     observer = EventAuthority(secrets.token_bytes(32), "host-controller")
     runtime = Workflow(WorkflowStore(Path(directory).parent / "controller.db"), user, observer,
-                       WorkflowPolicy(directory, ("codex.command",), host_binding=host_binding))
+                       WorkflowPolicy(directory, ("codex.command",), host_binding=host_binding),
+                       efficiency_runtime=efficiency_runtime,
+                       efficiency_observation_provider=efficiency_observation_provider)
     base = Baseline("host-smoke", 1, "Print a fixed marker", "Approve exact callback once", (
         Criterion("exit", "Observed command exit code is zero", canonical(0), "host-command"),
     ), required_operations=("host-command",))
@@ -380,10 +427,21 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--scenario",
-                        choices=("smoke", "question", "cancel", "decline", "accept", "reconcile", "real-review"),
+                        choices=(
+                            "smoke",
+                            "question",
+                            "cancel",
+                            "decline",
+                            "accept",
+                            "reconcile",
+                            "real-review",
+                            "efficiency",
+                        ),
                         default="smoke")
     parser.add_argument("--model", default=None,
                         help="override the Codex config default model for this subprocess only")
+    parser.add_argument("--efficiency", action="store_true",
+                        help="admit executor dispatch from real Codex tokenUsage and elapsed time")
     args = parser.parse_args()
     import shutil
     argv = None
@@ -395,10 +453,23 @@ def main() -> None:
     record: dict[str, object] = {"level": "real-host-model-smoke", "scenario": args.scenario,
                                  "approval_provider": "fixture" if args.scenario == "question" else "none",
                                  "native_ui_verified": False, "approved_requests": 0}
+    efficiency_tracker = (
+        CodexTurnUsageTracker() if args.efficiency or args.scenario == "efficiency" else None
+    )
+    efficiency_runtime = (
+        EfficiencyRuntime(BudgetGovernor(token_budget=1_000_000, time_budget_seconds=300))
+        if args.efficiency or args.scenario == "efficiency"
+        else None
+    )
     with tempfile.TemporaryDirectory(prefix="goalanchor-codex-smoke-") as root:
         directory = str(Path(root) / "workspace")
         Path(directory).mkdir()
-        with CodexClient(argv=argv, cwd=directory, timeout=30) as client:
+        with CodexClient(
+            argv=argv,
+            cwd=directory,
+            timeout=30,
+            event_observers=(efficiency_tracker.observe,) if efficiency_tracker else (),
+        ) as client:
             initialized = client.initialize()
             record["platform"] = initialized.get("platformOs")
             thread = client.request("thread/start", {"cwd": directory, "ephemeral": True,
@@ -425,8 +496,24 @@ def main() -> None:
             if args.scenario == "question":
                 params["collaborationMode"] = {"mode": "plan", "settings": {
                     "model": thread["model"], "reasoning_effort": None, "developer_instructions": None}}
+            if efficiency_tracker is not None:
+                efficiency_tracker.prepare_turn(thread_id)
             started = client.request("turn/start", params)
             record["turn_id"] = started["turn"]["id"]
+            if efficiency_tracker is not None:
+                efficiency_tracker.start_turn(record["turn_id"], thread_id)
+                record["efficiency_enabled"] = True
+                if args.scenario == "efficiency":
+                    efficiency_tracker.bind_context(
+                        EfficiencyObservationContext(
+                            dependency_count=0,
+                            risk="LOW",
+                            blocking_uncertainty=False,
+                            evidence_change_count=0,
+                            operation="host-turn",
+                            operation_fingerprint="codex-efficiency-probe",
+                        )
+                    )
             if args.scenario == "cancel":
                 client.request("turn/interrupt", {"threadId": thread_id, "turnId": record["turn_id"]})
                 record["interrupt_sent"] = True
@@ -443,14 +530,23 @@ def main() -> None:
                     if args.scenario in ("accept", "real-review") and method == "item/commandExecution/requestApproval":
                         record.update(approve_fixture(client, event, directory, host_binding,
                                                        review_model=args.model
-                                                       if args.scenario == "real-review" else None))
+                                                       if args.scenario == "real-review" else None,
+                                                       efficiency_runtime=efficiency_runtime,
+                                                       efficiency_observation_provider=efficiency_tracker))
                         record["approval_provider"] = "explicit-test-fixture"
                         record["approved_requests"] = int(record["approved_requests"]) + int(
                             record.get("approval_outcome") == "SENT")
                         record["unknown_approval_requests"] = int(record.get("unknown_approval_requests", 0)) + int(
                             record.get("approval_outcome") == "UNKNOWN")
                     elif args.scenario == "reconcile" and method == "item/commandExecution/requestApproval":
-                        record.update(reconcile_fixture(client, event, directory, host_binding))
+                        record.update(reconcile_fixture(
+                            client,
+                            event,
+                            directory,
+                            host_binding,
+                            efficiency_runtime=efficiency_runtime,
+                            efficiency_observation_provider=efficiency_tracker,
+                        ))
                         record["approval_provider"] = "explicit-test-fixture"
                         record["approved_requests"] = int(record["approved_requests"]) + int(
                             record.get("approval_outcome") == "SENT")
@@ -461,14 +557,33 @@ def main() -> None:
                         record["declined_request"] = method
                 if method == "turn/completed":
                     record["turn_status"] = event["params"]["turn"]["status"]
+                    if args.scenario == "efficiency" and efficiency_tracker is not None:
+                        observation = efficiency_tracker.latest()
+                        record["efficiency_observation"] = (
+                            asdict(observation) if observation is not None else None
+                        )
+                        decision = (
+                            efficiency_runtime.admit_observation(
+                                efficiency_tracker,
+                                expected_operation="host-turn",
+                                expected_operation_fingerprint="codex-efficiency-probe",
+                                expected_risk="LOW",
+                            )
+                            if efficiency_runtime is not None
+                            else None
+                        )
+                        record["efficiency_decision"] = (
+                            asdict(decision) if decision is not None else None
+                        )
                     break
             else:
                 client.request("turn/interrupt", {"threadId": thread_id, "turnId": record["turn_id"]})
                 record["turn_status"] = "TIMEOUT"
             record["methods"] = methods
             record["diagnostics"] = diagnostics
-    args.output.write_text(json.dumps(record, indent=2), encoding="utf-8")
-    print(json.dumps(record, indent=2))
+    rendered = _render_record(record)
+    args.output.write_text(rendered, encoding="utf-8")
+    print(rendered)
 
 
 if __name__ == "__main__":
