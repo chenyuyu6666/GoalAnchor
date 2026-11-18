@@ -3,7 +3,7 @@
   "updated_at": "2026-11-18",
   "baseline": {
     "version": "0.10.3",
-    "commit": "d79f0c15796926a9f585a12cc4d939be4fb2beed",
+    "commit": "b7c0e702b2c3e1886a6053253cec86d83c3e90c4",
     "branch": "master",
     "release": "v0.10.3",
     "release_commit": "942351025178dbd28c63789b85394c5dbf142bd9",
@@ -47,7 +47,7 @@
     "skill_sync": "PASS",
     "node": "PASS (21/21)",
     "fixtures": "PASS (12/12 aligned)",
-    "ci": "PASS (15/15 on PR #55 / d79f0c1)",
+    "ci": "PASS (15/15 on PR #56 / b7c0e70)",
     "phase6_offline_benchmark": "5/5 aligned",
     "core_scenarios": "58/58 PASS",
     "native_case_mapping": "58/58 NOT_RUN; core-fixture PASS is not native-host acceptance",
@@ -55,7 +55,7 @@
     "efficiency_host_provider": "Codex App Server 0.169.0 tokenUsage event was captured live on 2026-11-18: model group/domestic-group reported 36,217 tokens; elapsed time is recalculated from the monotonic turn start at admission and was 4.281s in this run. LOW synthetic workflow context admitted with WITHIN_BUDGET. Because tokenUsage arrives after the approval callback, same-turn pre-dispatch observation remains UNAVAILABLE and efficiency-enabled dispatch fails closed.",
     "efficiency_baseline_artifact": "audit/efficiency-baseline-v1.0.json contains 20 deterministic local samples and explicitly records token_status=UNKNOWN where token data was unavailable",
     "graphify": "PARTIAL: no root graphify-out/graph.json and Ollama is absent from PATH; the retained ZCode slice predates PR #22 and is navigation-only",
-    "remote_sync": "Before the GA-EFF-HOST-01 branch, local, GitHub and Gitee master refs all resolve to d79f0c15796926a9f585a12cc4d939be4fb2beed with 0 ahead / 0 behind; Gitee retains an extra v0.10.2 tag for content GitHub cannot re-address"
+    "remote_sync": "PR #56 is merged on local and GitHub master at b7c0e702b2c3e1886a6053253cec86d83c3e90c4. Gitee was still at d79f0c15796926a9f585a12cc4d939be4fb2beed when this snapshot was written and is synchronized after the documentation follow-up; Gitee retains an extra v0.10.2 tag for content GitHub cannot re-address"
   },
   "host_matrix": {
     "codex": {
@@ -153,15 +153,15 @@
     "Keep P7 DEFERRED until all in-scope requirements reach IMPLEMENTED_AND_VERIFIED"
   ],
   "current_snapshot": {
-    "commit": "d79f0c15796926a9f585a12cc4d939be4fb2beed",
+    "commit": "b7c0e702b2c3e1886a6053253cec86d83c3e90c4",
     "branch": "master",
     "package_version": "0.10.3",
     "worktree": "not cached; inspect git status",
-    "latest_merged_pull_request": "https://github.com/chenyuyu6666/GoalAnchor/pull/55",
-    "post_release_commits": 19,
-    "github_master": "d79f0c15796926a9f585a12cc4d939be4fb2beed",
+    "latest_merged_pull_request": "https://github.com/chenyuyu6666/GoalAnchor/pull/56",
+    "post_release_commits": 20,
+    "github_master": "b7c0e702b2c3e1886a6053253cec86d83c3e90c4",
     "gitee_master": "d79f0c15796926a9f585a12cc4d939be4fb2beed",
-    "remote_relation": "IN_SYNC / 0 ahead / 0 behind",
+    "remote_relation": "GITHUB_FEATURE_MERGED / Gitee sync pending",
     "release": {
       "tag": "v0.10.3",
       "tag_object": "987771789d61a907be51ac0cd17c5360bf7ba862",
