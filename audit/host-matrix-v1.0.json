@@ -1,6 +1,6 @@
 {
   "schema": "goalanchor.host-matrix/v1",
-  "baseline": "v0.10.3 released at 9423510; current master d79f0c1",
+  "baseline": "v0.10.3 released at 9423510; current master b7c0e70",
   "updated_at": "2026-11-18",
   "updated_note": "2026-11-18: current repository, release, host versions and evidence versions are separated explicitly. Codex is installed at 0.169.0, its App Server deep loop was re-verified on 0.167.2, and the original loop was recorded on 0.163.0; ZCode is installed at 3.18.2/CLI 0.17.1 while its protocol evidence came from 3.16.3/0.17.0; PI-Desktop has UI 0.22.0 and installed plugin 0.10.1.",
   "evidence_rule": "CLI presence, fixtures, protocol simulations and package tests do not prove a native Strict full loop.",
