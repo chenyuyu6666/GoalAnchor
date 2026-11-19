@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .core import ContractValidationError
 from .efficiency_governance import (
+    EfficiencyAdmissionError,
     EfficiencyObservationContext,
     EfficiencyObservationProvider,
     EfficiencyRuntime,
@@ -72,7 +73,10 @@ class Workflow:
     def _efficiency_error(self, code: str, message: str) -> Exception:
         return ContractValidationError(f"{code}: {message}")
 
-    def _admit_efficiency(self, operation: Operation, review: Payload) -> None:
+    def _efficiency_budget_scope(self, operation: Operation, review: Payload) -> str:
+        return f"{operation.goal_id}:{operation.baseline_digest}:{review['context_fingerprint']}"
+
+    def _admit_efficiency(self, operation: Operation, review: Payload, idempotency_key: str | None = None) -> None:
         if self._efficiency_runtime is None:
             return
         provider = self._efficiency_observation_provider
@@ -97,7 +101,15 @@ class Workflow:
                 expected_operation=operation.tool,
                 expected_operation_fingerprint=operation.fingerprint,
                 expected_risk=expected_risk,
+                admission_scope=self._efficiency_budget_scope(operation, review),
+                idempotency_key=idempotency_key,
             )
+        except EfficiencyAdmissionError as exc:
+            raise self._efficiency_error(exc.code, exc.detail) from exc
+        except ContractValidationError as exc:
+            raise self._efficiency_error(
+                "UNTRUSTED", f"efficiency observation is invalid: {exc}"
+            ) from exc
         except ValueError as exc:
             raise self._efficiency_error(
                 "UNTRUSTED", f"efficiency observation is invalid: {exc}"
@@ -878,7 +890,7 @@ class Workflow:
             raise ContractValidationError("grant expired before efficiency admission")
         if parent is not None and parse_time(parent["expires_at"]) <= now:
             raise ContractValidationError("parent scope expired before efficiency admission")
-        self._admit_efficiency(operation, review)
+        self._admit_efficiency(operation, review, f"legacy:{attempt_id}")
         expected = {
             ("goal", operation.goal_id): self.store.fingerprint(goal),
             ("review", operation.goal_id): self.store.fingerprint(review),
@@ -1002,7 +1014,11 @@ class Workflow:
         if snapshot.expires_at is not None:
             deadlines.append(snapshot.expires_at)
         valid_until = self._grant_deadline(operation.goal_id, review, min(deadlines, key=parse_time))
-        self._admit_efficiency(operation, review)
+        self._admit_efficiency(
+            operation,
+            review,
+            f"legacy-resume:{attempt_id}:{request['recovery_id']}",
+        )
         valid_until = self._grant_deadline(operation.goal_id, review, valid_until)
         recovery = {**request, "goal_id": operation.goal_id, "state": "UNKNOWN", "phase": "RESERVED",
                     "transport_right": False, "source_event_id": event.event_id, "proof": proof.to_dict(),

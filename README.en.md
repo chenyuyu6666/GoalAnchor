@@ -199,6 +199,17 @@ a monotonic clock. Codex emits that event after the approval callback, so same-t
 pre-dispatch measurement remains `UNAVAILABLE`; efficiency-enabled command dispatch fails
 closed instead of inventing an estimate.
 
+`goalanchor.efficiency_admission` adds a durable admission ledger: admission history is
+append-only and one cumulative budget head is kept per goal/baseline/review scope.
+Cross-process writers are serialized; an exact replay is idempotent, while the same key with
+different input returns `CONFLICT`. Every read and write verifies the complete table/trigger
+DDL, rebuilds generation and cumulative usage from all allowed/denied history, and locks token
+and time budgets to one scope. With the optional `ledger` injected into `EfficiencyRuntime`,
+Workflow binds the attempt/recovery idempotency key and durably records the admission result
+before executor dispatch. These checks detect structural corruption and broken chains, not a
+determined database owner rewriting unkeyed digests; denied keys are terminal and a changed
+observation requires a new attempt/recovery key.
+
 Legacy `Workflow` objects, JSON, and historical empty-evidence behavior remain compatible. Legacy reviews, grants, `CLOSED`, and `VerificationResult` do not become Strict proof.
 
 Legacy `ONE_TIME` authorization requires an explicit consumption entry point: without a `OneTimeAuthorizationLedger`, `check_action_authorization()` returns `LEGACY_UNVERIFIED`. The in-process ledger only guarantees one-time use within one process; use Strict Workflow for trusted durable or cross-process consumption.

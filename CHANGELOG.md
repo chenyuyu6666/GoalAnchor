@@ -24,6 +24,15 @@
   `thread/tokenUsage/updated` 读取宿主累计 token，以单调时钟在准入时重算耗时，并按
   thread 独立保存累计基线。Codex live probe（0.169.0）实测
   36,217 tokens / 4.281s，并得到 `MEASURED / WITHIN_BUDGET`。
+- 新增 `efficiency_admission` 持久准入账本：append-only SQLite admission history 与
+  每 scope 一个累计预算 head；跨进程写入使用 `BEGIN IMMEDIATE`，支持幂等重放、
+  `CONFLICT` 拒绝和单调 head，并在每次读写时核对完整表/触发器 DDL。`EfficiencyRuntime` 可选注入该账本；
+  Workflow/StrictWorkflow 在 execute/resume 前传入 goal/baseline/review scope 与
+  attempt/recovery 幂等键。
+- 持久准入 hardening：budget head 同时绑定 scope、token/time budget 并禁止删除、换 scope
+  或放宽策略；payload/row 的 request digest、admission ID、决策字段逐项校验；完整
+  allowed/denied 历史重算 generation 与累计用量，head 丢失、链不一致或 DDL 缺失/改写时
+  新 admission、重放和证据读取均 fail closed；同幂等键重复请求不再推进 watchdog。
 
 ### Changed
 
@@ -39,8 +48,9 @@
 - pytest 1,314 passed / 0 failed / 0 skipped（188.491s，
   `audit/full-suite-0.10.3-post-mcp.xml`）；Ruff、Mypy 43 文件、Skill sync、fixtures
   12/12 与 Node 21/21 通过；PR #53 CI 15/15。
-- Efficiency runtime/host-provider 切片：pytest `1,376 passed / 0 failed / 0 skipped`
-  （174.705s，`audit/full-suite-efficiency-host.xml`）；Ruff、Mypy 44 文件与 Skill
+- 2026-11-19 Efficiency runtime/host-provider/admission 切片：pytest
+  `1,428 passed / 0 failed / 0 skipped`（136.685s，
+  `audit/full-suite-efficiency-admission.xml`）；Ruff、Mypy 45 文件与 Skill
   sync 通过。
 - Codex App Server 协议在 0.167.2 上复验：smoke 返回 `GOALANCHOR_HOST_OK`；
   accept 场景 `closure=CLOSED` 且无新审批的二次派发 `BLOCKED:ContractValidationError`；
@@ -59,9 +69,16 @@
 - MCP 只读 gate 不授权、不做模型审核，也不阻止宿主自己的未批准工具调用。
 - Codex 的 question/cancel/decline 三个场景，以及 ZCode 的桌面四角色审核与签名工作流
   demo，尚未在当前安装版本上复跑。
-- EfficiencyRuntime 已接入操作边界，Codex App Server 也已提供真实 tokenUsage/耗时
-  观测；仍缺持久化准入记录、跨进程预算状态和同回合派发前 forecast，因此效率结论
-  继续为 `PARTIAL/BOUNDED`。
+- EfficiencyRuntime 已接入操作边界，Codex App Server 已提供真实 tokenUsage/耗时
+  观测，效率准入也可持久记录并跨进程累计预算；仍缺同回合派发前 forecast、其他宿主观测
+  适配器和更大真实样本，因此效率结论继续为 `PARTIAL/BOUNDED`。
+- 持久准入的结构校验用于发现缺表、缺触发器、链断点和自洽但累计量错误的历史；本地数据库
+  所有者仍可重写无密钥摘要，因此这不是密码学防伪或原生宿主身份证明。
+- 2026-11-19 复核后：schema 校验从"必需对象存在且定义一致"收紧为"对象集合必须完全一致"，
+  额外表或额外触发器（例如吞掉 denied 插入的 `RAISE(IGNORE)` 触发器）同样被
+  `UNTRUSTED` 拒绝，否则同一 attempt 键可先记拒绝后又被放行。
+- 同一 attempt/recovery 幂等键一旦记录为拒绝即保持终态，使用新观测重试必须使用新的
+  attempt/recovery 键；宿主无法复现原观测时，Workflow 继续以 `UNAVAILABLE` fail closed。
 - Codex 的 tokenUsage 事件在审批回调之后才到达；同回合命令执行前没有可信 token
   测量，启用效率准入时会以 `UNAVAILABLE` fail closed，不能把回合后数据倒填为执行前事实。
 

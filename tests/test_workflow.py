@@ -6,8 +6,10 @@ from pathlib import Path
 import pytest
 
 from goalanchor.core import ContractValidationError
+from goalanchor.efficiency_admission import EfficiencyAdmissionStore
 from goalanchor.efficiency_governance import (
     BudgetGovernor,
+    EfficiencyAdmissionError,
     EfficiencyObservation,
     EfficiencyObservationContext,
     EfficiencyRuntime,
@@ -155,6 +157,19 @@ class FixedEfficiencyProvider:
         return self.observation
 
 
+class FailingEfficiencyLedger:
+    def __init__(self, error):
+        self.error = error
+
+    def admit(self, **kwargs):
+        raise self.error
+
+
+class InvalidContextEfficiencyProvider(FixedEfficiencyProvider):
+    def bind_context(self, context):
+        raise ContractValidationError("provider context is malformed")
+
+
 def efficiency_observation(op, **overrides):
     values = {
         "dependency_count": 0,
@@ -171,7 +186,10 @@ def efficiency_observation(op, **overrides):
 
 
 def admit_efficiency_workflow(tmp_path: Path, provider: FixedEfficiencyProvider):
-    runtime = EfficiencyRuntime(budget=BudgetGovernor(token_budget=100, time_budget_seconds=10))
+    runtime = EfficiencyRuntime(
+        budget=BudgetGovernor(token_budget=100, time_budget_seconds=10),
+        ledger=EfficiencyAdmissionStore(tmp_path / "efficiency.db", clock=lambda: NOW),
+    )
     return setup_workflow(
         tmp_path,
         efficiency_runtime=runtime,
@@ -194,6 +212,44 @@ def test_efficiency_admission_allows_matching_observation(tmp_path: Path) -> Non
     )
     assert receipt["state"] == "SUCCEEDED"
     assert calls == [op.fingerprint]
+
+
+def test_workflow_efficiency_admission_is_durable_and_scoped(tmp_path: Path) -> None:
+    provider = FixedEfficiencyProvider()
+    runtime, baseline, user, observer = admit_efficiency_workflow(tmp_path, provider)
+    review_record = review(runtime, observer)
+    op = operation(tmp_path, baseline)
+    approve(runtime, op, user)
+    provider.observation = efficiency_observation(op, tokens_used=10, elapsed_seconds=1.0)
+    receipt = runtime.execute(
+        "O1",
+        "durable-efficiency",
+        lambda actual: {"exit_code": 0},
+    )
+    assert receipt["state"] == "SUCCEEDED"
+
+    scope = f"{op.goal_id}:{op.baseline_digest}:{review_record['context_fingerprint']}"
+    admission = runtime._efficiency_runtime.ledger.get("legacy:durable-efficiency")
+    assert admission is not None
+    assert admission.allowed is True
+    assert admission.scope_id == scope
+    assert runtime._efficiency_runtime.ledger.budget_state(scope).tokens_consumed == 10
+
+    replayed = runtime._efficiency_runtime.ledger.admit(
+        idempotency_key="legacy:durable-efficiency",
+        scope_id=scope,
+        token_budget=100,
+        time_budget_seconds=10,
+        operation=op.tool,
+        operation_fingerprint=op.fingerprint,
+        risk="HIGH",
+        complexity=admission.complexity,
+        progress_alert=False,
+        tokens_used=10,
+        elapsed_seconds=1.0,
+    )
+    assert replayed == admission
+    assert runtime._efficiency_runtime.ledger.budget_state(scope).tokens_consumed == 10
 
 
 def test_workflow_binds_semantic_context_for_host_measured_provider(tmp_path: Path) -> None:
@@ -239,6 +295,94 @@ def test_efficiency_admission_denies_before_dispatch_and_preserves_grant(tmp_pat
     assert calls == []
     assert runtime.store.get("receipt", "efficiency-denied") is None
     assert {item["state"] for item in runtime.store.list("grant", baseline.goal_id)} == {"ACTIVE"}
+
+
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (
+            EfficiencyAdmissionError(
+                "efficiency admission idempotency key has different input",
+                "CONFLICT",
+            ),
+            "CONFLICT: efficiency admission idempotency key has different input",
+        ),
+        (
+            ContractValidationError("Cannot durably record efficiency admission"),
+            "UNAVAILABLE: efficiency ledger storage is unavailable",
+        ),
+    ],
+)
+def test_workflow_maps_ledger_errors_without_double_prefixing(
+    tmp_path: Path,
+    error,
+    expected,
+) -> None:
+    provider = FixedEfficiencyProvider()
+    efficiency = EfficiencyRuntime(
+        budget=BudgetGovernor(token_budget=100, time_budget_seconds=10),
+        ledger=FailingEfficiencyLedger(error),
+    )
+    runtime, baseline, user, observer = setup_workflow(
+        tmp_path,
+        efficiency_runtime=efficiency,
+        efficiency_observation_provider=provider,
+    )
+    review(runtime, observer)
+    op = operation(tmp_path, baseline)
+    approve(runtime, op, user)
+    provider.observation = efficiency_observation(op)
+    calls = []
+
+    with pytest.raises(ContractValidationError) as caught:
+        runtime.execute(
+            "O1",
+            "ledger-error",
+            lambda actual: calls.append(actual.fingerprint) or {"exit_code": 0},
+        )
+    assert str(caught.value) == expected
+    assert calls == []
+
+
+def test_no_ledger_provider_contract_failure_remains_untrusted(tmp_path: Path) -> None:
+    provider = InvalidContextEfficiencyProvider()
+    runtime, baseline, user, observer = setup_workflow(
+        tmp_path,
+        efficiency_runtime=EfficiencyRuntime(
+            budget=BudgetGovernor(token_budget=100, time_budget_seconds=10)
+        ),
+        efficiency_observation_provider=provider,
+    )
+    review(runtime, observer)
+    op = operation(tmp_path, baseline)
+    approve(runtime, op, user)
+
+    with pytest.raises(ContractValidationError) as caught:
+        runtime.execute("O1", "provider-error", lambda _: pytest.fail("must not dispatch"))
+    assert str(caught.value) == (
+        "UNTRUSTED: efficiency observation is invalid: provider context is malformed"
+    )
+
+
+def test_provider_contract_failure_with_ledger_remains_untrusted(tmp_path: Path) -> None:
+    provider = InvalidContextEfficiencyProvider()
+    runtime, baseline, user, observer = setup_workflow(
+        tmp_path,
+        efficiency_runtime=EfficiencyRuntime(
+            budget=BudgetGovernor(token_budget=100, time_budget_seconds=10),
+            ledger=FailingEfficiencyLedger(AssertionError("ledger must not be called")),
+        ),
+        efficiency_observation_provider=provider,
+    )
+    review(runtime, observer)
+    op = operation(tmp_path, baseline)
+    approve(runtime, op, user)
+
+    with pytest.raises(ContractValidationError) as caught:
+        runtime.execute("O1", "provider-ledger-error", lambda _: pytest.fail("must not dispatch"))
+    assert str(caught.value) == (
+        "UNTRUSTED: efficiency observation is invalid: provider context is malformed"
+    )
 
 
 def test_efficiency_admission_requires_a_provider_and_observation(tmp_path: Path) -> None:

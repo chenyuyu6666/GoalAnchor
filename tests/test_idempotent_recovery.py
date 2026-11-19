@@ -11,6 +11,7 @@ import pytest
 from test_workflow import NOW, approve, operation, review, setup_workflow
 
 from goalanchor.core import ContractValidationError
+from goalanchor.efficiency_admission import EfficiencyAdmissionStore
 from goalanchor.efficiency_governance import (
     BudgetGovernor,
     EfficiencyObservation,
@@ -235,6 +236,39 @@ def test_efficiency_admission_blocks_recovery_before_backend_transport(tmp_path)
         resume(runtime, user, observer, request, proof, backend.send)
     assert backend.transports == ["K1"]
     assert runtime.store.get("recovery", "A1") is None
+
+
+def test_durable_efficiency_ledger_records_execute_and_recovery_keys(tmp_path):
+    class Provider:
+        observation = None
+
+        def latest(self):
+            return self.observation
+
+    provider = Provider()
+    ledger = EfficiencyAdmissionStore(tmp_path / "efficiency.db", clock=lambda: NOW)
+    efficiency = EfficiencyRuntime(
+        budget=BudgetGovernor(token_budget=100, time_budget_seconds=10),
+        ledger=ledger,
+    )
+    runtime, _, user, observer, _, backend, request, proof = pending(
+        tmp_path,
+        efficiency_runtime=efficiency,
+        efficiency_observation_provider=provider,
+    )
+
+    recovered = resume(runtime, user, observer, request, proof, backend.send)
+    assert recovered["state"] == "AWAITING_RECONCILIATION"
+    assert backend.transports == ["K1", "K1"]
+    assert backend.effects == 1
+    execute_admission = ledger.get("legacy:A1")
+    recovery_admission = ledger.get("legacy-resume:A1:R1")
+    assert execute_admission is not None and execute_admission.allowed is True
+    assert recovery_admission is not None and recovery_admission.allowed is True
+    assert recovery_admission.scope_id == execute_admission.scope_id
+    state = ledger.budget_state(execute_admission.scope_id)
+    assert state.generation == 2
+    assert state.tokens_consumed == 20
 
 
 def test_efficiency_provider_cannot_outlive_recovery_proof(tmp_path):
