@@ -197,6 +197,14 @@ operation、fingerprint、risk 与证据语义；`CodexTurnUsageTracker` 从
 该事件，因此“同回合执行前实测”仍为 `UNAVAILABLE`，启用效率准入的命令派发会 fail
 closed，而不是使用伪造估值。
 
+`goalanchor.efficiency_admission` 提供持久准入账本：admission history 为 append-only，
+预算 head 按 goal/baseline/review scope 累计；跨进程写入串行化，重复提交按同一请求摘要
+幂等返回，键相同但内容不同返回 `CONFLICT`。账本在读写时校验完整表/触发器 DDL，从全部
+allowed/denied 历史重算 generation 和累计用量，并把 token/time budget 锁定在同一 scope。
+可选 `ledger` 注入 `EfficiencyRuntime` 后，Workflow 会在 executor 前绑定 attempt/recovery
+幂等键并持久记录准入结果。该校验发现结构损坏和链不一致，但不提供数据库所有者的密码学
+防伪；拒绝键保持终态，新的观测必须使用新的 attempt/recovery 键。
+
 旧 `Workflow` 的对象、JSON 和历史空证据行为保持兼容；旧审核、旧 grant、legacy `CLOSED` 和 legacy `VerificationResult` 不会变成 Strict 证明。
 
 legacy `ONE_TIME` 授权必须经过显式消费入口：无 `OneTimeAuthorizationLedger` 时，`check_action_authorization()` 返回 `LEGACY_UNVERIFIED`；进程内 ledger 只保证同一进程的一次性消费，跨进程或可信持久化场景请使用 Strict Workflow。

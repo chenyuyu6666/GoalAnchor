@@ -15,6 +15,7 @@ from test_strict_baseline_evidence import (
     write_evidence,
 )
 
+from goalanchor.efficiency_admission import EfficiencyAdmissionStore
 from goalanchor.efficiency_governance import (
     BudgetGovernor,
     EfficiencyObservation,
@@ -293,6 +294,13 @@ def _strict_efficiency_runtime():
     return EfficiencyRuntime(budget=BudgetGovernor(token_budget=100, time_budget_seconds=10))
 
 
+def _durable_strict_efficiency_runtime(tmp_path):
+    return EfficiencyRuntime(
+        budget=BudgetGovernor(token_budget=100, time_budget_seconds=10),
+        ledger=EfficiencyAdmissionStore(tmp_path / "efficiency.db", clock=lambda: NOW),
+    )
+
+
 def _strict_observation(operation, **overrides):
     values = {
         "dependency_count": 0,
@@ -374,6 +382,45 @@ def test_strict_efficiency_admission_allows_matching_observation(tmp_path):
     )
     assert receipt["state"] == "SUCCEEDED"
     assert calls == ["op-1"]
+
+
+def test_strict_efficiency_admission_is_durable_and_scoped(tmp_path):
+    efficiency_provider = _StrictEfficiencyProvider()
+    runtime, baseline, user, observer = _ready_operation_runtime(
+        tmp_path,
+        efficiency_runtime=_durable_strict_efficiency_runtime(tmp_path),
+        efficiency_observation_provider=efficiency_provider,
+    )
+    bundle = _bundle(runtime)
+    event = observer.sign("observer.review", runtime.review_context("goal-1").fingerprint, bundle, at=NOW)
+    runtime.submit_review("goal-1", bundle, event)
+    question = runtime.request_authorization("op-1")
+    runtime.answer(
+        question.question.question_id,
+        user.sign(
+            "user.answer",
+            question.question.fingerprint,
+            {"answer_id": "approve-1", "selected": ["approve"], "custom": None},
+            at=NOW,
+        ),
+    )
+    operation = Operation.from_dict(runtime.store.list("strict_operation", baseline.goal_id)[0]["operation"])
+    efficiency_provider.observation = _strict_observation(operation)
+    calls = []
+    receipt = runtime.execute(
+        "op-1",
+        "durable-efficiency",
+        lambda actual: calls.append(actual.operation_id) or {"exit_code": 0},
+    )
+    assert receipt["state"] == "SUCCEEDED"
+    assert calls == ["op-1"]
+    ledger = runtime._efficiency_runtime.ledger
+    scope = f"{operation.goal_id}:{operation.baseline_digest}:{runtime.review_context('goal-1').fingerprint}"
+    admission = ledger.get("strict:durable-efficiency")
+    assert admission is not None
+    assert admission.allowed is True
+    assert admission.scope_id == scope
+    assert ledger.budget_state(scope).tokens_consumed == 10
 
 
 def test_strict_efficiency_configuration_uses_strict_error_code(tmp_path):
@@ -732,11 +779,21 @@ def test_strict_resume_transport_requires_new_binding_and_leaves_reconcile_state
     assert captured.value.code == "UNTRUSTED"
 
 
-def _prepare_strict_resume(tmp_path, *, efficiency_provider=None, clock=None):
+def _prepare_strict_resume(
+    tmp_path,
+    *,
+    efficiency_provider=None,
+    durable_efficiency=False,
+    clock=None,
+):
     runtime_options = {}
     if efficiency_provider is not None:
         runtime_options.update(
-            efficiency_runtime=_strict_efficiency_runtime(),
+            efficiency_runtime=(
+                _durable_strict_efficiency_runtime(tmp_path)
+                if durable_efficiency
+                else _strict_efficiency_runtime()
+            ),
             efficiency_observation_provider=efficiency_provider,
         )
     runtime, baseline, user, observer, provider, _ = make_world(tmp_path, clock=clock, **runtime_options)
@@ -807,6 +864,35 @@ def test_strict_resume_transport_positive_path_is_bounded_until_reconcile(tmp_pa
     )
     assert receipt["state"] == "UNKNOWN"
     assert recovered["state"] == "AWAITING_RECONCILIATION"
+
+
+def test_strict_durable_efficiency_records_execute_and_recovery_keys(tmp_path):
+    efficiency_provider = _StrictEfficiencyProvider()
+    runtime, _, user, observer, _, request, proof_payload, receipt = _prepare_strict_resume(
+        tmp_path,
+        efficiency_provider=efficiency_provider,
+        durable_efficiency=True,
+    )
+
+    recovered = runtime.resume_transport(
+        "attempt-resume-positive",
+        user.sign("user.resume", "attempt-resume-positive", request, at=NOW),
+        observer.sign("observer.idempotency", "attempt-resume-positive", proof_payload, at=NOW),
+        lambda _: {"exit_code": 0},
+    )
+    assert receipt["state"] == "UNKNOWN"
+    assert recovered["state"] == "AWAITING_RECONCILIATION"
+    ledger = runtime._efficiency_runtime.ledger
+    execute_admission = ledger.get("strict:attempt-resume-positive")
+    recovery_admission = ledger.get(
+        "strict-recovery:attempt-resume-positive:recovery-positive"
+    )
+    assert execute_admission is not None and execute_admission.allowed is True
+    assert recovery_admission is not None and recovery_admission.allowed is True
+    assert recovery_admission.scope_id == execute_admission.scope_id
+    state = ledger.budget_state(execute_admission.scope_id)
+    assert state.generation == 2
+    assert state.tokens_consumed == 20
 
 
 @pytest.mark.parametrize("change", ["unknown-token", "fingerprint", "repeat", "expired"])

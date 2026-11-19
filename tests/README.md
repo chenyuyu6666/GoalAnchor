@@ -11,10 +11,14 @@
 | `js/test_pi_desktop.cjs` | PI-Desktop 桥接的 Node 行为测试 |
 | `conftest.py` | 共享夹具与临时目录/进程辅助 |
 
-2026-11-18 EfficiencyRuntime + host provider 切片的全量 JUnit
-（`audit/full-suite-efficiency-host.xml`）记录 1,376 个用例，0 failure / 0 error /
+2026-11-19 EfficiencyRuntime + host provider + durable admission 切片的全量 JUnit
+（`audit/full-suite-efficiency-admission.xml`）记录 1,424 个用例，0 failure / 0 error /
 0 skipped。实际收集数会随测试增加而变化；需要精确基线时应以当次 JUnit 为准，而不是
 本文中的历史计数。测试以离线、确定性为原则，平台探测类测试使用受控 fixture。
+（2026-11-19 复核后追加：最终门禁为 `1,428 passed / 0 failed / 0 skipped`，136.685s，
+JUnit SHA-256 `0EC822…95A46`。复核中新增的 schema 精确性回归要求额外表/额外触发器同样
+被 `UNTRUSTED` 拒绝，token/time 同时超限的拒绝原因也必须与链校验一致，因此比上述历史
+计数多 4 个用例。）
 
 ## 运行
 

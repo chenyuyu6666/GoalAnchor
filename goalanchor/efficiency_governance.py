@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import Any, Protocol
+
+from .core import ContractValidationError
 
 
 @dataclass(frozen=True)
@@ -177,6 +180,35 @@ class ContextBoundEfficiencyObservationProvider(EfficiencyObservationProvider, P
     def bind_context(self, context: EfficiencyObservationContext) -> None: ...
 
 
+class EfficiencyAdmissionLedger(Protocol):
+    """Durable, cross-process admission record and cumulative budget state."""
+
+    def admit(
+        self,
+        *,
+        idempotency_key: str,
+        scope_id: str,
+        token_budget: int,
+        time_budget_seconds: float,
+        operation: str,
+        operation_fingerprint: str,
+        risk: str,
+        complexity: ComplexityResult,
+        progress_alert: bool | Callable[[], bool],
+        tokens_used: int | None,
+        elapsed_seconds: float,
+    ) -> Any: ...
+
+
+class EfficiencyAdmissionError(ContractValidationError):
+    """A durable efficiency admission failure with a stable fail-closed code."""
+
+    def __init__(self, message: str, code: str) -> None:
+        super().__init__(f"{code}: {message}")
+        self.code = code
+        self.detail = message
+
+
 @dataclass
 class EfficiencyRuntime:
     """Fail-closed runtime facade for measured efficiency governance.
@@ -190,6 +222,7 @@ class EfficiencyRuntime:
     complexity_engine: TaskComplexityEngine = field(default_factory=TaskComplexityEngine)
     watchdog: ProgressWatchdog = field(default_factory=ProgressWatchdog)
     optimizer: PromptOptimizer = field(default_factory=PromptOptimizer)
+    ledger: EfficiencyAdmissionLedger | None = None
 
     def admit(
         self,
@@ -202,6 +235,8 @@ class EfficiencyRuntime:
         operation_fingerprint: str,
         tokens_used: int | None,
         elapsed_seconds: float,
+        admission_scope: str | None = None,
+        idempotency_key: str | None = None,
     ) -> EfficiencyDecision:
         complexity = self.complexity_engine.assess(
             dependency_count=dependency_count,
@@ -209,6 +244,38 @@ class EfficiencyRuntime:
             blocking_uncertainty=blocking_uncertainty,
             evidence_change_count=evidence_change_count,
         )
+        if self.ledger is not None:
+            if admission_scope is None or not isinstance(admission_scope, str) or not admission_scope.strip():
+                raise EfficiencyAdmissionError("efficiency admission scope is required", "UNAVAILABLE")
+            if idempotency_key is None or not isinstance(idempotency_key, str) or not idempotency_key.strip():
+                raise EfficiencyAdmissionError(
+                    "efficiency admission idempotency key is required", "UNAVAILABLE"
+                )
+            try:
+                admission = self.ledger.admit(
+                    idempotency_key=idempotency_key,
+                    scope_id=admission_scope,
+                    token_budget=self.budget.token_budget,
+                    time_budget_seconds=self.budget.time_budget_seconds,
+                    operation=operation,
+                    operation_fingerprint=operation_fingerprint,
+                    risk=risk,
+                    complexity=complexity,
+                    progress_alert=lambda: self.watchdog.observe(operation, operation_fingerprint),
+                    tokens_used=tokens_used,
+                    elapsed_seconds=elapsed_seconds,
+                )
+            except EfficiencyAdmissionError:
+                raise
+            except ContractValidationError as exc:
+                raise EfficiencyAdmissionError(
+                    "efficiency ledger storage is unavailable",
+                    "UNAVAILABLE",
+                ) from exc
+            decision = getattr(admission, "decision", None)
+            if not isinstance(decision, EfficiencyDecision):
+                raise EfficiencyAdmissionError("efficiency ledger returned no decision", "UNAVAILABLE")
+            return decision
         progress_alert = self.watchdog.observe(operation, operation_fingerprint)
         budget_allowed = self.budget.allow(tokens_used=tokens_used, elapsed_seconds=elapsed_seconds)
         token_status = "MEASURED" if tokens_used is not None else "UNKNOWN"
@@ -231,6 +298,8 @@ class EfficiencyRuntime:
         expected_operation: str | None = None,
         expected_operation_fingerprint: str | None = None,
         expected_risk: str | None = None,
+        admission_scope: str | None = None,
+        idempotency_key: str | None = None,
     ) -> EfficiencyDecision | None:
         observation = provider.latest()
         if observation is None:
@@ -255,6 +324,8 @@ class EfficiencyRuntime:
             operation_fingerprint=observation.operation_fingerprint,
             tokens_used=observation.tokens_used,
             elapsed_seconds=observation.elapsed_seconds,
+            admission_scope=admission_scope,
+            idempotency_key=idempotency_key,
         )
 
     def reuse_prompt(self, context_fingerprint: str) -> str | None:
@@ -264,6 +335,8 @@ class EfficiencyRuntime:
 __all__ = [
     "BudgetGovernor",
     "ComplexityResult",
+    "EfficiencyAdmissionError",
+    "EfficiencyAdmissionLedger",
     "EfficiencyDecision",
     "EfficiencyObservation",
     "EfficiencyObservationContext",

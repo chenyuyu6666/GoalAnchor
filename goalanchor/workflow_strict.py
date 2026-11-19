@@ -2780,7 +2780,7 @@ class StrictWorkflow(Workflow):
             raise self._strict_error("STALE", "Parent scope expired before efficiency admission")
         if guard is not None and parse_time(guard.expires_at) <= now:
             raise self._strict_error("STALE", "Strict review expired before efficiency admission")
-        self._admit_efficiency(operation, review)
+        self._admit_efficiency(operation, review, f"strict:{attempt_id}")
         admitted_at = parse_time(self.clock())
         if parse_time(grant["expires_at"]) <= admitted_at:
             raise self._strict_error("STALE", "Strict one-time grant expired")
@@ -2962,6 +2962,7 @@ class StrictWorkflow(Workflow):
         self._admit_efficiency(
             operation,
             self.store.get("strict_review_record", receipt["goal_id"]) or {},
+            f"strict-recovery:{attempt_id}:{request['recovery_id']}",
         )
         admitted_at = parse_time(self.clock())
         if self._efficiency_runtime is not None:
